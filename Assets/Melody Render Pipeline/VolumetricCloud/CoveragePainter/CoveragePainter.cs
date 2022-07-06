@@ -64,21 +64,17 @@ public class CoveragePainter : MonoBehaviour
 		RenderTexture buffer = RenderTexture.GetTemporary(target.width, target.height, target.depth, target.format, RenderTextureReadWrite.Linear);
 		Graphics.Blit(target, buffer);
 		RenderTexture.active = buffer;
-
 		float tw = target.width;
 		float th = target.height;
 		float h = radius;
 		float w = radius;
 		float z = 0.0f;
-
 		material.SetTexture("_MainTex", target);
 		material.SetFloat("_CoverageOpacity", coverageOpacity);
 		material.SetFloat("_TypeOpacity", typeOpacity);
 		material.SetFloat("_ShouldDrawCoverage", drawCoverage ? 1.0f : 0.0f);
 		material.SetFloat("_ShouldDrawType", drawType ? 1.0f : 0.0f);
 		material.SetFloat("_ShouldBlendValues", blendValues ? 1.0f : 0.0f);
-
-
 		if (brushTexture != null)
 		{
 			material.SetTexture("_BrushTexture", brushTexture);
@@ -87,12 +83,18 @@ public class CoveragePainter : MonoBehaviour
 
 		GL.PushMatrix();
 		material.SetPass(0);
+		//load an identiy(normalized) matrix into current model
 		GL.LoadIdentity();
+		//loads an orthographic projection into the projection matrix and loads an identity into the model and view matrices, left、right、bottom、top are current camera viewport
 		GL.LoadPixelMatrix(0.0f, target.width, 0.0f, target.height);
+		//draw a quad on the texture
 		GL.Begin(GL.QUADS);
 
+		//set uv1 coord with QUADS vertex position(so it is local UV)
 		GL.MultiTexCoord2(0, 0.0f, 0.0f);
+		//set uv2 coord with the proportion of the position of brush point in total texture size(so it is global UV)
 		GL.MultiTexCoord2(1, (point.x - w) / tw, (point.y - h) / th);
+		//set vertex position by the brush point
 		GL.Vertex(new Vector3(point.x - w, point.y - h, z));
 
 		GL.MultiTexCoord2(0, 1.0f, 0.0f);
