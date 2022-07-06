@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97b50ab2699f79343a33580c16758a2b, type: 3}
+  m_Name: CA Settings A
+  m_EditorClassIdentifier: 
+  stepsPerFrame: 2
+  noiseOffset: {x: 0.19, y: 0.23}
+  sensors:
+  - radiusMinMax: {x: 4, y: 7}
+    aliveMinMax: {x: 0.35615394, y: 0.83256185}
+    deadMinMax: {x: 0.110502295, y: 0.7799223}
+  - radiusMinMax: {x: 4, y: 5}
+    aliveMinMax: {x: 0.039343, y: 0.8061538}
+    deadMinMax: {x: 0.65912205, y: 0.8841332}
+  - radiusMinMax: {x: 6, y: 9}
+    aliveMinMax: {x: 0.41456413, y: 0.4653895}
+    deadMinMax: {x: 0.3012109, y: 0.73684204}
+  - radiusMinMax: {x: 0, y: 4}
+    aliveMinMax: {x: 0.030299667, y: 0.23516878}
+    deadMinMax: {x: 0.059383918, y: 0.91448325}
+  - radiusMinMax: {x: 6, y: 8}
+    aliveMinMax: {x: 0.0039631454, y: 0.67281944}
+    deadMinMax: {x: 0.2699366, y: 0.93613815}
+  - radiusMinMax: {x: 0, y: 5}
+    aliveMinMax: {x: 0.33243054, y: 0.85158354}
+    deadMinMax: {x: 0.5331163, y: 0.6610949}
+  - radiusMinMax: {x: 0, y: 6}
+    aliveMinMax: {x: 0.08726709, y: 0.41559342}
+    deadMinMax: {x: 0.3965477, y: 0.5689446}
+  - radiusMinMax: {x: 0, y: 6}
+    aliveMinMax: {x: 0.41988584, y: 0.95842594}
+    deadMinMax: {x: 0.030853702, y: 0.6426548}

@@ -1,0 +1,119 @@
+﻿#pragma kernel Init
+#pragma kernel Update
+#pragma kernel Display
+
+RWTexture2D<float4> Map;
+RWTexture2D<float4> NewMap;
+RWTexture2D<float4> DisplayMap;
+
+Texture2D<float4> InitMap;
+float deltaTime;
+int width;
+int height;
+
+float feedRate;
+float removeRate;
+float diffuseRateA;
+float diffuseRateB;
+int diffuseRadius;
+
+int displayMode;
+
+[numthreads(8,8,1)]
+void Init (uint3 id : SV_DispatchThreadID)
+{
+	if ((int)id.x >= width || (int)id.y >= height) {
+		return;
+	}
+
+	//Read from init map:
+	float4 initVals = InitMap[id.xy];
+	Map[id.xy] = float4(1, initVals.r, 0, 0);
+	return;
+}
+
+
+[numthreads(8,8,1)]
+void Update (uint3 id : SV_DispatchThreadID)
+{
+	if ((int)id.x >= width || (int)id.y >= height) {
+		return;
+	}
+
+	float2 uv = float2(id.x/(width-1.0), id.y / (height-1.0));
+
+	float2 currentValues = Map[id.xy].xy;
+	float a = currentValues.x;
+	float b = currentValues.y;
+
+
+	float2 diffuseStrength = 0;
+
+	
+	float2 sum = 0;
+	float weightSum;
+	for (int offsetY = -diffuseRadius; offsetY <= diffuseRadius; offsetY ++) {
+		for (int offsetX = -diffuseRadius; offsetX <= diffuseRadius; offsetX ++) {
+			if (offsetX == 0 && offsetY == 0) {
+				continue;
+			}
+			int2 samplePos = id.xy + int2(offsetX, offsetY);
+			samplePos = min(int2(width-1, height-1), max(0, samplePos));
+			float sqrDst = offsetX * offsetX + offsetY * offsetY;
+			
+			if (sqrDst <= diffuseRadius * diffuseRadius) {
+				float weight = 1.0 / sqrt(sqrDst);
+				sum += Map[samplePos].xy * weight;
+				weightSum += weight;
+			}
+		}
+	}
+
+	diffuseStrength = sum / weightSum - currentValues;
+
+
+	float deltaA = (diffuseRateA * diffuseStrength.x - a * b * b + feedRate * (1-a));
+	float newA = a + deltaA;
+
+	float deltaB = (diffuseRateB * diffuseStrength.y + a * b * b - (removeRate + feedRate) * b);
+	float newB = b + deltaB;
+
+	NewMap[id.xy] = float4(max(0, newA), min(newB, 1), deltaA, deltaB);
+}
+
+[numthreads(8,8,1)]
+void Display (uint3 id : SV_DispatchThreadID)
+{
+	if ((int)id.x >= width || (int)id.y >= height) {
+		return;
+	}
+
+	float4 m = Map[id.xy];
+	float a = m.x;
+	float b = m.y;
+	float deltaA = m.z;
+	float deltaB = m.w;
+
+	const float deltaAThreshold = 0.0005;
+	deltaA = max(0, deltaA - deltaAThreshold);
+
+	if (displayMode == 0) {
+		DisplayMap[id.xy] = m;
+	}
+	else if (displayMode == 1) {
+		DisplayMap[id.xy] = a-b;
+	}
+	else if (displayMode == 2) {
+		float4 col = float4(deltaA * 350, deltaB * 250, 0, 0) + float4(0, 0, b, 0);
+		col = col.gbra;
+		col.g = pow(col.g, 2) * 6;
+		col = min(1, max(0, col));
+		DisplayMap[id.xy] = col;
+	}
+	else if (displayMode == 3) {
+	
+		float v = a - b;
+		DisplayMap[id.xy] = (1-pow(abs(1-(v+ 1-max(deltaB, deltaA) * 350)), 0.6)) + float4(deltaB,0,0,0) * 400;
+	}
+
+}

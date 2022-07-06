@@ -1,0 +1,153 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9ed20029b7a5bd48a2c7f0545aa09bb, type: 3}
+  m_Name: Volumetric Cloud D
+  m_EditorClassIdentifier: 
+  shader: {fileID: 4800000, guid: e61add218821eec439de1c401c3b69ef, type: 3}
+  enabled: 1
+  subPixelSize: 2
+  maxIterations: 128
+  renderSize: 0
+  fixedWidth: 2560
+  fixedHeight: 1440
+  downsample: 2
+  coverageOffsetX: 0.598
+  coverageOffsetY: 0.593
+  horizonCoverageStart: 0.363
+  horizonCoverageEnd: 0.937
+  baseScale: 0.84
+  cloudGradient1:
+    serializedVersion: 2
+    key0: {r: 0, g: 0, b: 0, a: 1}
+    key1: {r: 1, g: 1, b: 1, a: 1}
+    key2: {r: 1, g: 1, b: 1, a: 0}
+    key3: {r: 0.02439034, g: 0.02439034, b: 0.02439034, a: 0}
+    key4: {r: 0.02439034, g: 0.02439034, b: 0.02439034, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 721
+    ctime1: 3277
+    ctime2: 5783
+    ctime3: 10023
+    ctime4: 14745
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 4
+    m_NumAlphaKeys: 2
+  cloudGradient2:
+    serializedVersion: 2
+    key0: {r: 0, g: 0, b: 0, a: 1}
+    key1: {r: 1, g: 1, b: 1, a: 1}
+    key2: {r: 1, g: 1, b: 1, a: 0}
+    key3: {r: 0, g: 0, b: 0, a: 0}
+    key4: {r: 0, g: 0, b: 0, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 3277
+    ctime2: 13685
+    ctime3: 25636
+    ctime4: 44911
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 4
+    m_NumAlphaKeys: 2
+  cloudGradient3:
+    serializedVersion: 2
+    key0: {r: 0, g: 0, b: 0, a: 1}
+    key1: {r: 1, g: 1, b: 1, a: 1}
+    key2: {r: 1, g: 1, b: 1, a: 0}
+    key3: {r: 0, g: 0, b: 0, a: 0}
+    key4: {r: 0, g: 0, b: 0, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 3084
+    ctime2: 34888
+    ctime3: 65535
+    ctime4: 0
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 4
+    m_NumAlphaKeys: 2
+  sampleThreshold: 0.155
+  sampleScalar: 1
+  bottomFade: 0.373
+  detailScale: 8
+  erosionEdgeSize: 0.345
+  cloudDistortion: 0.114
+  cloudDistortionScale: 0.43
+  cloudBaseColor: {r: 0.397, g: 0.5571719, b: 1, a: 1}
+  cloudTopColor: {r: 1, g: 1, b: 1, a: 1}
+  sunScale: 0.8
+  ambientScale: 1.28
+  sunRayLength: 0.088
+  coneRadius: 0.317
+  density: 1
+  forwardScatteringG: 0.792
+  backwardScatteringG: -0.286
+  darkOutlineScalar: 1
+  speed: 0.1
+  coverageOffsetPerFrame: {x: 0.002, y: 0.0014}
+  baseOffsetPerFrame: {x: 0.0001, y: -0.018, z: -0.003}
+  detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
+  earthCenter: {x: 0, y: -91000, z: 0}
+  earthRadius: 91000
+  useCalculatedRadius: 0
+  showCalculatedRadius: 0
+  horizonDistanceOfRadius: 0
+  atmosphereStartHeight: 1000
+  atmosphereEndHeight: 1500
+  cameraPositionScale: {x: 1, y: 1, z: 1}
+  lodDistance: 0.336
+  horizonLevel: 0.01
+  horizonFade: 0.571
+  horizonFadeStartAlpha: 0.042
+  shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
+  detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
+  coverageTexture: {fileID: 2800000, guid: fc68107a3c95b814ab6270a284419e7c, type: 3}
+  curlTexture: {fileID: 2800000, guid: 4c1bdebb39a1f034aad3a28b4df53a8e, type: 3}
+  blueNoiseTexture: {fileID: 0}
+  debugTexture: 1

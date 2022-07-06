@@ -1,0 +1,194 @@
+﻿#pragma kernel NonMobilePathClear
+#pragma kernel NonMobilePathRenderHashRT
+#pragma kernel NonMobilePathResolveColorRT
+#pragma kernel FillHoles
+
+//X * Y must be multiple of 64, for performance we take 8*8
+#define NUMTHREAD_X 8
+#define NUMTHREAD_Y 8
+#define MAX_UINT 4294967295
+
+
+//common SamplerState settings
+SamplerState PointClampSampler;
+SamplerState LinearClampSampler;
+
+//common uniform input from SSPlanarReflection.cs
+float2 _RTSize;
+float _HorizontalPlaneHeightWS;
+float _FadeOutScreenBorderWidthVerticle;
+float _FadeOutScreenBorderWidthHorizontal;
+float3 _CameraDirection;
+float3 _CameraPosition;
+
+float4x4 _VPMatrix;
+float4x4 _I_VPMatrix;
+float _ScreenLRStretchIntensity;
+float _ScreenLRStretchThreshold;
+float4 _FinalTintColor;
+
+//common texture input from SSPlanarReflection.cs
+RWTexture2D<half4> ColorRT;
+Texture2D<half4> _CameraColorTexture;
+Texture2D<float> _CameraDepthTexture;
+
+//No-Mobile Path will use this 32 bits RInt RT, sorted by InterlockedMin(), split first 16bits for GetReflectionColorFromID's y, last 16bits for GetReflectionColorFromID's x
+RWTexture2D<uint> HashRT;
+
+float3 ConvertScreenIDToPosWS(uint2 id)
+{
+	//input id is compute function's input SV_DispatchThreadID
+	 //[0,RTSize-1] -> screen [0,1] uv
+	float2 screenUV = float2(id.x / (_RTSize.x), id.y / (_RTSize.y));
+	//get rawDepth(posCS.z) in _CameraDepthTexture
+	float inputPixelRawDepth = _CameraDepthTexture.SampleLevel(PointClampSampler, screenUV, 0);
+	//reconstruct ndc using screen [0,1] uv & rawDepth
+	float4 ndc = float4(screenUV * 2.0 - 1.0, inputPixelRawDepth, 1.0);
+	float4 posHWS = mul(_I_VPMatrix, ndc); //ndc -> posHWS
+	float3 posWS = posHWS.xyz / posHWS.w; //posHWS -> posWS
+	return posWS;
+}
+
+//planar reflection by pos y
+float3 MirrorPosWS(float3 inputPosWS)
+{
+	float3 reflectedPosWS = inputPosWS;
+	reflectedPosWS.y -= _HorizontalPlaneHeightWS;
+	//actual reflect action
+	reflectedPosWS.y *= -1;
+	reflectedPosWS.y += _HorizontalPlaneHeightWS;
+	return reflectedPosWS;
+}
+
+float2 ConvertReflectedPosWSToScreenUV(float3 reflectedPosWS)
+{
+	//posWS -> posCS
+	float4 reflectedPosCS = mul(_VPMatrix, float4(reflectedPosWS, 1));
+	//posCS -> posNDC
+	float2 reflectedPosNDCxy = reflectedPosCS.xy / reflectedPosCS.w;
+	//posNDC -> screen [0,1] uv, don't saturate() to allow  out of bound access early exit
+	float2 reflectedScreenUV = reflectedPosNDCxy * 0.5 + 0.5; 
+
+	//fix missing geometry
+	float Threshold = _ScreenLRStretchThreshold;
+	float Intensity = _ScreenLRStretchIntensity;
+
+	float HeightStretch = (abs(reflectedPosWS.y - _HorizontalPlaneHeightWS));
+	float AngleStretch = (-_CameraDirection.y);
+	float ScreenStretch = saturate(abs(reflectedScreenUV.x * 2 - 1) - Threshold);
+
+	reflectedScreenUV.x = reflectedScreenUV.x * 2 - 1;
+	reflectedScreenUV.x *= 1 + HeightStretch * AngleStretch * ScreenStretch * Intensity;
+	reflectedScreenUV.x = saturate(reflectedScreenUV.x * 0.5 + 0.5);
+
+#if UNITY_UV_STARTS_AT_TOP
+	reflectedScreenUV.y = 1.0 - reflectedScreenUV.y;
+#endif
+
+	return reflectedScreenUV;
+}
+
+half ConvertOpaqueColorRTScreenUVToFadeAlphaParam(float2 screenUV, float reflectedPosWSy)
+{
+	//fadeout  using vertical uv.y (only fadeout if reaching _CameraOpaqueTexture's uv border top)
+	half fadeoutAlpha = smoothstep(1, 1 - _FadeOutScreenBorderWidthVerticle, screenUV.y);
+	//fadeout using horizontal uv.x
+	fadeoutAlpha *= smoothstep(1, 1 - _FadeOutScreenBorderWidthHorizontal * -reflectedPosWSy, abs(screenUV.x * 2 - 1));
+	return fadeoutAlpha;
+}
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void NonMobilePathClear(uint3 id : SV_DispatchThreadID)
+{
+	//max value as clear, because we want to sort by InterlockedMin()
+	HashRT[id.xy] = MAX_UINT;
+	ColorRT[uint2(id.xy)] = half4(0, 0, 0, 0);
+}
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void NonMobilePathRenderHashRT(uint3 id : SV_DispatchThreadID)
+{
+	//convert screenID to world space pos
+	float3 posWS = ConvertScreenIDToPosWS(id);
+	//early exit when pos is under the reflection plane
+	if (posWS.y <= _HorizontalPlaneHeightWS)
+		return;
+	//mirror operation
+	float3 reflectedPosWS = MirrorPosWS(posWS);
+	//convert reflected pos to screenID
+	float2 reflectedScreenUV = ConvertReflectedPosWSToScreenUV(reflectedPosWS);
+	//early exit if uv is out of the bound
+	float2 earlyExitTest = abs(reflectedScreenUV - 0.5);
+	if (earlyExitTest.x >= 0.5 || earlyExitTest.y >= 0.5)
+		return;
+	//from screen uv[0,1] to [0,RTSize-1]
+	uint2 reflectedScreenID = reflectedScreenUV * _RTSize;
+
+	//ghost-recon-wildlands method use 16bit y, 16bit x encode
+	//we save 8 bits for fade out alpha info
+	//-first 12 bits for id.y (0~4095)
+	//-then  12 bits for id.x (0~4095)
+	//-last  8  bits for alpha (0~255)
+	float2 screenUV = id.xy / _RTSize;
+	half fadeOutAlpha = ConvertOpaqueColorRTScreenUVToFadeAlphaParam(screenUV, reflectedPosWS.y);
+	//8 bit
+	uint fadeOutAlphaInt = fadeOutAlpha * 255;
+	//why 20 ?
+	uint hash = id.y << 20 | id.x << 8 | fadeOutAlphaInt;
+	//correct sorting method, sort by id.y
+	InterlockedMin(HashRT[reflectedScreenID], hash);
+	//no sorting method, it will produce random flickering because of unknown order write(random order)
+	//HashRT[reflectedScreenID] = hash;
+}
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void NonMobilePathResolveColorRT(uint3 id : SV_DispatchThreadID)
+{
+	uint packedData = HashRT[id.xy];
+	//MAX_UINT == max uint
+	if (packedData == MAX_UINT)
+	{
+		//if this location is not having any reflection data (still containing clear value, still 0 reflection write), early exit to prevent wrong RT write
+		ColorRT[id.xy] = 0;
+		return;
+	}
+
+	//ghost-recon-wildlands method use 16bit y, 16bit x encode
+	//we save 8 bits for fade out alpha info
+	//-first 12 bits for id.y (0~4095)
+	//-then  12 bits for id.x (0~4095)
+	//-last  8  bits for alpha (0~255)
+	//decode from single 32bit uint, to 3 separated uint (12bit y & 12bit x & 8bit alpha)
+	uint2 sampleID = uint2((packedData >> 8) & 0xFFF, packedData >> 20);
+	uint alphaAsInt = packedData & 0xFF;
+	half alphaAsFloatingPoint = alphaAsInt / 255.0;
+
+	float2 sampleUV = sampleID.xy / _RTSize;
+	half3 sampledColor = _CameraColorTexture.SampleLevel(LinearClampSampler, sampleUV, 0);
+
+	half4 finalColor = half4(sampledColor, alphaAsFloatingPoint) * _FinalTintColor;
+	finalColor.a = saturate(finalColor.a);
+	ColorRT[id.xy] = finalColor;
+}
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void FillHoles(uint3 id : SV_DispatchThreadID)
+{
+	//fill holes inside each 2*2
+	id.xy *= 2;
+	//cache read
+	half4 center = ColorRT[id.xy + uint2(0, 0)];
+	half4 right = ColorRT[id.xy + uint2(0, 1)];
+	half4 bottom = ColorRT[id.xy + uint2(1, 0)];
+	half4 bottomRight = ColorRT[id.xy + uint2(1, 1)];
+	//find best inside 2*2
+	half4 best = center;
+	best = right.a > best.a + 0.5 ? right : best;
+	best = bottom.a > best.a + 0.5 ? bottom : best;
+	best = bottomRight.a > best.a + 0.5 ? bottomRight : best;
+	//write better rgba
+	ColorRT[id.xy + uint2(0, 0)] = best.a > center.a + 0.5 ? best : center;
+	ColorRT[id.xy + uint2(0, 1)] = best.a > right.a + 0.5 ? best : right;
+	ColorRT[id.xy + uint2(1, 0)] = best.a > bottom.a + 0.5 ? best : bottom;
+	ColorRT[id.xy + uint2(1, 1)] = best.a > bottomRight.a + 0.5 ? best : bottomRight;
+}

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6d5bb0d7e99b88419dacacb002cfbaa, type: 3}
+  m_Name: Slime Data B
+  m_EditorClassIdentifier: 
+  stepsPerFrame: 2
+  width: 2560
+  height: 1440
+  numAgents: 400000
+  spawnMode: 2
+  trailWeight: 5
+  decayRate: 0.3
+  diffuseRate: 3
+  speciesSettings:
+  - moveSpeed: 20
+    turnSpeed: 2
+    sensorAngleSpacing: 35
+    sensorOffsetDst: 50
+    sensorSize: 1

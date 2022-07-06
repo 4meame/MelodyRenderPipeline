@@ -1,0 +1,209 @@
+﻿#pragma kernel Noise
+#pragma kernel Normalize
+//some const
+static const int numThreads = 8;
+static const int minMaxAccuracy = 10000000;
+//3D Worley Noise Result
+RWTexture3D<float4> Result;
+RWStructuredBuffer<int> minMax;
+StructuredBuffer<float3> pointsA;
+StructuredBuffer<float3> pointsB;
+StructuredBuffer<float3> pointsC;
+int numCellsA;
+int numCellsB;
+int numCellsC;
+uint resolution;
+float4 channelMask;
+float persistence;
+bool invertNoise;
+int tile;
+int octaves;
+float frequency;
+float amplitude;
+float lacunarity;
+float3 offset;
+bool blendPerlin;
+
+//this is a 3x3 cube for optimization
+static const int3 offsets[] =
+{
+	//centre
+	int3(0,0,0),
+	//9 front face;
+	int3(0,0,1),
+	int3(-1,1,1),
+	int3(-1,0,1),
+	int3(-1,-1,1),
+	int3(0,1,1),
+	int3(0,-1,1),
+	int3(1,1,1),
+	int3(1,0,1),
+	int3(1,-1,1),
+	//9 back face
+	int3(0,0,-1),
+	int3(-1,1,-1),
+	int3(-1,0,-1),
+	int3(-1,-1,-1),
+	int3(0,1,-1),
+	int3(0,-1,-1),
+	int3(1,1,-1),
+	int3(1,0,-1),
+	int3(1,-1,-1),
+	//8 ring around centre
+	int3(-1,1,0),
+	int3(-1,0,0),
+	int3(-1,-1,0),
+	int3(0,1,0),
+	int3(0,-1,0),
+	int3(1,1,0),
+	int3(1,0,0),
+	int3(1,-1,0)
+};
+
+//get a scalar random value from a 3d value
+float rand3dTo1d(float3 value, float3 dotDir = float3(12.9898, 78.233, 37.719)) {
+	value = value * tile;
+	//make value smaller to avoid artefacts
+	float3 smallValue = sin(value);
+	//get scalar value from 3d vector
+	float random = dot(smallValue, dotDir);
+	//make value more random by making it bigger and then taking teh factional part
+	random = frac(sin(random) * 143758.5453);
+	return random;
+}
+
+//get a 3d random value from a 3d value
+float3 rand3dTo3d(float3 value) {
+	return float3(
+		rand3dTo1d(value, float3(12.989, 78.233, 37.719)),
+		rand3dTo1d(value, float3(39.346, 11.135, 83.155)),
+		rand3dTo1d(value, float3(73.156, 52.235, 09.151))
+		);
+}
+float maxComponent(float3 vec) {
+	return max(vec.x, max(vec.y, vec.z));
+}
+
+float minComponent(float3 vec) {
+	return min(vec.x, min(vec.y, vec.z));
+}
+
+float easeIn(float interpolator) {
+	return interpolator * interpolator * interpolator * interpolator * interpolator;
+}
+
+float easeOut(float interpolator) {
+	return 1 - easeIn(1 - interpolator);
+}
+
+float easeInOut(float interpolator) {
+	float easeInValue = easeIn(interpolator);
+	float easeOutValue = easeOut(interpolator);
+	return lerp(easeInValue, easeOutValue, interpolator);
+}
+
+float3 modulo(float3 divident, float3 divisor) {
+	float3 positiveDivident = divident % divisor + divisor;
+	return positiveDivident % divisor;
+}
+
+float PerlinNoise(float3 value) {
+	float3 fraction = frac(value);
+	float interpolatorX = easeInOut(fraction.x);
+	float interpolatorY = easeInOut(fraction.y);
+	float interpolatorZ = easeInOut(fraction.z);
+
+	float cellNoiseZ[2];
+	for (int z = 0; z <= 1; z++) {
+		float cellNoiseY[2];
+		for (int y = 0; y <= 1; y++) {
+			float cellNoiseX[2];
+			for (int x = 0; x <= 1; x++) {
+				float3 cell = floor(value) + float3(x, y, z);
+				float3 cellDirection = rand3dTo3d(cell) * 2 - 1;
+				float3 compareVector = fraction - float3(x, y, z);
+				cellNoiseX[x] = dot(cellDirection, compareVector);
+			}
+			cellNoiseY[y] = lerp(cellNoiseX[0], cellNoiseX[1], interpolatorX);
+		}
+		cellNoiseZ[z] = lerp(cellNoiseY[0], cellNoiseY[1], interpolatorY);
+	}
+	float noise = lerp(cellNoiseZ[0], cellNoiseZ[1], interpolatorZ);
+	return noise;
+}
+
+float WorleyNoise(StructuredBuffer<float3> points, int numCells, float3 samplePos) {
+	samplePos = (samplePos * tile) % 1;
+	int3 cellID = floor(samplePos * numCells);
+	float minSqrDst = 1;
+
+	//loop over all 26 adjacent cells of current cell and itself to find the closet point to the sample postion
+	for (int cellOffsetIndex = 0; cellOffsetIndex < 27; cellOffsetIndex++) {
+		int3 adjacentID = cellID + offsets[cellOffsetIndex];
+		//adjacent cell is outside map, so wrap around to other side to allow for seamless tiling
+		if (minComponent(adjacentID) == -1 || maxComponent(adjacentID) == numCells) {
+			int3 wrappedID = (adjacentID + numCells) % (uint3)numCells;
+			int adjacentCellIndex = wrappedID.x + numCells * (wrappedID.y + wrappedID.z * numCells);
+			float3 wrappedPoint = points[adjacentCellIndex];
+			//Offset the wrappedPoint by all offsets to find which is the cloest to samplePos
+			for (int wrapOffsetIndex = 0; wrapOffsetIndex < 27; wrapOffsetIndex++) {
+				float3 sampleOffset = (samplePos - (wrappedPoint + offsets[wrapOffsetIndex]));
+				minSqrDst = min(minSqrDst, dot(sampleOffset, sampleOffset));
+			}
+		}
+		//adjacent cell is inside map, so calculate sqrDst from samplePos to cell point
+		else {
+			int adjacentCellIndex = adjacentID.x + numCells * (adjacentID.y + adjacentID.z * numCells);
+			float3 sampleOffset = samplePos - points[adjacentCellIndex];
+			minSqrDst = min(minSqrDst, dot(sampleOffset, sampleOffset));
+		}
+	}
+	return sqrt(minSqrDst);
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void Noise(uint3 id : SV_DispatchThreadID) {
+	float3 position = id / (float3)resolution;
+	//Layer 3 levels of noise
+	float layerA = WorleyNoise(pointsA, numCellsA, position);
+	float layerB = WorleyNoise(pointsB, numCellsB, position);
+	float layerC = WorleyNoise(pointsC, numCellsC, position);
+	// calculate the worley FBM
+	float noiseSum = layerA + (layerB * persistence) + (layerC * persistence * persistence);
+	float maxVal = 1 + persistence + (persistence * persistence);
+	//keep inside range [0,1] as it will be clamped in texture
+	noiseSum /= maxVal;
+	//Invert
+	if (invertNoise) {
+		noiseSum = 1 - noiseSum;
+	}
+	//keep track of min max (using int to support atomic operation)
+	int val = (int)(noiseSum * minMaxAccuracy);
+	//---------------------------NOTE HERE------------------------
+	InterlockedMin(minMax[0], val);
+	InterlockedMax(minMax[1], val);
+	//Store result in specified channel of texture
+	Result[id] = Result[id] * (1 - channelMask) + noiseSum * channelMask;
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void Normalize(uint3 id : SV_DispatchThreadID) {
+	float minVal = (float)minMax[0] / minMaxAccuracy;
+	float maxVal = (float)minMax[1] / minMaxAccuracy;
+	float4 normalizedVal = (Result[id] - minVal) / (maxVal - minVal);
+	//calculate 3D perlin, not seamless yet
+	float3 position = id / (float3)resolution + offset;
+	float perlin = 0;
+	for (int i = 0; i < octaves; i++) {
+		position *= frequency;
+		perlin += amplitude * PerlinNoise(position);
+		frequency *= lacunarity;
+		amplitude *= 0.5;
+	}
+	perlin = perlin * 0.5 + 0.5;
+	//remap worley with perlin
+	float perlin_worley = normalizedVal - perlin * (1 - normalizedVal);
+	perlin_worley += 0.5;
+	//only R channel will remap with perlin noise
+	Result[id] = lerp(Result[id] * (1 - channelMask) + normalizedVal * channelMask, perlin_worley, blendPerlin);
+}

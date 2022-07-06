@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d85e0c0abf419d4409a4a345eebbf59d, type: 3}
+  m_Name: Ripples
+  m_EditorClassIdentifier: 
+  numStepsPerFrame: 6
+  displayMode: 2
+  initMap: {fileID: 2800000, guid: feb576158d08b534ebfdf0d03558864e, type: 3}
+  feedRate: 0.0147
+  removeRate: 0.046
+  diffuseRateA: 1
+  diffuseRateB: 0.5
+  diffuseRadius: 4

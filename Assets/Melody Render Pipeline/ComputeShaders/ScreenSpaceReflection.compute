@@ -1,0 +1,215 @@
+#include "../ShaderLibrary/Common.hlsl"
+#pragma kernel SSRResolve
+// Create a RenderTexture with enableRandomWrite flag and set it
+RWTexture2D<float4> ScreenSpaceReflectionRT;
+//SSR ray march variable
+float2 textureSize;
+float maxDistance;
+float iterations;
+float binarySearchIterations;
+float pixelStrideSize;
+float pixelStrideZCuttoff;
+float thickness;
+//fade
+float screenEdgeFade;
+float eyeFadeStart;
+float eyeFadeEnd;
+//custom matrix set from cs.
+float4x4 _CameraInverseProjection;
+float4x4 _CameraProjection;
+
+
+//help functions
+inline float distanceSquared(float2 a, float2 b) { 
+	a -= b; 
+	return dot(a, a); 
+}
+
+inline void swapIfBigger(inout float aa, inout float bb) {
+	if (aa > bb) {
+		float tmp = aa;
+		aa = bb;
+		bb = tmp;
+	}
+}
+
+//backZ need additional pass
+inline bool rayIntersectsDepth(float zA, float zB, float2 uv) {
+	float cameraZ = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r, _ZBufferParams) * -_ProjectionParams.z;
+	//float backZ = SAMPLE_DEPTH_TEXTURE_LOD(_BackFaceDepthTex, sampler_point_clamp, uv, 0).r * -_ProjectionParams.z;
+	//return zB <= cameraZ && zA >= backZ - _PixelZSize;
+	return zB <= cameraZ && cameraZ - zB <= thickness;
+}
+
+inline bool TraceScreenSpaceRay(float3 rayOrigin, float3 rayDirection, float jitter, out float2 hitPixel, out float3 hitPosition, out float iterationCount) {
+	//calculate ray length in view space, and clip to the near plane    
+	float rayLength = ((rayOrigin.z + rayDirection.z * maxDistance) > -_ProjectionParams.y) ? (-_ProjectionParams.y - rayOrigin.z) / rayDirection.z : maxDistance;
+	float3 rayEnd = rayOrigin + rayDirection * rayLength;
+	//project into homogeneous clip space, use the w component to transform into screen space
+	float4 H0 = mul(_CameraProjection, float4(rayOrigin, 1.0));
+	float4 H1 = mul(_CameraProjection, float4(rayEnd, 1.0));
+	float k0 = 1.0 / H0.w;
+	float k1 = 1.0 / H1.w;
+	//the interpolated homogeneous version of the veiw space points  
+	float3 Q0 = rayOrigin * k0;
+	float3 Q1 = rayEnd * k1;
+	//screen space points of Origin and rayEnd
+	float2 P0 = H0.xy * k0;
+	float2 P1 = H1.xy * k1;
+	//if the line is degenerate(means overlapping), make it cover at least one pixel to avoid handling zero-pixel extent as a special case later
+	P1 += (distanceSquared(P0, P1) < 0.0001) ? 0.01 : 0.0;
+	float2 delta = P1 - P0;
+	//permute so that the primary iteration is in x to collapse all quadrant-specific DDA cases later
+	bool permute = false;
+	if (abs(delta.x) < abs(delta.y)) {
+		//this is a more-vertical line, permute its xy
+		permute = true;
+		delta = delta.yx;
+		P0 = P0.yx;
+		P1 = P1.yx;
+	}
+	float stepDirection = sign(delta.x);
+	//mark the processing of the ray trace
+	float inverveDeltaX = 1 / delta.x * stepDirection;
+	//track the derivatives of Q and k
+	float3 dQ = (Q1 - Q0) * inverveDeltaX;
+	float dk = (k1 - k0) * inverveDeltaX;
+	float2 dP = float2(stepDirection, delta.y * inverveDeltaX);
+	//calculate pixel stride based on distance of ray origin from camera.
+    //since perspective means distant objects will be smaller in screen space, we can use this to have higher quality reflections for far away objects while still using a large pixel stride for near objects (and increase performance)
+    //this also helps mitigate artifacts on distant reflections when we use a largepixel stride.
+	float strideScaler = 1.0 - min(1.0, -rayOrigin.z / pixelStrideZCuttoff);
+	float pixelStride = 1.0 + strideScaler * pixelStrideSize;
+	//scale derivatives by the desired pixel stride and offset the starting values by the jitter fraction
+	dP *= pixelStride;
+	dQ *= pixelStride;
+	dk *= pixelStride;
+	P0 += dP * jitter;
+	Q0 += dQ * jitter;
+	k0 += dk * jitter;
+	//counting nums of the ray trace
+	float i;
+	//the interpolated homogeneous version of the veiw space depth
+	float zA = 0.0;
+	float zB = 0.0;
+	//track ray step and derivatives in a float4 to parallelize
+	float4 pqk = float4(P0, Q0.z, k0);
+	float4 dPQK = float4(dP, dQ.z, dk);
+	bool intersect = false;
+	for (i = 0; i < iterations && intersect == false; i++) {
+		pqk += dPQK;
+		zA = zB;
+		zB = (dPQK.z * 0.5 + pqk.z) / (dPQK.w * 0.5 + pqk.w);
+		swapIfBigger(zB, zA);
+		hitPixel = permute ? pqk.yx : pqk.xy;
+		//transform screen space into uv
+		hitPixel *= 1 / textureSize;
+		intersect = rayIntersectsDepth(zA, zB, hitPixel);
+	}
+
+	Q0.xy += dQ.xy * i;
+	Q0.z = pqk.z;
+	//hit point in view space position
+	hitPosition = Q0 / pqk.w;
+	iterationCount = i;
+
+	//binary search refinement
+	if (pixelStride > 1.0 && intersect) {
+		pqk -= dPQK;
+		dPQK /= pixelStride;
+		float originalStride = pixelStride * 0.5;
+		float stride = originalStride;
+		zA = pqk.z / pqk.w;
+		zB = zA;
+		for (float j = 0; j < binarySearchIterations; j++) {
+			pqk += dPQK * stride;
+			zA = zB;
+			zB = (dPQK.z * -0.5 + pqk.z) / (dPQK.w * -0.5 + pqk.w);
+			swapIfBigger(zB, zA);
+			hitPixel = permute ? pqk.yx : pqk.xy;
+			hitPixel *= 1 / textureSize;
+			originalStride *= 0.5;
+			stride = rayIntersectsDepth(zA, zB, hitPixel) ? -originalStride : originalStride;
+		}
+	}
+	return intersect;
+}
+
+inline float CalculateHitAlpha(bool hit, float iterationCount, float2 hitPixel, float3 hitPosition, float3 rayOrigin, float3 rayDirection) {
+	float alpha = 1;
+	//fade ray hits that approach the maximum iterations
+	alpha *= 1.0 - (iterationCount / iterations);
+	//fade ray hits that approach the screen edge
+	float2 hitPixelNDC = (hitPixel * 2.0 - 1.0);
+	float maxDimension = min(1.0, max(abs(hitPixelNDC.x), abs(hitPixelNDC.y)));
+	alpha *= 1.0 - (max(0.0, maxDimension - screenEdgeFade) / (1.0 - screenEdgeFade));
+	//fade ray hits base on how much they face the camera
+	swapIfBigger(eyeFadeStart, eyeFadeEnd);
+	float eyeDirection = clamp(rayDirection.z, eyeFadeStart, eyeFadeEnd);
+	alpha *= 1.0 - ((eyeDirection - eyeFadeStart) / (eyeFadeEnd - eyeFadeStart));
+	//fade ray hits based on distance from ray origin
+	alpha *= 1.0 - clamp(distance(rayOrigin, hitPosition) / maxDistance, 0.0, 1.0);
+	alpha *= hit;
+
+	return alpha;
+}
+
+[numthreads(8,8,1)]
+void SSRResolve(uint3 id : SV_DispatchThreadID)
+{
+//------------------------calulate screen/view informations------------------------//
+	float2 screenUV = id.xy / textureSize;
+	//calculate camera to far plane ray in the screen
+	float4 cameraRay = float4(screenUV * 2.0 - 1.0, 1.0, 1.0);
+	cameraRay = mul(_CameraInverseProjection, cameraRay);
+	cameraRay.xyz = cameraRay.xyz / cameraRay.w;
+//------------------------sample common buffers------------------------//
+	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
+	//depth of the DepthNormal is not realiabe, maybe sample Depth Texture instead
+	float4 depthTexture = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0);
+//------------------------calulate buffer informations(view space)------------------------//
+	float3 bufferNormal = DecodeViewNormalStereo(depthNormalTexture);
+	//float bufferDepth = DecodeFloatRG(depthNormalTexture.zw);
+	float bufferDepth = depthTexture.r;
+	float linearDepth = Linear01Depth(bufferDepth, _ZBufferParams);
+	float3 bufferPosition = cameraRay.xyz * linearDepth;
+//------------------------prepare for ray tracing------------------------//
+	float3 rayOrigin = bufferPosition;
+	float3 rayDirection = normalize(reflect(normalize(bufferPosition), normalize(bufferNormal)));
+	float jitter = 1.0;
+	//float2 fragment = screenUV * textureSize;
+	//float c = (fragment.x + fragment.y) * 0.25;
+	//jitter = fmod(c, 1.0);
+	float2 hitUV;
+	float3 hitPosition;
+	float iterationCount;
+//------------------------start ray tracing------------------------//
+	bool hit = TraceScreenSpaceRay(rayOrigin, rayDirection, jitter, hitUV, hitPosition, iterationCount);
+	float alpha = CalculateHitAlpha(hit, iterationCount, hitUV, hitPosition, rayOrigin, rayDirection);
+	hitUV = lerp(screenUV, hitUV, hit);
+	//NOTE : In Forward PATH, there is a problem that the Lighting is already calculated in "_CameraColorTexture", but we calculate it again in the Second DrawRender "SSR" Pass !!
+	float4 result = SAMPLE_TEXTURE2D_LOD(_CameraColorTexture, sampler_linear_clamp, hitUV, 0);
+	ScreenSpaceReflectionRT[id.xy] = float4(result.xyz, alpha);
+}
+
+//method from kode80
+#pragma kernel SSRBlur
+//Blur RT
+RWTexture2D<float4> BlurRT;
+float blurOffset;
+
+[numthreads(8, 8, 1)]
+void SSRBlur(uint3 id : SV_DispatchThreadID) {
+	float4 sum = 0;
+	float4 originalCol = ScreenSpaceReflectionRT[id.xy];
+	for (int offsetX = -blurOffset; offsetX <= blurOffset; offsetX++) {
+		for (int offsetY = -blurOffset; offsetY <= blurOffset; offsetY++) {
+			int sampleX = min(textureSize.x - 1, max(0, id.x + offsetX));
+			int sampleY = min(textureSize.y - 1, max(0, id.y + offsetY));
+			sum += ScreenSpaceReflectionRT[int2(sampleX, sampleY)];
+		}
+	}
+	float4 blurredCol = sum / ((blurOffset * 2 + 1) * (blurOffset * 2 + 1));
+
+	BlurRT[id.xy] = blurredCol;
+}

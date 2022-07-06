@@ -1,0 +1,161 @@
+#pragma kernel Sim
+
+//ring shadpe sensor that rules cell alive or dead
+struct Sensor {
+	int2 radiusMinMax;
+	float2 aliveMinMax;
+	float2 deadMinMax;
+};
+
+StructuredBuffer<Sensor> Sensors;
+
+RWTexture2D<float4> SimMap;
+RWTexture2D<float4> NextSimMap;
+RWTexture2D<float4> DisplayMap;
+
+int width;
+int height;
+int frameCount;
+float2 noiseOffset;
+float4 displayParams;
+//show different color in final frame on the screen
+int displayMode;
+
+float hash(float2 p) {
+	float3 p3 = float3(p.xy, 0);
+	p3 = frac(p3 * float3(0.1031, 0.1030, 0.0973));
+	p3 += dot(p3, p3.yxz + 33.33);
+	return frac((p3.xxy + p3.yxx) * p3.zyx).x;
+}
+
+//init cell's pixel
+float init(int2 id) {
+	float dstFromCentre = length(id.xy - int2(width, height) * 0.5);
+	return hash(id.xy + int2(noiseOffset * width));
+}
+
+int2 wrapAroundCoord(int2 coord) {
+	uint2 mapSize = uint2(width, height);
+	return (coord + mapSize) % mapSize;
+}
+
+//sample the map at given coordinate (handles wrap-around)
+float4 sampleMap(int2 coord) {
+	return SimMap[wrapAroundCoord(coord)];
+}
+
+//calculate the average value of all cells inside the sensor.
+//the sensor is a ring shape (defined by a min and max radius).
+float sense(int2 radiusMinMax, int2 centre) {
+	int cellCount = 0;
+	float livingValueSum = 0;
+	int radiusMin = radiusMinMax.x;
+	int radiusMax = radiusMinMax.y;
+	//loop over the area inside the sensor to find cells
+	for (int offsetX = -radiusMax; offsetX <= radiusMax; offsetX += 1) {
+		for (int offsetY = -radiusMax; offsetY <= radiusMax; offsetY += 1) {
+			float2 offset = float2(offsetX, offsetY);
+			float sqrDst = dot(offset, offset);
+			int dst = int(round(sqrt(sqrDst)));
+
+			if (dst <= radiusMax && dst > radiusMin) {
+				float neighbourValue = sampleMap(centre + offset).x;
+				cellCount += 1;
+				livingValueSum += neighbourValue;
+			}
+		}
+	}
+	return livingValueSum / cellCount;
+}
+
+[numthreads(8, 8, 1)]
+void Sim(int3 id : SV_DispatchThreadID)
+{
+	if (id.x >= width || id.y >= height) {
+		return;
+	}
+
+	const int numSensors = 8;
+	const int numPotentialStates = numSensors / 2;
+	//a very small delta value of the cell pixel
+	float dt = 0.048;
+
+	float4 prevValues = sampleMap(id.xy);
+	float prevState = prevValues.x;
+
+	//calculate sensor data and store results.
+	//sensors are rings defined by a min and max radius.
+	float sensorData[numSensors];
+
+	for (int i = 0; i < numSensors; i++) {
+		sensorData[i] = sense(Sensors[i].radiusMinMax, id.xy);
+	}
+
+	//potential next states: initialize to previous value
+	float potentialStates[numPotentialStates];
+
+	for (i = 0; i < numPotentialStates; i++) {
+		potentialStates[i] = prevState;
+	}
+
+	//loop over all sensor data.
+	//this state gets increased/decreased or remains the same, depending on the sensor.
+	for (i = 0; i < numSensors; i++) {
+		Sensor sensor = Sensors[i];
+		float sensorValue = sensorData[i];
+
+		if (sensorValue >= sensor.aliveMinMax.x && sensorValue <= sensor.aliveMinMax.y) {
+			potentialStates[i / 2u] += dt;
+		}
+		if (sensorValue >= sensor.deadMinMax.x && sensorValue <= sensor.deadMinMax.y) {
+			potentialStates[i / 2u] -= dt;
+		}
+	}
+
+	//blur each potential state to be more like the cells inside the two sensors which control the potential state
+	for (i = 0; i < numPotentialStates; i++) {
+		float avgValInSensors = (sensorData[i * 2] + sensorData[i * 2 + 1]) * 0.5;
+		potentialStates[i] = (potentialStates[i] + avgValInSensors * dt) / (1 + dt);
+	}
+
+	//choose the potential state that is most different from the previous state
+	float maxDelta = 0;
+	int selectedStateIndex = 0;
+
+	for (i = 0; i < numPotentialStates; i++) {
+		float delta = abs(prevState - potentialStates[i]);
+		if (delta > maxDelta) {
+			maxDelta = delta;
+			selectedStateIndex = i;
+		}
+	}
+
+	float nextState = saturate(potentialStates[selectedStateIndex]);
+
+	if (frameCount == 0) {
+		nextState = init(id.xy);
+	}
+
+	NextSimMap[id.xy] = float4(nextState, 0, 0, 0);
+}
+
+#pragma kernel Display
+
+[numthreads(8, 8, 1)]
+void Display(int3 id : SV_DispatchThreadID)
+{
+	if (id.x >= width || id.y >= height) {
+		return;
+	}
+
+	float3 col = 0;
+	float4 state = SimMap[id.xy];
+
+	float threshold = 0.05;
+	float processedState = (state.r - threshold) / (1 - threshold);
+
+	col = processedState;
+
+	// Output
+	DisplayMap[id.xy] = float4(col.rgb, 1);
+}

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97b50ab2699f79343a33580c16758a2b, type: 3}
+  m_Name: CA Settings C
+  m_EditorClassIdentifier: 
+  stepsPerFrame: 1
+  noiseOffset: {x: 0, y: 0}
+  sensors:
+  - radiusMinMax: {x: 0, y: 1}
+    aliveMinMax: {x: 0, y: 0}
+    deadMinMax: {x: 0, y: 0.26}
+  - radiusMinMax: {x: 0, y: 3}
+    aliveMinMax: {x: 0, y: 0}
+    deadMinMax: {x: 0, y: 0}
+  - radiusMinMax: {x: 0, y: 2}
+    aliveMinMax: {x: 0, y: 0}
+    deadMinMax: {x: 0, y: 0}
+  - radiusMinMax: {x: 3, y: 5}
+    aliveMinMax: {x: 0, y: 0.079}
+    deadMinMax: {x: 0.098, y: 0.37}
+  - radiusMinMax: {x: 2, y: 5}
+    aliveMinMax: {x: 0, y: 0}
+    deadMinMax: {x: 0, y: 0}
+  - radiusMinMax: {x: 7, y: 9}
+    aliveMinMax: {x: 0.187, y: 0.199}
+    deadMinMax: {x: 0, y: 0}
+  - radiusMinMax: {x: 2, y: 4}
+    aliveMinMax: {x: 0, y: 0}
+    deadMinMax: {x: 0, y: 0}
+  - radiusMinMax: {x: 9, y: 12}
+    aliveMinMax: {x: 0.261, y: 0.335}
+    deadMinMax: {x: 0, y: 0.138}

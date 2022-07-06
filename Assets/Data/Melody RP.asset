@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5329e00abca0d1a48a72def97f368009, type: 3}
+  m_Name: Melody RP
+  m_EditorClassIdentifier: 
+  useDynamicBachting: 0
+  useInstancing: 1
+  useSRPBatcher: 0
+  useLightsPerObject: 1
+  shadows:
+    maxDistance: 100
+    distanceFade: 0.303
+    directional:
+      atlasSize: 2048
+      filter: 3
+      cascadeCount: 1
+      cascadeRatio1: 0.478
+      cascadeRatio2: 0.624
+      cascadeRatio3: 0.799
+      cascadeFade: 0.237
+      cascadeBlend: 1
+    other:
+      atlasSize: 1024
+      filter: 3
+  cloud: {fileID: 11400000, guid: 40389096b9f7d2d44a3199bab3705f16, type: 2}
+  postFXSettings: {fileID: 11400000, guid: b4828196f5e88184d928f696687e89a2, type: 2}
+  cameraBufferSettings:
+    allowHDR: 1
+    copyDepth: 1
+    copyDepthReflections: 0
+    copyColor: 1
+    copyColorReflections: 0
+    useDepthNormal: 1
+    usePostGeometryColor: 1
+    renderScale: 1
+    bicubicRescaling: 1
+    fxaa:
+      enabled: 1
+      fixedThreshold: 0.0359
+      relativeThreshold: 0.068
+      subpixelBlending: 0.793
+      quality: 2
+    sspr:
+      enabled: 0
+      computeShader: {fileID: 7200000, guid: f2a4c2a9bafc08c4bb76a19c765becc6, type: 3}
+      reflectionTextureSize: 1024
+      ApplyFillHoleFix: 1
+      HorizontalReflectionPlaneHeightWS: 0
+      FadeOutScreenBorderWidthVerticle: 0.119
+      FadeOutScreenBorderWidthHorizontal: 0.088
+      ScreenLRStretchIntensity: 0
+      ScreenLRStretchThreshold: 1
+      TintColor: {r: 1.7411011, g: 1.7411011, b: 1.7411011, a: 1}
+    ssr:
+      enabled: 1
+      computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
+      downsample: 1
+      maxDistance: 25
+      iterations: 120
+      binarySearchIterations: 6
+      pixelStrideSize: 4
+      pixelStrideZCuttoff: 9.82
+      thickness: 0.1
+      screenEdgeFade: 0.598
+      eyeFadeStart: 0.131
+      eyeFadeEnd: 0.606
+  colorLUTResolution: 64
+  cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
+    type: 3}
