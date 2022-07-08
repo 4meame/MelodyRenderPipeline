@@ -282,7 +282,7 @@ float SampleCloud(float3 ray, float rayDensity, float4 coverage, float csRayHeig
 		GradientStep(csRayHeight, _CloudHeightGradient3)
 		); 
 	shapeSample *= gradientScalar;
-	//maybe use NUBIS's Remapping FBM method is better depending on _ShaapeNoise
+	//maybe use NUBIS's Remapping FBM method is better depending on _ShapeNoise
 	float shape = saturate((shapeSample.r + shapeSample.g + shapeSample.b + shapeSample.a) / 4.0);
 	float4 gradient = Lerp3(
 		_CloudHeightGradient3,

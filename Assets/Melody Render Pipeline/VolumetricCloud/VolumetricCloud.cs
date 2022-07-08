@@ -249,7 +249,7 @@ public class VolumetricCloud {
         detailOffset = settings.detailOffsetPerFrame * settings.speed;
     }
 
-    private void UpdateMaterialsPublicProperties() {
+    void UpdateMaterialsPublicProperties() {
         if (cloudBaseMaterial && camera) {
             if (settings.debugTexture && noise && painter) {
                 cloudBaseMaterial.SetTexture("_ShapeNoiseTex", noise.shapeTexture);
