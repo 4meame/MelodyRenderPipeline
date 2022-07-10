@@ -107,6 +107,10 @@ float3 modulo(float3 divident, float3 divisor) {
 	return positiveDivident % divisor;
 }
 
+float remap(float original_value, float original_min, float original_max, float new_min, float new_max) {
+	return new_min + (((original_value - original_min) / (original_max - original_min)) * (new_max - new_min));
+}
+
 float PerlinNoise(float3 value) {
 	float3 fraction = frac(value);
 	float interpolatorX = easeInOut(fraction.x);
