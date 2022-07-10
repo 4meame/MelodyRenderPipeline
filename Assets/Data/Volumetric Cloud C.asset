@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Volumetric Cloud C
   m_EditorClassIdentifier: 
   shader: {fileID: 4800000, guid: e61add218821eec439de1c401c3b69ef, type: 3}
+  enabled: 1
   subPixelSize: 2
   maxIterations: 250
   renderSize: 0
@@ -132,8 +133,11 @@ MonoBehaviour:
   coverageOffsetPerFrame: {x: 0.001, y: 0.003}
   baseOffsetPerFrame: {x: 0.35, y: 0.25, z: 0.1}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
+  earthCenter: {x: 0, y: -6371000, z: 0}
   earthRadius: 6371000
-  horizonDistance: 235000
+  useCalculatedRadius: 0
+  showCalculatedRadius: 0
+  horizonDistanceOfRadius: 0
   atmosphereStartHeight: 2500
   atmosphereEndHeight: 12000
   cameraPositionScale: {x: 1, y: 1, z: 1}
@@ -143,7 +147,7 @@ MonoBehaviour:
   horizonFadeStartAlpha: 0.707
   shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
   detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
-  coverageTexture: {fileID: 2800000, guid: fc68107a3c95b814ab6270a284419e7c, type: 3}
+  coverageTexture: {fileID: 2800000, guid: 813a69576878a33438240780d057dcf3, type: 3}
   curlTexture: {fileID: 2800000, guid: 4c1bdebb39a1f034aad3a28b4df53a8e, type: 3}
   blueNoiseTexture: {fileID: 0}
   debugTexture: 0
