@@ -248,6 +248,22 @@ float2 RayIntersectCloudDistance(float3 sphereCenter, float3 origin, float3 dire
 	return float2(dstToCloud, dstInCloud);
 }
 
+
+float HenyeyGreensteinPhase(float cosAngle, float g) {
+	float g2 = g * g;
+	return (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosAngle, 1.5);
+}
+
+float BeerTerm(float densityAtSample) {
+	return exp(-_Density * densityAtSample);
+}
+
+float PowderTerm(float densityAtSample, float cosTheta) {
+	float powder = 1.0 - exp(-_Density * densityAtSample * 2.0);
+	powder = saturate(powder * _DarkOutlineScalar * 2.0);
+	return lerp(1.0, powder, smoothstep(0.5, -0.5, cosTheta));
+}
+
 //coverage is a xz plane
 float4 SampleCoverage(float3 ray, float csRayHeight, float lod) {
 	float2 unit = ray.xz * _CoverageScale;
@@ -314,21 +330,6 @@ float SampleCloud(float3 ray, float rayDensity, float4 coverage, float csRayHeig
 		shape = saturate(shape);
 	}
 	return shape * _SampleScalar * smoothstep(0.0, _BottomFade * 1.0, csRayHeight);
-}
-
-float HenyeyGreensteinPhase(float cosAngle, float g) {
-	float g2 = g * g;
-	return (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosAngle, 1.5);
-}
-
-float BeerTerm(float densityAtSample) {
-	return exp(-_Density * densityAtSample);
-}
-
-float PowderTerm(float densityAtSample, float cosTheta) {
-	float powder = 1.0 - exp(-_Density * densityAtSample * 2.0);
-	powder = saturate(powder * _DarkOutlineScalar * 2.0);
-	return lerp(1.0, powder, smoothstep(0.5, -0.5, cosTheta));
 }
 
 float3 SampleLight(float3 origin, float originDensity, float pixelAlpha, float3 cosAngle, float rayDistance, float3 RandomUnitSphere[6]) {
