@@ -243,5 +243,18 @@
             #include "OutlinePass.hlsl"
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "GodsRay"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment GodsRayPassFragment
+            #include "GodsRayPass.hlsl"
+            ENDHLSL
+        }
     }
 }

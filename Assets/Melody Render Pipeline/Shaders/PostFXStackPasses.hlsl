@@ -49,6 +49,10 @@ float4 GetSource2(float2 screenUV) {
 	return SAMPLE_TEXTURE2D_LOD(_PostFXSource2, sampler_PostFXSource2, screenUV, 0);
 }
 
+float4 GetColor(float2 screenUV) {
+	return SAMPLE_TEXTURE2D_LOD(_PostCameraColorTexture, sampler_linear_clamp, screenUV, 0);
+}
+
 float GetDepth(float2 screenUV) {
 	return SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0);
 }

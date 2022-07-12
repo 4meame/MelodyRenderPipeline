@@ -23,7 +23,8 @@ public class PostFXStack {
         FXAA,
         ColorGradingWithLuma,
         FXAAWithLuma,
-        Outline
+        Outline,
+        GodsRay
     }
 
     const string bufferName = "Post FX";
@@ -90,6 +91,9 @@ public class PostFXStack {
     int ThresholdParams = Shader.PropertyToID("_ThresholdParams");
     int ThresholdScale = Shader.PropertyToID("_DepthNormalThresholdScale");
     int outlineResultId = Shader.PropertyToID("_OutlineResult");
+    #endregion
+    #region GodsRay
+    int godsRayResultId = Shader.PropertyToID("_GodsRayResult");
     #endregion
     public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.BicubicRescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
@@ -161,6 +165,13 @@ public class PostFXStack {
             DoOutline(sourceId);
             //updating outline result to source
             sourceId = outlineResultId;
+        }
+        #endregion
+        #region GodsRay
+        if (settings.GodsRaySetting.enable) {
+            DoGodsRay(sourceId);
+            //updating outline result to source
+            sourceId = godsRayResultId;
         }
         #endregion
         BloomSettings bloom = settings.Bloom;
@@ -409,5 +420,12 @@ public class PostFXStack {
         buffer.GetTemporaryRT(outlineResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         Draw(from, outlineResultId, Pass.Outline);
         buffer.EndSample("Outline");
+    }
+
+    void DoGodsRay(int from) {
+        buffer.BeginSample("GodsRay");
+        buffer.GetTemporaryRT(godsRayResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        Draw(from, godsRayResultId, Pass.GodsRay);
+        buffer.EndSample("GodsRay");
     }
 }

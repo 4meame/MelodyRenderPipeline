@@ -130,6 +130,12 @@ public class PostFXSettings : ScriptableObject {
         public float depthNormalThresholdScale;
     }
 
+    [System.Serializable]
+    public struct GodsRaySettings
+    {
+        public bool enable;
+    }
+
     [SerializeField]
     BloomSettings bloom = default;
     [SerializeField]
@@ -152,7 +158,9 @@ public class PostFXSettings : ScriptableObject {
     [SerializeField]
     ToneMappingSettings toneMapping = default;
     [SerializeField]
-    OutlineSettings outlineSettings = new OutlineSettings { enable = false, color = Color.black, outlineScale = 1 };
+    OutlineSettings outlineSetting = new OutlineSettings { enable = false, color = Color.black, outlineScale = 1 };
+    [SerializeField]
+    GodsRaySettings godsRaySetting = default;
     public BloomSettings Bloom => bloom;
     public ColorAdjustmentSettings ColorAdjustment => colorAdjustment;
     public WhiteBalanceSettings WhiteBalance => whiteBalance;
@@ -160,6 +168,6 @@ public class PostFXSettings : ScriptableObject {
     public ChannelMixerSettings ChannelMixer => channelMixer;
     public ShadowMidtonesHighlightsSettings ShadowMidtonesHighlights => shadowMidtonesHighlights;
     public ToneMappingSettings ToneMapping => toneMapping;
-
-    public OutlineSettings OutlineSetting => outlineSettings;
+    public OutlineSettings OutlineSetting => outlineSetting;
+    public GodsRaySettings GodsRaySetting => godsRaySetting;
 }

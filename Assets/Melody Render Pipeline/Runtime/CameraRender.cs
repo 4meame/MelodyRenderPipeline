@@ -158,8 +158,11 @@ public partial class CameraRender
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();
         ssr.Render();
+        if (renderCloud) {
+            cloud.Render(colorAttachmentId);
+        }
         #region Fix post-Geometry rendering probelms
-        if (cameraBufferSettings.usePostGeometryColor && (cameraBufferSettings.ssr.enabled || cameraBufferSettings.sspr.enabled)) {
+        if (cameraBufferSettings.usePostGeometryColor) {
             buffer.GetTemporaryRT(postColorTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             if (copyTextureSupported) {
                 buffer.CopyTexture(colorAttachmentId, postColorTextureId);
@@ -170,9 +173,6 @@ public partial class CameraRender
             }
         }
         #endregion
-        if (renderCloud) {
-            cloud.Render(colorAttachmentId);
-        }
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         if (postFXStack.IsActive) {
