@@ -246,14 +246,40 @@
 
         Pass
         {
-            Name "GodsRay"
+            Name "LightShafts Prefilter"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment GodsRayPassFragment
-            #include "GodsRayPass.hlsl"
+            #pragma fragment LightShaftsPrefilterPassFragment
+            #include "LightShaftsPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "LightShafts Blur"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment LightShaftsBlurFragment
+            #include "LightShaftsPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "LightShafts Blend"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment LightShaftsBlendFragment
+            #include "LightShaftsPass.hlsl"
             ENDHLSL
         }
     }

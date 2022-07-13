@@ -151,9 +151,8 @@ public partial class CameraRender
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         ssr.Setup(context, camera, cullingResults, cameraBufferSettings.ssr, useHDR, useDynamicBatching, useInstancing, useLightsPerObject);
         cloud.Setup(context, camera, cloudSettings, useHDR);
-        postFXStack.Setup(context, camera, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
+        postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
-
         Setup();
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();

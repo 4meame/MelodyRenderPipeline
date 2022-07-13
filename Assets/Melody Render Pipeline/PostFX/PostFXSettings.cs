@@ -131,9 +131,10 @@ public class PostFXSettings : ScriptableObject {
     }
 
     [System.Serializable]
-    public struct GodsRaySettings
+    public struct LightShaftsSettings
     {
         public bool enable;
+        public Vector4 lightShaftParameters;
     }
 
     [SerializeField]
@@ -160,7 +161,7 @@ public class PostFXSettings : ScriptableObject {
     [SerializeField]
     OutlineSettings outlineSetting = new OutlineSettings { enable = false, color = Color.black, outlineScale = 1 };
     [SerializeField]
-    GodsRaySettings godsRaySetting = default;
+    LightShaftsSettings lightShaftsSetting = default;
     public BloomSettings Bloom => bloom;
     public ColorAdjustmentSettings ColorAdjustment => colorAdjustment;
     public WhiteBalanceSettings WhiteBalance => whiteBalance;
@@ -169,5 +170,5 @@ public class PostFXSettings : ScriptableObject {
     public ShadowMidtonesHighlightsSettings ShadowMidtonesHighlights => shadowMidtonesHighlights;
     public ToneMappingSettings ToneMapping => toneMapping;
     public OutlineSettings OutlineSetting => outlineSetting;
-    public GodsRaySettings GodsRaySetting => godsRaySetting;
+    public LightShaftsSettings LightShaftsSetting => lightShaftsSetting;
 }

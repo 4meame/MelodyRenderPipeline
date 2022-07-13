@@ -46,6 +46,11 @@ public class Lighting {
     static VisibleLight[] dirVisibleLights = new VisibleLight[maxDirLightCount];
     static int mainLightIndex = -1;
     static Vector4 mainLightPosition = new Vector4(0.0f, 0.0f, 1.0f, 0.0f);
+    public Vector4 MainLightPosition {
+        get {
+            return mainLightPosition;
+        }
+    }
     static Color mainLightColor = Color.black;
     #endregion
     static string lightsPerObjectKeyword = "_LIGHTS_PER_OBJECT";

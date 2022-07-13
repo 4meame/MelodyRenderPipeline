@@ -24,7 +24,9 @@ public class PostFXStack {
         ColorGradingWithLuma,
         FXAAWithLuma,
         Outline,
-        GodsRay
+        LightShaftsPrefilter,
+        LightShaftsBlur,
+        LightShaftsBlend
     }
 
     const string bufferName = "Post FX";
@@ -92,12 +94,18 @@ public class PostFXStack {
     int ThresholdScale = Shader.PropertyToID("_DepthNormalThresholdScale");
     int outlineResultId = Shader.PropertyToID("_OutlineResult");
     #endregion
-    #region GodsRay
-    int godsRayResultId = Shader.PropertyToID("_GodsRayResult");
+    #region LightShafts
+    Lighting lighting;
+    int lightShafts0Id = Shader.PropertyToID("_LightShafts0");
+    int lightShafts1Id = Shader.PropertyToID("_LightShafts1");
+    int lightShaftsResultId = Shader.PropertyToID("_LightShaftsResult");
+    int lightSource = Shader.PropertyToID("_LightSource");
+    int lightShaftParameters = Shader.PropertyToID("_LightShaftParameters");
     #endregion
-    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.BicubicRescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
+    public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.BicubicRescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
         this.camera = camera;
+        this.lighting = lighting;
         this.bufferSize = bufferSize;
         //this.settings = settings;
         //apply to proper camera
@@ -167,11 +175,11 @@ public class PostFXStack {
             sourceId = outlineResultId;
         }
         #endregion
-        #region GodsRay
-        if (settings.GodsRaySetting.enable) {
-            DoGodsRay(sourceId);
-            //updating outline result to source
-            sourceId = godsRayResultId;
+        #region Light Shafts
+        if (settings.LightShaftsSetting.enable) {
+            DoLightShafts(sourceId);
+            //updating current result to source
+            sourceId = lightShafts0Id;
         }
         #endregion
         BloomSettings bloom = settings.Bloom;
@@ -422,10 +430,19 @@ public class PostFXStack {
         buffer.EndSample("Outline");
     }
 
-    void DoGodsRay(int from) {
-        buffer.BeginSample("GodsRay");
-        buffer.GetTemporaryRT(godsRayResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-        Draw(from, godsRayResultId, Pass.GodsRay);
-        buffer.EndSample("GodsRay");
+    void DoLightShafts(int from) {
+        buffer.BeginSample("Light Shafts");
+        buffer.GetTemporaryRT(lightShafts0Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(lightShafts1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        Vector3 lightDir = lighting.MainLightPosition;
+        Vector3 lightScreenPos = camera.transform.position + lightDir * camera.farClipPlane;
+        lightScreenPos = camera.WorldToViewportPoint(lightScreenPos);
+        buffer.SetGlobalVector(lightSource, new Vector4(lightScreenPos.x, lightScreenPos.y, 0, 0));
+        buffer.SetGlobalVector(lightShaftParameters, settings.LightShaftsSetting.lightShaftParameters);
+
+        buffer.SetRenderTarget(lightShafts0Id, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+        buffer.DrawProcedural(Matrix4x4.identity, settings.Material, (int)Pass.LightShaftsPrefilter, MeshTopology.Triangles, 3);
+
+        buffer.EndSample("Light Shafts");
     }
 }
