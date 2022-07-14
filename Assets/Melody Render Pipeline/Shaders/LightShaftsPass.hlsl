@@ -85,7 +85,7 @@ float4 LightShaftsBlurFragment(Varyings input) : SV_TARGET{
 float4 LightShaftsOcclusionBlendFragment(Varyings input) : SV_TARGET {
 	float4 godsRayBlur = SAMPLE_TEXTURE2D_LOD(_LightShafts1, sampler_LightShafts1, input.screenUV, 0);
 	float4 sceneColor = SAMPLE_TEXTURE2D_LOD(_SceneColor, sampler_SceneColor, input.screenUV, 0);
-	return float4(sceneColor.rgb * godsRayBlur.x, 1);
+	return float4((_LightSource.z < 0 ? sceneColor.rgb *_ShaftsExposure * _ShaftsExposure : sceneColor.rgb * godsRayBlur.x), 1);
 }
 
 float4 LightShaftsBloomBlendFragment(Varyings input) : SV_TARGET{
