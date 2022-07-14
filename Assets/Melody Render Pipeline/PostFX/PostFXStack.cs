@@ -24,9 +24,11 @@ public class PostFXStack {
         ColorGradingWithLuma,
         FXAAWithLuma,
         Outline,
-        LightShaftsPrefilter,
+        LightShaftsOcclusionPrefilter,
+        LightShaftsBloomPrefilter,
         LightShaftsBlur,
-        LightShaftsBlend
+        LightShaftsOcclusionBlend,
+        LightShaftsBloomBlend
     }
 
     const string bufferName = "Post FX";
@@ -101,6 +103,12 @@ public class PostFXStack {
     int lightShaftsResultId = Shader.PropertyToID("_LightShaftsResult");
     int lightSource = Shader.PropertyToID("_LightSource");
     int lightShaftParameters = Shader.PropertyToID("_LightShaftParameters");
+    int radialBlurParameters = Shader.PropertyToID("_RadialBlurParameters");
+    int lightShaftsDensity = Shader.PropertyToID("_ShaftsDensity");
+    int lightShaftsWeight = Shader.PropertyToID("_ShaftsWeight");
+    int lightShaftsDecay = Shader.PropertyToID("_ShaftsDecay");
+    int lightShaftsExposure = Shader.PropertyToID("_ShaftsExposure");
+    int bloomTintAndThreshold = Shader.PropertyToID("_BloomTintAndThreshold");
     #endregion
     public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.BicubicRescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
@@ -179,7 +187,7 @@ public class PostFXStack {
         if (settings.LightShaftsSetting.enable) {
             DoLightShafts(sourceId);
             //updating current result to source
-            sourceId = lightShafts0Id;
+            sourceId = lightShaftsResultId;
         }
         #endregion
         BloomSettings bloom = settings.Bloom;
@@ -432,17 +440,46 @@ public class PostFXStack {
 
     void DoLightShafts(int from) {
         buffer.BeginSample("Light Shafts");
-        buffer.GetTemporaryRT(lightShafts0Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-        buffer.GetTemporaryRT(lightShafts1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(lightShafts0Id, bufferSize.x / settings.LightShaftsSetting.Downsample, bufferSize.y / settings.LightShaftsSetting.Downsample, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(lightShafts1Id, bufferSize.x / settings.LightShaftsSetting.Downsample, bufferSize.y / settings.LightShaftsSetting.Downsample, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         Vector3 lightDir = lighting.MainLightPosition;
-        Vector3 lightScreenPos = camera.transform.position + lightDir * camera.farClipPlane;
+        Vector4 lightScreenPos = camera.transform.position + lightDir * camera.farClipPlane;
         lightScreenPos = camera.WorldToViewportPoint(lightScreenPos);
-        buffer.SetGlobalVector(lightSource, new Vector4(lightScreenPos.x, lightScreenPos.y, 0, 0));
+        buffer.SetGlobalVector(lightSource, new Vector4(lightScreenPos.x, lightScreenPos.y, lightScreenPos.z, 0));
         buffer.SetGlobalVector(lightShaftParameters, settings.LightShaftsSetting.lightShaftParameters);
-
+        buffer.SetGlobalVector(radialBlurParameters, settings.LightShaftsSetting.radialBlurParameters);
+        buffer.SetGlobalFloat(lightShaftsDensity, settings.LightShaftsSetting.density);
+        buffer.SetGlobalFloat(lightShaftsWeight, settings.LightShaftsSetting.weight);
+        buffer.SetGlobalFloat(lightShaftsDecay, settings.LightShaftsSetting.decay);
+        buffer.SetGlobalFloat(lightShaftsExposure, settings.LightShaftsSetting.exposure);
+        buffer.SetGlobalVector(bloomTintAndThreshold, settings.LightShaftsSetting.bloomTintAndThreshold);
+        //set the from rt as the scene color, do prefilter according to the settings
+        buffer.SetGlobalTexture("_SceneColor", from);
         buffer.SetRenderTarget(lightShafts0Id, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-        buffer.DrawProcedural(Matrix4x4.identity, settings.Material, (int)Pass.LightShaftsPrefilter, MeshTopology.Triangles, 3);
-
+        if (settings.LightShaftsSetting.mode == LightShaftsSettings.Mode.Occlusion) {
+            buffer.DrawProcedural(Matrix4x4.identity, settings.Material, (int)Pass.LightShaftsOcclusionPrefilter, MeshTopology.Triangles, 3);
+        } else {
+            buffer.DrawProcedural(Matrix4x4.identity, settings.Material, (int)Pass.LightShaftsBloomPrefilter, MeshTopology.Triangles, 3);
+        }
+        //do radial blur for 3 times
+        int tempId = lightShafts0Id;
+        for (int i = 0; i < 3; i++) {
+            buffer.SetGlobalTexture("_LightShafts0", lightShafts0Id);
+            buffer.SetRenderTarget(lightShafts1Id, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.DrawProcedural(Matrix4x4.identity, settings.Material, (int)Pass.LightShaftsBlur, MeshTopology.Triangles, 3);
+            lightShafts0Id = lightShafts1Id;
+            lightShafts1Id = tempId;
+            tempId = lightShafts0Id;
+        }
+        //blend with scene color according to the settings
+        buffer.GetTemporaryRT(lightShaftsResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.SetGlobalTexture("_LightShafts1", lightShafts1Id);
+        buffer.SetRenderTarget(lightShaftsResultId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+        if (settings.LightShaftsSetting.mode == LightShaftsSettings.Mode.Occlusion) {
+            buffer.DrawProcedural(Matrix4x4.identity, settings.Material, (int)Pass.LightShaftsOcclusionBlend, MeshTopology.Triangles, 3);
+        } else {
+            buffer.DrawProcedural(Matrix4x4.identity, settings.Material, (int)Pass.LightShaftsBloomBlend, MeshTopology.Triangles, 3);
+        }
         buffer.EndSample("Light Shafts");
     }
 }

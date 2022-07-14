@@ -20,10 +20,10 @@ MonoBehaviour:
   fixedWidth: 2560
   fixedHeight: 1440
   downsample: 2
-  coverageOffsetX: 0.598
-  coverageOffsetY: 0.593
-  horizonCoverageStart: 0.363
-  horizonCoverageEnd: 0.937
+  coverageOffsetX: 0
+  coverageOffsetY: 0
+  horizonCoverageStart: 0
+  horizonCoverageEnd: 0.968
   baseScale: 0.84
   cloudGradient1:
     serializedVersion: 2
@@ -121,25 +121,25 @@ MonoBehaviour:
   cloudDistortionScale: 0.43
   cloudBaseColor: {r: 0.397, g: 0.5571719, b: 1, a: 1}
   cloudTopColor: {r: 1, g: 1, b: 1, a: 1}
-  sunScale: 0.8
-  ambientScale: 1.28
+  sunScale: 1.47
+  ambientScale: 0.97
   sunRayLength: 0.088
   coneRadius: 0.317
   density: 1
   forwardScatteringG: 0.792
   backwardScatteringG: -0.286
   darkOutlineScalar: 1
-  speed: 0.1
+  speed: 0
   coverageOffsetPerFrame: {x: 0.002, y: 0.0014}
   baseOffsetPerFrame: {x: 0.0001, y: -0.018, z: -0.003}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
-  earthCenter: {x: 0, y: -91000, z: 0}
-  earthRadius: 91000
+  earthCenter: {x: 0, y: -31000, z: 0}
+  earthRadius: 31000
   useCalculatedRadius: 0
   showCalculatedRadius: 0
   horizonDistanceOfRadius: 0
-  atmosphereStartHeight: 1000
-  atmosphereEndHeight: 1500
+  atmosphereStartHeight: 600
+  atmosphereEndHeight: 900
   cameraPositionScale: {x: 1, y: 1, z: 1}
   lodDistance: 0.336
   horizonLevel: 0.01
@@ -147,7 +147,7 @@ MonoBehaviour:
   horizonFadeStartAlpha: 0.042
   shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
   detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
-  coverageTexture: {fileID: 2800000, guid: 813a69576878a33438240780d057dcf3, type: 3}
+  coverageTexture: {fileID: 2800000, guid: 0dfb11a4a52d6d446bd846dbcc09a060, type: 3}
   curlTexture: {fileID: 2800000, guid: 4c1bdebb39a1f034aad3a28b4df53a8e, type: 3}
   blueNoiseTexture: {fileID: 0}
   debugTexture: 0

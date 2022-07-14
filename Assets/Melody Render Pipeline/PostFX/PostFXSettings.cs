@@ -133,8 +133,22 @@ public class PostFXSettings : ScriptableObject {
     [System.Serializable]
     public struct LightShaftsSettings
     {
+        public enum Mode { Occlusion, Bloom }
+        public Mode mode;
         public bool enable;
+        [Range(2, 8)]
+        public int Downsample;
         public Vector4 lightShaftParameters;
+        public Vector4 radialBlurParameters;
+        [Range(0, 2)]
+        public float density;
+        [Range(0, 2)]
+        public float weight;
+        [Range(0, 2)]
+        public float decay;
+        [Range(0, 2)]
+        public float exposure;
+        public Color bloomTintAndThreshold;
     }
 
     [SerializeField]

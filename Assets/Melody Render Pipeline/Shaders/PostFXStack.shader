@@ -246,13 +246,26 @@
 
         Pass
         {
-            Name "LightShafts Prefilter"
+            Name "LightShafts Occlusion Prefilter"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment LightShaftsPrefilterPassFragment
+            #pragma fragment LightShaftsOcclusionPrefilterPassFragment
+            #include "LightShaftsPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "LightShafts Bloom Prefilter"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment LightShaftsBloomPrefilterPassFragment
             #include "LightShaftsPass.hlsl"
             ENDHLSL
         }
@@ -272,13 +285,26 @@
 
         Pass
         {
-            Name "LightShafts Blend"
+            Name "LightShafts Occlusion Blend"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment LightShaftsBlendFragment
+            #pragma fragment LightShaftsOcclusionBlendFragment
+            #include "LightShaftsPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "LightShafts Bloom Blend"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment LightShaftsBloomBlendFragment
             #include "LightShaftsPass.hlsl"
             ENDHLSL
         }

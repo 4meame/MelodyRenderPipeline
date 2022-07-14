@@ -51,12 +51,23 @@ MonoBehaviour:
     highlightsEnd: 0
   toneMapping:
     mode: 3
-  outlineSettings:
+  outlineSetting:
     enable: 0
-    color: {r: 0, g: 0, b: 0, a: 0.69803923}
+    color: {r: 0, g: 0, b: 0, a: 1}
     outlineScale: 2
-    ColorThreshold: 0.869
-    depthThreshold: 1.72
-    normalThreshold: 0.248
-    depthNormalThreshold: 0.471
-    depthNormalThresholdScale: 9.42
+    ColorThreshold: 0
+    depthThreshold: 0
+    normalThreshold: 0
+    depthNormalThreshold: 0
+    depthNormalThresholdScale: 0
+  lightShaftsSetting:
+    mode: 1
+    enable: 1
+    Downsample: 8
+    lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
+    radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}
+    density: 1
+    weight: 1
+    decay: 1
+    exposure: 0.584
+    bloomTintAndThreshold: {r: 0.879, g: 0.50992185, b: 0.255789, a: 0.8784314}

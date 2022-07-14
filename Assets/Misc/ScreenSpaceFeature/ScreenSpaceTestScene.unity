@@ -38,12 +38,12 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.17473152, g: 0.21856321, b: 0.3008333, a: 1}
+  m_IndirectSpecularColor: {r: 0.17473175, g: 0.21856266, b: 0.3008323, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 12
+  serializedVersion: 11
   m_GIWorkflowMode: 0
   m_GISettings:
     serializedVersion: 2
@@ -98,8 +98,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 0}
-  m_LightingSettings: {fileID: 4890085278179872738, guid: ba8f1e4db7d61054fb64af368e94c88f,
-    type: 2}
+  m_UseShadowmask: 1
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -119,8 +118,6 @@ NavMeshSettings:
     manualTileSize: 0
     tileSize: 256
     accuratePlacement: 0
-    maxJobWorkers: 0
-    preserveTilesOutsideBounds: 0
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
@@ -200,7 +197,6 @@ Light:
   m_UseColorTemperature: 0
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
-  m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
 --- !u!4 &176583532
@@ -210,13 +206,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 176583530}
-  m_LocalRotation: {x: 0.78244007, y: 0.15176438, z: -0.20965421, w: 0.5663923}
+  m_LocalRotation: {x: 0.75774854, y: -0.20726791, z: 0.28632933, w: 0.5485186}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 108.2, y: 30, z: 0}
+  m_LocalEulerAnglesHint: {x: 108.2, y: -41.4, z: 0}
 --- !u!1001 &210452413
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -298,6 +294,7 @@ GameObject:
   - component: {fileID: 1791529391}
   - component: {fileID: 1791529390}
   - component: {fileID: 1791529393}
+  - component: {fileID: 1791529394}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -393,6 +390,23 @@ MonoBehaviour:
     allowFXAA: 1
     allowSSPR: 0
     allowSSR: 1
+    allowCloud: 0
     renderScaleMode: 0
     renderScale: 1
     keepAlpha: 0
+--- !u!114 &1791529394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1791529389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de7c0147a56a27b43bf0b047b39db583, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lookSpeed: 0.2
+  moveSpeed: 15
+  runMultiplier: 4
+  DirLightTransform: {fileID: 176583532}

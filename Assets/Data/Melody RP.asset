@@ -54,7 +54,7 @@ MonoBehaviour:
       computeShader: {fileID: 7200000, guid: f2a4c2a9bafc08c4bb76a19c765becc6, type: 3}
       reflectionTextureSize: 1024
       ApplyFillHoleFix: 1
-      HorizontalReflectionPlaneHeightWS: 0
+      HorizontalReflectionPlaneHeightWS: 0.01
       FadeOutScreenBorderWidthVerticle: 0.119
       FadeOutScreenBorderWidthHorizontal: 0.088
       ScreenLRStretchIntensity: 0
@@ -65,11 +65,11 @@ MonoBehaviour:
       computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
       downsample: 1
       maxDistance: 25
-      iterations: 120
+      iterations: 165
       binarySearchIterations: 6
-      pixelStrideSize: 4
-      pixelStrideZCuttoff: 9.82
-      thickness: 0.1
+      pixelStrideSize: 1
+      pixelStrideZCuttoff: 2.62
+      thickness: 0.23
       screenEdgeFade: 0.598
       eyeFadeStart: 0.131
       eyeFadeEnd: 0.606
