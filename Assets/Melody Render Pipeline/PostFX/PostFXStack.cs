@@ -134,6 +134,12 @@ public class PostFXStack {
             DoColorGradingAndToneMappingAndFxaa(bloomResultId);
             buffer.ReleaseTemporaryRT(bloomResultId);
         } else {
+            #region Light Shafts
+            if (settings.LightShaftsSetting.enable) {
+                //updating outline result to source
+                sourceId = lightShaftsResultId;
+            }
+            #endregion
             #region Outline
             if (settings.OutlineSetting.enable) {
                 //updating outline result to source
@@ -176,18 +182,18 @@ public class PostFXStack {
     }
 
     bool DoBloom(int sourceId) {
-        #region Outline
-        if (settings.OutlineSetting.enable) {
-            DoOutline(sourceId);
-            //updating outline result to source
-            sourceId = outlineResultId;
-        }
-        #endregion
         #region Light Shafts
         if (settings.LightShaftsSetting.enable) {
             DoLightShafts(sourceId);
             //updating current result to source
             sourceId = lightShaftsResultId;
+        }
+        #endregion
+        #region Outline
+        if (settings.OutlineSetting.enable) {
+            DoOutline(sourceId);
+            //updating outline result to source
+            sourceId = outlineResultId;
         }
         #endregion
         BloomSettings bloom = settings.Bloom;
