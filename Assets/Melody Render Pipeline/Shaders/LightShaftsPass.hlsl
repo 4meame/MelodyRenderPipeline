@@ -53,7 +53,7 @@ float4 LightShaftsBloomPrefilterPassFragment(Varyings input) : SV_TARGET{
 	float bloomDistanceMask = saturate((sceneDepth - 0.5f / invOcclusionDepthRange) * invOcclusionDepthRange);
 	//setup a mask that is 0 at light source and increases to 1 over distance
 	float screenRatio = _CameraBufferSize.z / _CameraBufferSize.w;
-	float blurOriginDistanceMask = 1.0f - saturate(length(_LightSource.xy - input.screenUV) * screenRatio * 2.0f);
+	float blurOriginDistanceMask = 1.0f - saturate(length(_LightSource.xy - input.screenUV) * screenRatio * _LightShaftParameters.z);
 	//calculate bloom color with masks applied
 	bloomColor = saturate(bloomColor * _BloomTintAndThreshold.rgb * bloomDistanceMask * (1.0f - edgeMask) * blurOriginDistanceMask * blurOriginDistanceMask);
 	return float4(bloomColor, 1);
