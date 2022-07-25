@@ -66,7 +66,9 @@ public class VolumetricCloud {
     }
 
     public void Render(int sourceId) {
-
+        if(camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
+            return;
+        }
         UpdateAnimatedProperties();
 
         buffer.SetRenderTarget(preDepthId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
