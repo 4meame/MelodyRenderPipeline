@@ -10,6 +10,8 @@ public class MelodyRenderPipelineAsset : RenderPipelineAsset {
     [SerializeField]
     ShadowSettings shadows = default;
     [SerializeField]
+    AtmosphereScatteringSettings atmosphere = default;
+    [SerializeField]
     VolumetricCloudSettings cloud = default;
     [SerializeField]
     PostFXSettings postFXSettings = default;
@@ -21,6 +23,6 @@ public class MelodyRenderPipelineAsset : RenderPipelineAsset {
     [SerializeField]
     Shader cameraRendererShader = default;
     protected override RenderPipeline CreatePipeline() {
-        return new MelodyRenderPipeline(useDynamicBachting, useInstancing, useSRPBatcher, useLightsPerObject, shadows, cloud, postFXSettings, cameraBufferSettings, (int)colorLUTResolution, cameraRendererShader);
+        return new MelodyRenderPipeline(useDynamicBachting, useInstancing, useSRPBatcher, useLightsPerObject, shadows, atmosphere, cloud, postFXSettings, cameraBufferSettings, (int)colorLUTResolution, cameraRendererShader);
     }
 }

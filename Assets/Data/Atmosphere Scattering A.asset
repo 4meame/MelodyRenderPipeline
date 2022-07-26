@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54eb3ceb11826404a9f982167e9b640e, type: 3}
+  m_Name: Atmosphere Scattering A
+  m_EditorClassIdentifier: 
+  planetRadius: 6371000
+  atmosphereHeight: 80000
+  densityScaleHeight: {x: 7944, y: 1200}
+  incomingLight: {r: 4, g: 4, b: 4, a: 4}
+  rayleighCoefficients: {x: 5.5, y: 13, z: 22.4}
+  rayleighInscatterScale: 1
+  rayleighExtinctionScale: 1
+  mieCoefficients: {x: 21, y: 21, z: 21}
+  mieInscatterScale: 1
+  mieExtinctionScale: 1
+  mieG: 0.625
+  particleDensityLUTSize: 1024

@@ -17,6 +17,7 @@ public partial class CameraRender
                        litShaderTagId = new ShaderTagId("MelodyLit");                    
 
     Lighting lighting = new Lighting();
+    AtmosphereScattering atmosphere = new AtmosphereScattering();
     VolumetricCloud cloud = new VolumetricCloud();
     SSPlanarReflection sspr = new SSPlanarReflection();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
@@ -62,7 +63,7 @@ public partial class CameraRender
 
     static int srcBlendId = Shader.PropertyToID("_CameraSrcBlend"),
                dstBlendId = Shader.PropertyToID("_CameraDstBlend");
-    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, ShadowSettings shadowSettings, VolumetricCloudSettings cloudSettings, PostFXSettings postFXSettings, CameraBufferSettings cameraBufferSettings, int colorLUTResolution) {
+    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, ShadowSettings shadowSettings, AtmosphereScatteringSettings atmosphereSettings, VolumetricCloudSettings cloudSettings, PostFXSettings postFXSettings, CameraBufferSettings cameraBufferSettings, int colorLUTResolution) {
         this.context = context;
         this.camera = camera;
 
@@ -150,9 +151,11 @@ public partial class CameraRender
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         ssr.Setup(context, camera, cullingResults, cameraBufferSettings.ssr, useHDR, useDynamicBatching, useInstancing, useLightsPerObject);
+        atmosphere.Setup(context, camera, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
+        atmosphere.Precompute();
         Setup();
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();

@@ -37,9 +37,8 @@
                 float3 rayStart = _WorldSpaceCameraPos.xyz;
                 float3 rayDirection = normalize(TransformObjectToWorld(input.positionOS));
                 float3 lightDirection = _MainLightPosition.xyz;
-                //camera position is the center of the world in the skybox
-                float3 planetCenter = _WorldSpaceCameraPos.xyz;
-                planetCenter = float3(0, -_PlanetRadius, 0);
+                //center could be any coordiante in the situation of universe system 
+                float3 planetCenter = float3(0, -_PlanetRadius, 0);
                 //calculate ray and atmosphere intersect
                 float2 intersection = RaySphereIntersection(rayStart, rayDirection, planetCenter, _PlanetRadius + _AtmosphereHeight);
                 float rayLength = intersection.y;
@@ -49,8 +48,8 @@
                     rayLength = min(rayLength, intersection.x);
                 }
                 float4 extinction;
-                float4 inscattering = IntergrateInscattering();
-                return 1;
+                float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, 1, lightDirection, 16, extinction);
+                return float4(inscattering.rgb, 1);
             }
             ENDHLSL
         }

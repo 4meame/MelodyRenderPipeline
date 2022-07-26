@@ -3,7 +3,6 @@
 
 #include "../ShaderLibrary/Common.hlsl"
 
-#define PI 3.14159265359
 float4 _MainLightPosition;
 float4 _IncomingLight;
 float _SunIntensity;
@@ -14,7 +13,11 @@ float2 _DensityScaleHeight;
 //Extinction factor of raylie and mie scatter
 float3 _ExtinctionR;
 float3 _ExtinctionM;
+//Scattering factor of raylie and mie scatter
+float3 _ScatteringR;
+float3 _ScatteringM;
 float _MieG;
+float _DistanceScale;
 
 TEXTURE2D(_ParticleDensityLUT);
 SAMPLER(sampler_ParticleDensityLUT);
@@ -80,8 +83,8 @@ void ComputeLocalInscattering(float2 localDensity, float2 densityPA, float2 dens
 
 float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, float3 planetCenter, float distanceScale, float3 lightDir, float sampleCount, out float4 extinction) {
 	//ray march vector and the Delta s
-	float3 step = rayDir * (rayLength / sampleCount);
-	float stepSize = length(step) * distanceScale;
+	float3 step = rayDir * (rayLength * distanceScale / sampleCount);
+	float stepSize = length(step);
 	//P - current integration point
 	//C - camera position
 	//A - top of the atmosphere
@@ -119,5 +122,33 @@ float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, f
 	extinction = float4(lightExtinction, 0);
 	return float4(lightInscatter, 0);
 }
+
+//compute density of the all height and zenith angle situation, so we can store density of all light direction and height  
+float2 PrecomputeParticleDensity(float3 rayStart, float3 rayDir) {
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	float sampleCount = 250;
+	float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
+	//write very high density if intersect planet
+	if (intersection.x > 0) {
+		return 1e+20;
+	}
+	intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius + _AtmosphereHeight);
+	float3 rayEnd = rayStart + rayDir * intersection.y;
+	//compute density along the ray
+	float3 step = (rayEnd - rayStart) / sampleCount;
+	float stepSize = length(step);
+	float2 density = 0;
+	for (float i = 0.5; i < sampleCount; i++) {
+		float3 p = rayStart + i * step;
+		//why abs ?  Due to spherical symmetry ?
+		float height = abs(length(p - planetCenter) - _PlanetRadius);
+		float2 localDensity = exp(-height.xx / _DensityScaleHeight);
+		density += localDensity * stepSize;
+	}
+	return density;
+}
+
+
+
 
 #endif
