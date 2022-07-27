@@ -53,7 +53,7 @@ public class AtmosphereScattering {
         buffer.SetGlobalFloat(atmosphereHeightId, settings.atmosphereHeight);
         buffer.SetGlobalVector(densityScaleHeightId, settings.densityScaleHeight);
         buffer.SetGlobalVector(incomingLightId, settings.incomingLight);
-        buffer.SetGlobalFloat(sunIntensityId, 1);
+        buffer.SetGlobalFloat(sunIntensityId, 0.3f);
         buffer.SetGlobalVector(extinctionRId, settings.rayleighCoefficients * 0.000001f * settings.rayleighExtinctionScale);
         buffer.SetGlobalVector(extinctionMId, settings.mieCoefficients * 0.000001f * settings.mieExtinctionScale);
         buffer.SetGlobalVector(scatteringRId, settings.rayleighCoefficients * 0.000001f * settings.rayleighInscatterScale);

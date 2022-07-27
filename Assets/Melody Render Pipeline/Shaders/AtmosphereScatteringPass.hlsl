@@ -38,7 +38,7 @@ float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCente
 }
 
 //high Mie G value can be used to rendering sun like circle
-float3 RenderSun(float cosAngle, float3 scatterM) {
+float3 RenderSun(float3 scatterM, float cosAngle) {
 	float g = 0.98;
 	float g2 = g * g;
 	float sun = pow(1 - g, 2.0) / (4 * PI * pow(1.0 + g2 - 2.0 * g * cosAngle, 1.5));
@@ -48,11 +48,22 @@ float3 RenderSun(float cosAngle, float3 scatterM) {
 
 void ApplyPhaseFunction(inout float3 scatterR, inout float3 scatterM, float cosAngle) {
 	//rayliegh phase
-	float phase = (3.0 / 16.0 * PI) * (1 + (cosAngle * cosAngle));
+	float phase = (3.0 / (16.0 * PI)) * (1 + (cosAngle * cosAngle));
 	scatterR *= phase;
 	//mie phase
 	float g = _MieG;
-	float2 g2 = g * g;
+	float g2 = g * g;
+	phase = (1.0 / (4.0 * PI)) * ((3.0 * (1.0 - g2)) / (2.0 * (2.0 + g2))) * ((1 + cosAngle * cosAngle) / (pow((1 + g2 - 2 * g * cosAngle), 3.0 / 2.0)));
+	scatterM *= phase;
+}
+
+void ApplyPhaseFunctionElek(inout float3 scatterR, inout float3 scatterM, float cosAngle) {
+	//rayliegh phase
+	float phase = (8.0 / 10.0) / (4 * PI) * ((7.0 / 5.0) + 0.5 * cosAngle);
+	scatterR *= phase;
+	//mie phase
+	float g = _MieG;
+	float g2 = g * g;
 	phase = (1.0 / (4.0 * PI)) * ((3.0 * (1.0 - g2)) / (2.0 * (2.0 + g2))) * ((1 + cosAngle * cosAngle) / (pow((1 + g2 - 2 * g * cosAngle), 3.0 / 2.0)));
 	scatterM *= phase;
 }
@@ -99,7 +110,7 @@ float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, f
 	GetAtmosphereDensity(rayStart, planetCenter, lightDir, prevDensityAtP, densityPA);
 	ComputeLocalInscattering(prevDensityAtP, densityPA, densityCP, prevLocalInscatterR, prevLocalInscatterM);
 	[loop]
-	for (int i = 0; i < sampleCount; i++) {
+	for (float i = 1.0; i < sampleCount; i += 1) {
 		float3 p = rayStart + step * i;
 		GetAtmosphereDensity(p, planetCenter, lightDir, densityAtP, densityPA);
 		densityCP += (densityAtP + prevDensityAtP) * stepSize * 0.5;
@@ -113,7 +124,7 @@ float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, f
 		prevLocalInscatterM = localInscatteringM;
 	}
 	float m = scatterM;
-	float cosAngle = dot(rayDir, -lightDir);
+	float cosAngle = dot(rayDir, lightDir);
 	ApplyPhaseFunction(scatterR, scatterM, cosAngle);
 	//I = Isun *  β(0) * P(θ) * ∫(exp(-β(0) * (Dcp + Dpa))) * ρ(h)ds
 	float3 lightInscatter = (scatterR * _ScatteringR + scatterM * _ScatteringM) * _IncomingLight.xyz;
@@ -138,7 +149,7 @@ float2 PrecomputeParticleDensity(float3 rayStart, float3 rayDir) {
 	float3 step = (rayEnd - rayStart) / sampleCount;
 	float stepSize = length(step);
 	float2 density = 0;
-	for (float i = 0.5; i < sampleCount; i++) {
+	for (float i = 0.5; i < sampleCount; i += 1) {
 		float3 p = rayStart + i * step;
 		//why abs ?  Due to spherical symmetry ?
 		float height = abs(length(p - planetCenter) - _PlanetRadius);

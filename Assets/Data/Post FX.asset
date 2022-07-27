@@ -15,9 +15,9 @@ MonoBehaviour:
   shader: {fileID: 4800000, guid: 94b6d1a1245ff2142b12e2b3962e91b9, type: 3}
   bloom:
     maxIterations: 5
-    downscaleLimit: 16
+    downscaleLimit: 10
     bicubicUpsampling: 1
-    threshold: 1
+    threshold: 1.51
     thresholdKnee: 0.102
     fadeFireflies: 1
     mode: 0
@@ -29,7 +29,7 @@ MonoBehaviour:
     constrat: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 45.4
+    saturation: 31.7
   whiteBalance:
     Temperature: 0
     Tint: 0
@@ -62,12 +62,12 @@ MonoBehaviour:
     depthNormalThresholdScale: 0
   lightShaftsSetting:
     mode: 1
-    enable: 1
-    Downsample: 8
+    enable: 0
+    Downsample: 5
     lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
     radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}
     density: 1
     weight: 1
     decay: 1
     exposure: 0.584
-    bloomTintAndThreshold: {r: 0.879, g: 0.50992185, b: 0.255789, a: 0.8784314}
+    bloomTintAndThreshold: {r: 0.879, g: 0.50992185, b: 0.255789, a: 1}

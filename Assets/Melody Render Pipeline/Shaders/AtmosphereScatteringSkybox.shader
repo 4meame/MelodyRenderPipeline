@@ -35,20 +35,26 @@
 
             float4 frag(Varyings input) : SV_TARGET{
                 float3 rayStart = _WorldSpaceCameraPos.xyz;
+                //NOTE : the larger radius of planet is , the further far plane of camera should be
                 float3 rayDirection = normalize(TransformObjectToWorld(input.positionOS));
                 float3 lightDirection = _MainLightPosition.xyz;
                 //center could be any coordiante in the situation of universe system 
                 float3 planetCenter = float3(0, -_PlanetRadius, 0);
                 //calculate ray and atmosphere intersect
                 float2 intersection = RaySphereIntersection(rayStart, rayDirection, planetCenter, _PlanetRadius + _AtmosphereHeight);
+                float3 color = 0;
+                if (intersection.y > 0) {
+                    color = 1;
+                }
+                //return float4(color, 1);
                 float rayLength = intersection.y;
                 //ray should be end at the first intersect point if hit the planet
                 intersection = RaySphereIntersection(rayStart, rayDirection, planetCenter, _PlanetRadius);
-                if (intersection.x > 0) {
+                if (intersection.x >= 0) {
                     rayLength = min(rayLength, intersection.x);
                 }
                 float4 extinction;
-                float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, 1, lightDirection, 16, extinction);
+                float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, 1, lightDirection, 64, extinction);
                 return float4(inscattering.rgb, 1);
             }
             ENDHLSL
