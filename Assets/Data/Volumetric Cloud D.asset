@@ -147,7 +147,7 @@ MonoBehaviour:
   horizonFadeStartAlpha: 0
   shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
   detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
-  coverageTexture: {fileID: 2800000, guid: 0dfb11a4a52d6d446bd846dbcc09a060, type: 3}
+  coverageTexture: {fileID: 2800000, guid: 813a69576878a33438240780d057dcf3, type: 3}
   curlTexture: {fileID: 2800000, guid: 4c1bdebb39a1f034aad3a28b4df53a8e, type: 3}
   blueNoiseTexture: {fileID: 0}
   debugTexture: 0

@@ -6,6 +6,7 @@ using UnityEngine;
 public class AtmosphereScatteringSettings : ScriptableObject {
     public float planetRadius = 6371000.0f;
     public float atmosphereHeight = 80000.0f;
+    public float groundHeight = 500.0f;
     public Vector2 densityScaleHeight = new Vector2(7944.0f, 1200.0f);
     [ColorUsage(false,true)]
     public Color incomingLight = new Color(4, 4, 4, 4);
@@ -18,4 +19,5 @@ public class AtmosphereScatteringSettings : ScriptableObject {
     public float mieG = 0.625f;
     [Header("Texture")]
     public int particleDensityLUTSize = 1024;
+    public int sunColorLUTSize = 512;
 }

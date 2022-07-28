@@ -159,7 +159,22 @@ float2 PrecomputeParticleDensity(float3 rayStart, float3 rayDir) {
 	return density;
 }
 
-
+//compute the color of sun reachs planet
+float4 PrecomputeSunColor(float3 rayStart, float3 rayDir) {
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	float2 localDensity;
+	float2 densityToAtmosphereTop;
+	GetAtmosphereDensity(rayStart, planetCenter, rayDir, localDensity, densityToAtmosphereTop);
+	float4 color;
+	//transmittance from sun to eyes
+	float3 Tr = densityToAtmosphereTop.x * _ExtinctionR;
+	float3 Tm = densityToAtmosphereTop.y * _ExtinctionM;
+	//the absorption of extinction can be ignored
+	float3 extinction = exp(-(Tr + Tm));
+	color.xyz = _IncomingLight.xyz * extinction;
+	color.w = 1;
+	return color;
+}
 
 
 #endif

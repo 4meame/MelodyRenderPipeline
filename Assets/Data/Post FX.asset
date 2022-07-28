@@ -29,7 +29,7 @@ MonoBehaviour:
     constrat: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 31.7
+    saturation: 20.6
   whiteBalance:
     Temperature: 0
     Tint: 0
@@ -62,7 +62,7 @@ MonoBehaviour:
     depthNormalThresholdScale: 0
   lightShaftsSetting:
     mode: 1
-    enable: 0
+    enable: 1
     Downsample: 5
     lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
     radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}

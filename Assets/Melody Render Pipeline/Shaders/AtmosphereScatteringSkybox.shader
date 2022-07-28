@@ -55,6 +55,7 @@
                 }
                 float4 extinction;
                 float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, 1, lightDirection, 64, extinction);
+                inscattering = max(0, inscattering);
                 return float4(inscattering.rgb, 1);
             }
             ENDHLSL
