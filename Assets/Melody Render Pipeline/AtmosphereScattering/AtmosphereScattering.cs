@@ -7,7 +7,8 @@ using static AtmosphereScatteringSettings;
 public class AtmosphereScattering {
     enum Pass {
         PrecomputeDensity,
-        PrecomputeSunColor
+        PrecomputeSunColor,
+        PrecomputeAmbient
     }
     const string bufferName = "AtmosphereScattering";
     CommandBuffer buffer = new CommandBuffer {
@@ -22,12 +23,17 @@ public class AtmosphereScattering {
     Light sun;
     RenderTexture particleDensityLUT;
     RenderTexture sunColorLUT;
+    RenderTexture ambientLUT;
     Texture2D sunColorTexture;
+    Texture2D abmeintTexture;
+    Texture2D randomVectorsLUT;
 
     int particleDensityLUTId = Shader.PropertyToID("_ParticleDensityLUT");
     int planetRadiusId = Shader.PropertyToID("_PlanetRadius");
     int atmosphereHeightId = Shader.PropertyToID("_AtmosphereHeight");
     int densityScaleHeightId = Shader.PropertyToID("_DensityScaleHeight");
+    int lightSamplesId = Shader.PropertyToID("_LightSamples");
+    int distanceScaleId = Shader.PropertyToID("_DistanceScale");
     int sunIntensityId = Shader.PropertyToID("_SunIntensity");
     int incomingLightId = Shader.PropertyToID("_IncomingLight");
     int extinctionRId = Shader.PropertyToID("_ExtinctionR");
@@ -54,9 +60,11 @@ public class AtmosphereScattering {
     void UpdateMaterialParameters() {
         buffer.SetGlobalFloat(planetRadiusId, settings.planetRadius);
         buffer.SetGlobalFloat(atmosphereHeightId, settings.atmosphereHeight);
+        buffer.SetGlobalFloat(lightSamplesId, settings.lightSamples);
+        buffer.SetGlobalFloat(distanceScaleId, settings.distanceScale);
         buffer.SetGlobalVector(densityScaleHeightId, settings.densityScaleHeight);
         buffer.SetGlobalVector(incomingLightId, settings.incomingLight);
-        buffer.SetGlobalFloat(sunIntensityId, 0.3f);
+        buffer.SetGlobalFloat(sunIntensityId, settings.sunIntensity);
         buffer.SetGlobalVector(extinctionRId, settings.rayleighCoefficients * 0.000001f * settings.rayleighExtinctionScale);
         buffer.SetGlobalVector(extinctionMId, settings.mieCoefficients * 0.000001f * settings.mieExtinctionScale);
         buffer.SetGlobalVector(scatteringRId, settings.rayleighCoefficients * 0.000001f * settings.rayleighInscatterScale);
@@ -68,6 +76,8 @@ public class AtmosphereScattering {
         UpdateMaterialParameters();
         PrecomputeParticleDensity();
         PrecomputeSunColor();
+        InitRandomVectors();
+        PrecomputeAmbient();
         ExecuteBuffer();
     }
 
@@ -99,6 +109,32 @@ public class AtmosphereScattering {
         buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.PrecomputeSunColor, MeshTopology.Triangles, 3);
     }
 
+    void InitRandomVectors() {
+        if(randomVectorsLUT == null) {
+            randomVectorsLUT = new Texture2D(256, 1, TextureFormat.RGBAHalf, false, true);
+            randomVectorsLUT.name = "Random Vectors LUT";
+            Color[] colors = new Color[256];
+            for (int i = 0; i < colors.Length; i++) {
+                Vector3 vector = Random.onUnitSphere;
+                colors[i] = new Color(vector.x, vector.y, vector.z, 1);
+            }
+            randomVectorsLUT.SetPixels(colors);
+            randomVectorsLUT.Apply();
+        }
+    }
+
+    void PrecomputeAmbient() {
+        if (ambientLUT == null) {
+            ambientLUT = new RenderTexture(settings.ambientLUTSize, 1, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+            ambientLUT.name = "Ambient LUT";
+            ambientLUT.filterMode = FilterMode.Bilinear;
+            ambientLUT.Create();
+        }
+        buffer.SetGlobalTexture("_RandomVectors", randomVectorsLUT);
+        buffer.SetRenderTarget(ambientLUT);
+        buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.PrecomputeAmbient, MeshTopology.Triangles, 3);
+    }
+
     public void UpdateSunColor() {
         if (sunColorTexture == null) {
             sunColorTexture = new Texture2D(settings.sunColorLUTSize, settings.sunColorLUTSize, TextureFormat.RGBAHalf, false, true);
@@ -115,6 +151,19 @@ public class AtmosphereScattering {
         c /= length;
         sun.color = new Color(Mathf.Max(c.x, 0.01f), Mathf.Max(c.y, 0.01f), Mathf.Max(c.z, 0.01f), 1);
         sun.intensity = Mathf.Max(length, 0.01f);
+    }
+
+    public void UpdateAmbient() {
+        if (abmeintTexture == null) {
+            abmeintTexture = new Texture2D(settings.ambientLUTSize, 1, TextureFormat.RGBAHalf, false, true);
+            abmeintTexture.name = "Ambient Texture";
+            abmeintTexture.Apply();
+        }
+        ReadRTpixelsBackToCPU(ambientLUT, abmeintTexture);
+        float cosAngle = Vector3.Dot(Vector3.up, -sun.transform.forward);
+        float cosAngle01 = cosAngle * 0.5f + 0.5f;
+        Color color = abmeintTexture.GetPixel((int)(cosAngle01 * abmeintTexture.width), 0).gamma;
+        RenderSettings.ambientLight = color;
     }
 
     void ExecuteBuffer() {

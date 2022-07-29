@@ -157,6 +157,7 @@ public partial class CameraRender
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
         atmosphere.UpdateSunColor();
+        atmosphere.UpdateAmbient();
         Setup();
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();

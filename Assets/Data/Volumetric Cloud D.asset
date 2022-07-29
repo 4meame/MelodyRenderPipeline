@@ -119,10 +119,10 @@ MonoBehaviour:
   erosionEdgeSize: 0.345
   cloudDistortion: 0.114
   cloudDistortionScale: 0.43
-  cloudBaseColor: {r: 0.2023961, g: 0.28455693, b: 0.511, a: 1}
+  cloudBaseColor: {r: 0.6415094, g: 0.6415094, b: 0.6415094, a: 1}
   cloudTopColor: {r: 1, g: 1, b: 1, a: 1}
-  sunScale: 0.69
-  ambientScale: 0.97
+  sunScale: 0.89
+  ambientScale: 0.11
   sunRayLength: 0.088
   coneRadius: 0.317
   density: 1
@@ -139,7 +139,7 @@ MonoBehaviour:
   showCalculatedRadius: 0
   horizonDistanceOfRadius: 0
   atmosphereStartHeight: 2400
-  atmosphereEndHeight: 3900
+  atmosphereEndHeight: 3200
   cameraPositionScale: {x: 1, y: 1, z: 1}
   lodDistance: 0.336
   horizonLevel: 0.01
@@ -147,7 +147,7 @@ MonoBehaviour:
   horizonFadeStartAlpha: 0
   shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
   detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
-  coverageTexture: {fileID: 2800000, guid: 813a69576878a33438240780d057dcf3, type: 3}
+  coverageTexture: {fileID: 2800000, guid: 800e139c07c95544497413242b13afbc, type: 3}
   curlTexture: {fileID: 2800000, guid: 4c1bdebb39a1f034aad3a28b4df53a8e, type: 3}
   blueNoiseTexture: {fileID: 0}
   debugTexture: 0

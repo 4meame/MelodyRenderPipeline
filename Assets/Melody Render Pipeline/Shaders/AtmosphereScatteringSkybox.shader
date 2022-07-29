@@ -42,19 +42,16 @@
                 float3 planetCenter = float3(0, -_PlanetRadius, 0);
                 //calculate ray and atmosphere intersect
                 float2 intersection = RaySphereIntersection(rayStart, rayDirection, planetCenter, _PlanetRadius + _AtmosphereHeight);
-                float3 color = 0;
-                if (intersection.y > 0) {
-                    color = 1;
-                }
-                //return float4(color, 1);
                 float rayLength = intersection.y;
                 //ray should be end at the first intersect point if hit the planet
                 intersection = RaySphereIntersection(rayStart, rayDirection, planetCenter, _PlanetRadius);
                 if (intersection.x >= 0) {
                     rayLength = min(rayLength, intersection.x);
                 }
+                float lightSamples = _LightSamples;
+                float distanceScale = _DistanceScale;
                 float4 extinction;
-                float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, 1, lightDirection, 64, extinction);
+                float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, distanceScale, lightDirection, lightSamples, extinction);
                 inscattering = max(0, inscattering);
                 return float4(inscattering.rgb, 1);
             }

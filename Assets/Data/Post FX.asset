@@ -25,11 +25,11 @@ MonoBehaviour:
     scatter: 0.497
     ignoreRenderScale: 1
   colorAdjustment:
-    postExposure: -0.06
+    postExposure: -0.07
     constrat: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 20.6
+    saturation: 17.2
   whiteBalance:
     Temperature: 0
     Tint: 0
@@ -63,11 +63,11 @@ MonoBehaviour:
   lightShaftsSetting:
     mode: 1
     enable: 1
-    Downsample: 5
+    Downsample: 4
     lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
     radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}
-    density: 1
-    weight: 1
-    decay: 1
-    exposure: 0.584
-    bloomTintAndThreshold: {r: 0.879, g: 0.50992185, b: 0.255789, a: 1}
+    density: 0.983
+    weight: 0.735
+    decay: 0.949
+    exposure: 1.045
+    bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}

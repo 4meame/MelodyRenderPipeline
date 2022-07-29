@@ -15,14 +15,18 @@ MonoBehaviour:
   planetRadius: 6371000
   atmosphereHeight: 80000
   groundHeight: 500
-  densityScaleHeight: {x: 7926.31, y: 1200}
+  lightSamples: 64
+  distanceScale: 1
+  densityScaleHeight: {x: 7944, y: 1200}
   incomingLight: {r: 3.9533494, g: 3.9533494, b: 3.9533494, a: 4}
   rayleighCoefficients: {x: 5.5, y: 14.08, z: 22.4}
-  rayleighInscatterScale: 1
+  rayleighInscatterScale: 1.4
   rayleighExtinctionScale: 1
   mieCoefficients: {x: 21, y: 21, z: 21}
-  mieInscatterScale: 1
+  mieInscatterScale: 1.1
   mieExtinctionScale: 1
   mieG: 0.625
+  sunIntensity: 0.3
   particleDensityLUTSize: 1024
-  sunColorLUTSize: 512
+  sunColorLUTSize: 256
+  ambientLUTSize: 128

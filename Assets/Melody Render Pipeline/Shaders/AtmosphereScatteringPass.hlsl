@@ -17,10 +17,14 @@ float3 _ExtinctionM;
 float3 _ScatteringR;
 float3 _ScatteringM;
 float _MieG;
+
+float _LightSamples;
 float _DistanceScale;
 
 TEXTURE2D(_ParticleDensityLUT);
 SAMPLER(sampler_ParticleDensityLUT);
+TEXTURE2D(_RandomVectors);
+SAMPLER(sampler_RandomVectors);
 
 //d1 is if d < 0, ray hit the sphere in the opposite direction
 float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCenter, float sphereRadius) {
@@ -123,7 +127,7 @@ float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, f
 		prevLocalInscatterR = localInscatteringR;
 		prevLocalInscatterM = localInscatteringM;
 	}
-	float m = scatterM;
+	float3 m = scatterM;
 	float cosAngle = dot(rayDir, lightDir);
 	ApplyPhaseFunction(scatterR, scatterM, cosAngle);
 	//I = Isun *  β(0) * P(θ) * ∫(exp(-β(0) * (Dcp + Dpa))) * ρ(h)ds
@@ -137,7 +141,7 @@ float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, f
 //compute density of the all height and zenith angle situation, so we can store density of all light direction and height  
 float2 PrecomputeParticleDensity(float3 rayStart, float3 rayDir) {
 	float3 planetCenter = float3(0, -_PlanetRadius, 0);
-	float sampleCount = 250;
+	float sampleCount = 256;
 	float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
 	//write very high density if intersect planet
 	if (intersection.x > 0) {
@@ -159,14 +163,14 @@ float2 PrecomputeParticleDensity(float3 rayStart, float3 rayDir) {
 	return density;
 }
 
-//compute the color of sun reachs planet
+//compute the color of sun reachs planet ground
 float4 PrecomputeSunColor(float3 rayStart, float3 rayDir) {
 	float3 planetCenter = float3(0, -_PlanetRadius, 0);
 	float2 localDensity;
 	float2 densityToAtmosphereTop;
 	GetAtmosphereDensity(rayStart, planetCenter, rayDir, localDensity, densityToAtmosphereTop);
 	float4 color;
-	//transmittance from sun to eyes
+	//transmittance from sun to ground object
 	float3 Tr = densityToAtmosphereTop.x * _ExtinctionR;
 	float3 Tm = densityToAtmosphereTop.y * _ExtinctionM;
 	//the absorption of extinction can be ignored
@@ -176,5 +180,30 @@ float4 PrecomputeSunColor(float3 rayStart, float3 rayDir) {
 	return color;
 }
 
-
+//compute abment color : ∫2PI (N * ω) Inscatter(ω), use Monte Carlo method
+float4 PrecomputeAmbient(float3 lightDir) {
+	float startHeight = 0;
+	float3 rayStart = float3(0, startHeight, 0);
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	float sampleCount = 256;
+	float4 color;
+	[loop]
+	for (int i = 0; i < sampleCount; i++) {
+		float3 rayDir = SAMPLE_TEXTURE2D_LOD(_RandomVectors, sampler_RandomVectors, float2((i / sampleCount), 0.5), 0);
+		//in case the random vector is invert
+		rayDir.y = abs(rayDir.y);
+		float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius + _AtmosphereHeight);
+		float rayLength = intersection.y;
+		//ray should be end at the first intersect point if hit the planet
+		intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
+		if (intersection.x >= 0) {
+			rayLength = min(rayLength, intersection.x);
+		}
+		float4 extinction;
+		float4 inscattering = IntergrateInscattering(rayStart, rayDir, rayLength, planetCenter, _DistanceScale, lightDir, _LightSamples, extinction);
+		//n dot ω
+		color += inscattering * dot(rayDir, float3(0, 1, 0));
+	}
+	return color * 2 * PI / sampleCount;
+}
 #endif
