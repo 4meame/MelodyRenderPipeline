@@ -1,0 +1,30 @@
+#pragma kernel InscatteringLUT
+
+RWTexture3D<float4> _InscatteringLUT;
+RWTexture3D<float4> _ExtinctionLUT;
+
+#include "../ShaderLibrary/Common.hlsl"
+float4 _MainLightPosition;
+float4 _IncomingLight;
+float _SunIntensity;
+float _PlanetRadius;
+float _AtmosphereHeight;
+//Scale Height of raylie and mie scatter
+float2 _DensityScaleHeight;
+//Extinction factor of raylie and mie scatter
+float3 _ExtinctionR;
+float3 _ExtinctionM;
+//Scattering factor of raylie and mie scatter
+float3 _ScatteringR;
+float3 _ScatteringM;
+float _MieG;
+float _LightSamples;
+
+
+[numthreads(8,8,1)]
+void InscatteringLUT(uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+
+    _InscatteringLUT[id.xyz] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+}

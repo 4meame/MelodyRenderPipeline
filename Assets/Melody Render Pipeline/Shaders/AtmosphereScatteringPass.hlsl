@@ -200,7 +200,7 @@ float4 PrecomputeAmbient(float3 lightDir) {
 			rayLength = min(rayLength, intersection.x);
 		}
 		float4 extinction;
-		float4 inscattering = IntergrateInscattering(rayStart, rayDir, rayLength, planetCenter, _DistanceScale, lightDir, _LightSamples, extinction);
+		float4 inscattering = IntergrateInscattering(rayStart, rayDir, rayLength, planetCenter, 1, lightDir, _LightSamples, extinction);
 		//n dot ω
 		color += inscattering * dot(rayDir, float3(0, 1, 0));
 	}

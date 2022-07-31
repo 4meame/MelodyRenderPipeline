@@ -49,9 +49,8 @@
                     rayLength = min(rayLength, intersection.x);
                 }
                 float lightSamples = _LightSamples;
-                float distanceScale = _DistanceScale;
                 float4 extinction;
-                float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, distanceScale, lightDirection, lightSamples, extinction);
+                float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, 1, lightDirection, lightSamples, extinction);
                 inscattering = max(0, inscattering);
                 return float4(inscattering.rgb, 1);
             }
