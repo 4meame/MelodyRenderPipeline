@@ -101,21 +101,6 @@ public class AtmosphereScattering {
         buffer.SetGlobalVector("_BottomRightCorner", frustumCorners[3]);
     }
 
-    void UpdateDateComputeParameters() {
-        buffer.SetComputeFloatParam(cs, planetRadiusId, settings.planetRadius);
-        buffer.SetComputeFloatParam(cs, atmosphereHeightId, settings.atmosphereHeight);
-        buffer.SetComputeFloatParam(cs, lightSamplesId, settings.lightSamples);
-        buffer.SetComputeFloatParam(cs, distanceScaleId, settings.distanceScale);
-        buffer.SetComputeVectorParam(cs, densityScaleHeightId, settings.densityScaleHeight);
-        buffer.SetComputeVectorParam(cs, incomingLightId, settings.incomingLight);
-        buffer.SetComputeFloatParam(cs, sunIntensityId, settings.sunIntensity);
-        buffer.SetComputeVectorParam(cs,extinctionRId, settings.rayleighCoefficients * 0.000001f * settings.rayleighExtinctionScale);
-        buffer.SetComputeVectorParam(cs, extinctionMId, settings.mieCoefficients * 0.000001f * settings.mieExtinctionScale);
-        buffer.SetComputeVectorParam(cs,scatteringRId, settings.rayleighCoefficients * 0.000001f * settings.rayleighInscatterScale);
-        buffer.SetComputeVectorParam(cs, scatteringMId, settings.mieCoefficients * 0.000001f * settings.mieInscatterScale);
-        buffer.SetComputeFloatParam(cs, mieGId, settings.mieG);
-    }
-
     public void PrecomputeAll() {
         if (settings.updateEveryFrame) {
             UpdateShaderParameters();

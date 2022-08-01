@@ -119,7 +119,7 @@ public partial class CameraRender
         var renderCloud = cloudSettings.enabled && cameraSettings.allowCloud;
         #endregion
         #region Atmosphere Scattering
-        var atmosScatter = atmosphereSettings.updateEveryFrame && cameraSettings.allowAtmosScatter;
+        var atmosScatter = atmosphereSettings.updateEveryFrame && cameraSettings.updateAtmosScatter;
         #endregion
         #region SSPR
         cameraBufferSettings.sspr.enabled = cameraBufferSettings.sspr.enabled && cameraSettings.allowSSPR;

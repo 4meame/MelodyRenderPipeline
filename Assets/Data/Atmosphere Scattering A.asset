@@ -33,3 +33,5 @@ MonoBehaviour:
   particleDensityLUTSize: 1024
   sunColorLUTSize: 256
   ambientLUTSize: 128
+  atmosphereScatterLUTSize: {x: 32, y: 128, z: 32}
+  inscatterExtinctionLUTSize: {x: 8, y: 8, z: 64}

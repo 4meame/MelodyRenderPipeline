@@ -1,4 +1,4 @@
-#pragma kernel ParticleDensityLUT
+Ôªø#pragma kernel ParticleDensityLUT
 #pragma kernel SunColorLUT
 #pragma kernel AmbientLUT
 #pragma kernel AtmosphereSkyLUT
@@ -125,7 +125,7 @@ float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, f
 	float3 m = scatterM;
 	float cosAngle = dot(rayDir, lightDir);
 	ApplyPhaseFunction(scatterR, scatterM, cosAngle);
-	//I = Isun *  ¶¬(0) * P(¶») * °“(exp(-¶¬(0) * (Dcp + Dpa))) * ¶—(h)ds
+	//I = Isun *  Œ≤(0) * P(Œ∏) * ‚à´(exp(-Œ≤(0) * (Dcp + Dpa))) * œÅ(h)ds
 	float3 lightInscatter = (scatterR * _ScatteringR + scatterM * _ScatteringM) * _IncomingLight.xyz;
 	float3 lightExtinction = exp(-(densityCP.x * _ExtinctionR + densityCP.y * _ExtinctionM));
 	extinction = float4(lightExtinction, 0);
@@ -174,7 +174,7 @@ float4 PrecomputeSunColor(float3 rayStart, float3 rayDir) {
 	return color;
 }
 
-//compute abment color : °“2PI (N * ¶ÿ) Inscatter(¶ÿ), use Monte Carlo method
+//compute abment color : ‚à´2PI (N * œâ) Inscatter(œâ), use Monte Carlo method
 float4 PrecomputeAmbient(float3 lightDir) {
 	float startHeight = 0;
 	float3 rayStart = float3(0, startHeight, 0);
@@ -195,7 +195,7 @@ float4 PrecomputeAmbient(float3 lightDir) {
 		}
 		float4 extinction;
 		float4 inscattering = IntergrateInscattering(rayStart, rayDir, rayLength, planetCenter, 1, lightDir, _LightSamples, extinction);
-		//n dot ¶ÿ
+		//n dot œâ
 		color += inscattering * dot(rayDir, float3(0, 1, 0));
 	}
 	return color * 2 * PI / sampleCount;
