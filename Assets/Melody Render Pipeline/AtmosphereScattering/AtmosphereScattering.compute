@@ -1,5 +1,14 @@
-#pragma kernel InscatteringLUT
+#pragma kernel ParticleDensityLUT
+#pragma kernel SunColorLUT
+#pragma kernel AmbientLUT
+#pragma kernel AtmosphereSkyLUT
+#pragma kernel LightScatteringLUT
 
+RWTexture2D<float2> _CSParticleDensityLUT;
+RWTexture2D<float4> _SunColorLUT;
+RWTexture2D<float4> _AmbientLUT;
+RWTexture3D<float4> _ScatterRaylieLUT;
+RWTexture3D<float4> _ScatterMieLUT;
 RWTexture3D<float4> _InscatteringLUT;
 RWTexture3D<float4> _ExtinctionLUT;
 
@@ -11,20 +20,361 @@ float _PlanetRadius;
 float _AtmosphereHeight;
 //Scale Height of raylie and mie scatter
 float2 _DensityScaleHeight;
-//Extinction factor of raylie and mie scatter
+//Extinction factor of rayliegh and mie scatter
 float3 _ExtinctionR;
 float3 _ExtinctionM;
-//Scattering factor of raylie and mie scatter
+//Scattering factor of rayliegh and mie scatter
 float3 _ScatteringR;
 float3 _ScatteringM;
 float _MieG;
 float _LightSamples;
+float _DistanceScale;
 
+float4 _BottomLeftCorner;
+float4 _BottomRightCorner;
+float4 _TopLeftCorner;
+float4 _TopRightCorner;
+
+Texture2D<float2> _ParticleDensityLUT;
+Texture2D<float3> _RandomVectors;
+SamplerState LinearClampSampler;
+SamplerState PointClampSampler;
+
+//d1 is if d < 0, ray hit the sphere in the opposite direction
+float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCenter, float sphereRadius) {
+	rayOrigin -= sphereCenter;
+	float a = dot(rayDir, rayDir);
+	float b = 2.0 * dot(rayOrigin, rayDir);
+	float c = dot(rayOrigin, rayOrigin) - (sphereRadius * sphereRadius);
+	float d = b * b - 4 * a * c;
+	if (d < 0) {
+		return -1;
+	}
+	else {
+		d = sqrt(d);
+		return float2(-b - d, -b + d) / (2 * a);
+	}
+}
+
+void ApplyPhaseFunction(inout float3 scatterR, inout float3 scatterM, float cosAngle) {
+	//rayliegh phase
+	float phase = (3.0 / (16.0 * PI)) * (1 + (cosAngle * cosAngle));
+	scatterR *= phase;
+	//mie phase
+	float g = _MieG;
+	float g2 = g * g;
+	phase = (1.0 / (4.0 * PI)) * ((3.0 * (1.0 - g2)) / (2.0 * (2.0 + g2))) * ((1 + cosAngle * cosAngle) / (pow((1 + g2 - 2 * g * cosAngle), 3.0 / 2.0)));
+	scatterM *= phase;
+}
+
+//get a local point density by searching precomputed particle density texture
+void GetAtmosphereDensity(float3 position, float3 planetCenter, float3 lightDir, out float2 localDensity, out float2 densityToAtmTop) {
+	float height = length(position - planetCenter) - _PlanetRadius;
+	//x : Raylei, y : Mie
+	localDensity = exp(-height.xx / _DensityScaleHeight.xy);
+	float cosAngle = dot(normalize(position - planetCenter), lightDir);
+	//use cosAngle of the lightDir and height percentage of the point to get a local density
+	densityToAtmTop = _ParticleDensityLUT.SampleLevel(LinearClampSampler, float2(cosAngle * 0.5 + 0.5, (height / _AtmosphereHeight)), 0.0).xy;
+}
+
+//compute a local point inscattering ,it will be used to intergrate path inscattering
+void ComputeLocalInscattering(float2 localDensity, float2 densityPA, float2 densityCP, out float3 localInscatterR, out float3 localInscatterM) {
+	//we can just add exponent calculation together
+	float2 densityCPA = densityCP + densityPA;
+	//transmittance
+	float3 Tr = densityCPA.x * _ExtinctionR;
+	float3 Tm = densityCPA.y * _ExtinctionM;
+	//the absorption of extinction can be ignored
+	float3 extinction = exp(-(Tr + Tm));
+	//local inscattering equals to transmittance from C to A multi local height scatter(density)
+	localInscatterR = localDensity.x * extinction;
+	localInscatterM = localDensity.y * extinction;
+}
+
+float4 IntergrateInscattering(float3 rayStart, float3 rayDir, float rayLength, float3 planetCenter, float distanceScale, float3 lightDir, float sampleCount, out float4 extinction) {
+	//ray march vector and the Delta s
+	float3 step = rayDir * (rayLength * distanceScale / sampleCount);
+	float stepSize = length(step);
+	//P - current integration point
+	//C - camera position
+	//A - top of the atmosphere
+	float2 densityCP = 0;
+	float3 scatterR = 0;
+	float3 scatterM = 0;
+	float2 densityAtP;
+	float2 densityPA;
+	float2 prevDensityAtP;
+	float3 prevLocalInscatterR;
+	float3 prevLocalInscatterM;
+	GetAtmosphereDensity(rayStart, planetCenter, lightDir, prevDensityAtP, densityPA);
+	ComputeLocalInscattering(prevDensityAtP, densityPA, densityCP, prevLocalInscatterR, prevLocalInscatterM);
+	[loop]
+	for (float i = 1.0; i < sampleCount; i += 1) {
+		float3 p = rayStart + step * i;
+		GetAtmosphereDensity(p, planetCenter, lightDir, densityAtP, densityPA);
+		densityCP += (densityAtP + prevDensityAtP) * stepSize * 0.5;
+		prevDensityAtP = densityAtP;
+		float3 localInscatteringR;
+		float3 localInscatteringM;
+		ComputeLocalInscattering(densityAtP, densityPA, densityCP, localInscatteringR, localInscatteringM);
+		scatterR += (localInscatteringR + prevLocalInscatterR) * stepSize * 0.5;
+		scatterM += (localInscatteringM + prevLocalInscatterM) * stepSize * 0.5;
+		prevLocalInscatterR = localInscatteringR;
+		prevLocalInscatterM = localInscatteringM;
+	}
+	float3 m = scatterM;
+	float cosAngle = dot(rayDir, lightDir);
+	ApplyPhaseFunction(scatterR, scatterM, cosAngle);
+	//I = Isun *  ¦Â(0) * P(¦È) * ¡Ò(exp(-¦Â(0) * (Dcp + Dpa))) * ¦Ñ(h)ds
+	float3 lightInscatter = (scatterR * _ScatteringR + scatterM * _ScatteringM) * _IncomingLight.xyz;
+	float3 lightExtinction = exp(-(densityCP.x * _ExtinctionR + densityCP.y * _ExtinctionM));
+	extinction = float4(lightExtinction, 0);
+	return float4(lightInscatter, 0);
+}
+
+//compute density of the all height and zenith angle situation, so we can store density of all light direction and height  
+float2 PrecomputeParticleDensity(float3 rayStart, float3 rayDir) {
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	float sampleCount = 256;
+	float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
+	//write very high density if intersect planet
+	if (intersection.x > 0) {
+		return 1e+20;
+	}
+	intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius + _AtmosphereHeight);
+	float3 rayEnd = rayStart + rayDir * intersection.y;
+	//compute density along the ray
+	float3 step = (rayEnd - rayStart) / sampleCount;
+	float stepSize = length(step);
+	float2 density = 0;
+	for (float i = 0.5; i < sampleCount; i += 1) {
+		float3 p = rayStart + i * step;
+		//why abs ?  Due to spherical symmetry ?
+		float height = abs(length(p - planetCenter) - _PlanetRadius);
+		float2 localDensity = exp(-height.xx / _DensityScaleHeight);
+		density += localDensity * stepSize;
+	}
+	return density;
+}
+
+//compute the color of sun reachs planet ground
+float4 PrecomputeSunColor(float3 rayStart, float3 rayDir) {
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	float2 localDensity;
+	float2 densityToAtmosphereTop;
+	GetAtmosphereDensity(rayStart, planetCenter, rayDir, localDensity, densityToAtmosphereTop);
+	float4 color;
+	//transmittance from sun to ground object
+	float3 Tr = densityToAtmosphereTop.x * _ExtinctionR;
+	float3 Tm = densityToAtmosphereTop.y * _ExtinctionM;
+	//the absorption of extinction can be ignored
+	float3 extinction = exp(-(Tr + Tm));
+	color.xyz = _IncomingLight.xyz * extinction;
+	color.w = 1;
+	return color;
+}
+
+//compute abment color : ¡Ò2PI (N * ¦Ø) Inscatter(¦Ø), use Monte Carlo method
+float4 PrecomputeAmbient(float3 lightDir) {
+	float startHeight = 0;
+	float3 rayStart = float3(0, startHeight, 0);
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	float sampleCount = 256;
+	float4 color;
+	[loop]
+	for (int i = 0; i < sampleCount; i++) {
+		float3 rayDir = _RandomVectors.SampleLevel(LinearClampSampler, float2((i / sampleCount), 0.5), 0.0).xyz;
+		//in case the random vector is invert
+		rayDir.y = abs(rayDir.y);
+		float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius + _AtmosphereHeight);
+		float rayLength = intersection.y;
+		//ray should be end at the first intersect point if hit the planet
+		intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
+		if (intersection.x >= 0) {
+			rayLength = min(rayLength, intersection.x);
+		}
+		float4 extinction;
+		float4 inscattering = IntergrateInscattering(rayStart, rayDir, rayLength, planetCenter, 1, lightDir, _LightSamples, extinction);
+		//n dot ¦Ø
+		color += inscattering * dot(rayDir, float3(0, 1, 0));
+	}
+	return color * 2 * PI / sampleCount;
+}
 
 [numthreads(8,8,1)]
-void InscatteringLUT(uint3 id : SV_DispatchThreadID)
-{
-    // TODO: insert actual code here!
+void ParticleDensityLUT(uint3 id : SV_DispatchThreadID) {
+	int w, h;
+	_CSParticleDensityLUT.GetDimensions(w, h);
+	float cosAngle01 = (float)id.x / (w - 1);
+	float height01 = (float)id.y / (h - 1);
+	float cosAngle = cosAngle01 * 2.0 - 1.0;
+	float sinAngle = sqrt(saturate(1 - cosAngle * cosAngle));
+	float startHeight = lerp(0.0, _AtmosphereHeight, height01);
+	float3 rayStart = float3(0, startHeight, 0);
+	float3 rayDir = float3(sinAngle, cosAngle, 0);
 
-    _InscatteringLUT[id.xyz] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+	_CSParticleDensityLUT[id.xy] = PrecomputeParticleDensity(rayStart, rayDir);
+}
+
+[numthreads(8, 8, 1)]
+void SunColorLUT(uint3 id : SV_DispatchThreadID) {
+	int w, h;
+	_SunColorLUT.GetDimensions(w, h);
+	float cosAngle01 = (float)id.x / (w - 1);
+	float height01 = (float)id.y / (h - 1);
+	float cosAngle = cosAngle01 * 2.0 - 1.0;
+	float sinAngle = sqrt(saturate(1 - cosAngle * cosAngle));
+	float startHeight = lerp(0.0, _AtmosphereHeight, height01);
+	float3 rayStart = float3(0, startHeight, 0);
+	float3 rayDir = float3(sinAngle, cosAngle, 0);
+
+	_SunColorLUT[id.xy] = PrecomputeSunColor(rayStart, rayDir);
+}
+
+[numthreads(64, 1, 1)]
+void AmbientLUT(uint3 id : SV_DispatchThreadID) {
+	int w, h;
+	_AmbientLUT.GetDimensions(w, h);
+	float cosAngle01 = (float)id.x / (w - 1);
+	float cosAngle = cosAngle01 * 2.0 - 1.0;
+	float sinAngle = sqrt(saturate(1 - cosAngle * cosAngle));
+	float3 lightDir = float3(sinAngle, cosAngle, 0);
+
+	_AmbientLUT[int2(id.x,0)] = PrecomputeAmbient(lightDir);
+}
+
+struct ScatteringOutput {
+	float3 raylie;
+	float3 mie;
+};
+
+ScatteringOutput IntegrateInscattering(float3 rayStart, float3 rayDir, float rayLength, float3 planetCenter, float distanceScale, float3 lightDir, uint sampleCount) {
+	//ray march vector and the Delta s
+	float3 step = rayDir * (rayLength * distanceScale / sampleCount);
+	float stepSize = length(step);
+	//P - current integration point
+	//C - camera position
+	//A - top of the atmosphere
+	float2 densityCP = 0;
+	float3 scatterR = 0;
+	float3 scatterM = 0;
+	float2 densityAtP;
+	float2 densityPA;
+	float2 prevDensityAtP;
+	float3 prevLocalInscatterR;
+	float3 prevLocalInscatterM;
+	GetAtmosphereDensity(rayStart, planetCenter, lightDir, prevDensityAtP, densityPA);
+	ComputeLocalInscattering(prevDensityAtP, densityPA, densityCP, prevLocalInscatterR, prevLocalInscatterM);
+	[loop]
+	for (float i = 1.0; i < sampleCount; i += 1) {
+		float3 p = rayStart + step * i;
+		GetAtmosphereDensity(p, planetCenter, lightDir, densityAtP, densityPA);
+		densityCP += (densityAtP + prevDensityAtP) * stepSize * 0.5;
+		prevDensityAtP = densityAtP;
+		float3 localInscatteringR;
+		float3 localInscatteringM;
+		ComputeLocalInscattering(densityAtP, densityPA, densityCP, localInscatteringR, localInscatteringM);
+		scatterR += (localInscatteringR + prevLocalInscatterR) * stepSize * 0.5;
+		scatterM += (localInscatteringM + prevLocalInscatterM) * stepSize * 0.5;
+		prevLocalInscatterR = localInscatteringR;
+		prevLocalInscatterM = localInscatteringM;
+	}
+	ScatteringOutput output;
+	output.raylie = scatterR;
+	output.mie = scatterM;
+	return output;
+}
+
+void PrecomputeLightScattering(float3 rayStart, float3 rayDir, float rayLength, float3 planetCenter, float distanceScale, float3 lightDir, uint3 coords, uint sampleCount) {
+	//ray march vector and the Delta s
+	float3 step = rayDir * (rayLength * distanceScale / sampleCount);
+	float stepSize = length(step);
+	//P - current integration point
+	//C - camera position
+	//A - top of the atmosphere
+	float2 densityCP = 0;
+	float3 scatterR = 0;
+	float3 scatterM = 0;
+	float2 densityAtP;
+	float2 densityPA;
+	float2 prevDensityAtP;
+	float3 prevLocalInscatterR;
+	float3 prevLocalInscatterM;
+	GetAtmosphereDensity(rayStart, planetCenter, lightDir, prevDensityAtP, densityPA);
+	ComputeLocalInscattering(prevDensityAtP, densityPA, densityCP, prevLocalInscatterR, prevLocalInscatterM);
+	_InscatteringLUT[coords] = float4(0, 0, 0, 1);
+	_ExtinctionLUT[coords] = float4(1, 1, 1, 1);
+	[loop]
+	for (coords.z = 0; coords.z < sampleCount; coords.z++) {
+		float3 p = rayStart + step * coords.z;
+		GetAtmosphereDensity(p, planetCenter, lightDir, densityAtP, densityPA);
+		densityCP += (densityAtP + prevDensityAtP) * stepSize * 0.5;
+		prevDensityAtP = densityAtP;
+		float3 localInscatteringR;
+		float3 localInscatteringM;
+		ComputeLocalInscattering(densityAtP, densityPA, densityCP, localInscatteringR, localInscatteringM);
+		scatterR += (localInscatteringR + prevLocalInscatterR) * stepSize * 0.5;
+		scatterM += (localInscatteringM + prevLocalInscatterM) * stepSize * 0.5;
+		prevLocalInscatterR = localInscatteringR;
+		prevLocalInscatterM = localInscatteringM;
+
+		float3 currentScatterR = scatterR;
+		float3 currentScatterM = scatterM;
+		ApplyPhaseFunction(currentScatterR, currentScatterM, dot(rayDir, -lightDir.xyz));
+		float3 lightInscatter = (currentScatterR * _ScatteringR + currentScatterM * _ScatteringM) * _IncomingLight.xyz;
+		float3 lightExtinction = exp(-(densityCP.x * _ExtinctionR + densityCP.y * _ExtinctionM));
+		_InscatteringLUT[coords] = float4(lightInscatter, 1);
+		_ExtinctionLUT[coords] = float4(lightExtinction, 1);
+	}
+}
+
+[numthreads(8, 8, 8)]
+void AtmosphereSkyLUT(uint3 id : SV_DispatchThreadID) {
+	int w, h, d;
+	_ScatterRaylieLUT.GetDimensions(w, h, d);
+	float3 coords = float3((float)id.x / (w - 1), (float)id.y / (h - 1), (float)id.z / (d - 1));
+	float height = coords.x * coords.x * _AtmosphereHeight;
+	float viewZenithAngle = coords.y;
+	//coords remap
+	float ch = -(sqrt(height * (2 * _PlanetRadius + height)) / (_PlanetRadius + height));
+	if (viewZenithAngle > 0.5) {
+		viewZenithAngle = ch + pow((viewZenithAngle - 0.5) * 2, 5) * (1 - ch);
+	} else {
+		viewZenithAngle = ch - pow(viewZenithAngle * 2, 5) * (1 + ch);
+	}
+	float sunZenithAngle = (tan((2 * coords.z - 1 + 0.26) * 0.75)) / (tan(1.26 * 0.75));
+
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	float3 rayStart = float3(0, height, 0);
+	float3 rayDir = float3(sqrt(saturate(1 - viewZenithAngle * viewZenithAngle)), viewZenithAngle, 0);
+	float3 lightDir = -float3(sqrt(saturate(1 - sunZenithAngle * sunZenithAngle)), sunZenithAngle, 0);
+	float rayLength = 1e20;
+	float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius + _AtmosphereHeight);
+	rayLength = intersection.y;
+	intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
+	if (intersection.x > 0)
+		rayLength = min(rayLength, intersection.x);
+	ScatteringOutput scattering = IntegrateInscattering(rayStart, rayDir, rayLength, planetCenter, 1, lightDir, _LightSamples);
+
+	_ScatterRaylieLUT[id.xyz] = float4(scattering.raylie, 1);
+	_ScatterMieLUT[id.xyz] = float4(scattering.mie, 1);
+}
+
+[numthreads(8, 8, 1)]
+void LightScatteringLUT(uint3 id : SV_DispatchThreadID) {
+	float w, h, d;
+	_InscatteringLUT.GetDimensions(w, h, d);
+	float2 coords = float2(id.x / (w - 1), id.y / (h - 1));
+	//camera screen pos
+	float3 v1 = lerp(_BottomLeftCorner.xyz, _BottomRightCorner.xyz, coords.x);
+	float3 v2 = lerp(_TopLeftCorner.xyz, _TopRightCorner.xyz, coords.x);
+
+	float3 rayEnd = lerp(v1, v2, coords.y);
+	float3 rayStart = _WorldSpaceCameraPos.xyz;
+	float3 rayDir = rayEnd - rayStart;
+	float rayLength = length(rayDir);
+	rayDir /= rayLength;
+
+	float3 planetCenter = float3(0, -_PlanetRadius, 0);
+	PrecomputeLightScattering(rayStart, rayDir, rayLength, planetCenter, 1, normalize(_MainLightPosition.xyz), id, d);
 }

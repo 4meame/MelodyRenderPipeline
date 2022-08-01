@@ -25,6 +25,14 @@ TEXTURE2D(_ParticleDensityLUT);
 SAMPLER(sampler_ParticleDensityLUT);
 TEXTURE2D(_RandomVectors);
 SAMPLER(sampler_RandomVectors);
+TEXTURE3D(_ScatterRaylieLUT);
+SAMPLER(sampler_ScatterRaylieLUT);
+TEXTURE3D(_ScatterMieLUT);
+SAMPLER(sampler_ScatterMieLUT);
+TEXTURE3D(_InscatteringLUT);
+SAMPLER(sample_InscatteringLUT);
+TEXTURE3D(_ExtinctionLUT);
+SAMPLER(sampler_ExtinctionLUT);
 
 //d1 is if d < 0, ray hit the sphere in the opposite direction
 float2 RaySphereIntersection(float3 rayOrigin, float3 rayDir, float3 sphereCenter, float sphereRadius) {
