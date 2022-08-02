@@ -44,7 +44,7 @@
 #if defined(_ATMOSPHERE_PRECOMPUTE)
                 float4 scatterR = 0;
                 float4 scatterM = 0;
-                float height = length(rayStart - planetCenter) - _PlanetRadius;
+                float height = max(0, length(rayStart - planetCenter) - _PlanetRadius);
                 float3 normal = normalize(rayStart - planetCenter);
                 float viewZenith = dot(normal, rayDirection);
                 float sunZenith = dot(normal, -lightDirection);
