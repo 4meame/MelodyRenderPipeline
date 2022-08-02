@@ -320,7 +320,7 @@ void PrecomputeLightScattering(float3 rayStart, float3 rayDir, float rayLength, 
 
 		float3 currentScatterR = scatterR;
 		float3 currentScatterM = scatterM;
-		ApplyPhaseFunction(currentScatterR, currentScatterM, dot(rayDir, -lightDir.xyz));
+		ApplyPhaseFunction(currentScatterR, currentScatterM, dot(rayDir, lightDir.xyz));
 		float3 lightInscatter = (currentScatterR * _ScatteringR + currentScatterM * _ScatteringM) * _IncomingLight.xyz;
 		float3 lightExtinction = exp(-(densityCP.x * _ExtinctionR + densityCP.y * _ExtinctionM));
 		_InscatteringLUT[coords] = float4(lightInscatter, 1);
