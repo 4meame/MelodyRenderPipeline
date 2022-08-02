@@ -352,7 +352,7 @@ void AtmosphereSkyLUT(uint3 id : SV_DispatchThreadID) {
 	float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius + _AtmosphereHeight);
 	rayLength = intersection.y;
 	intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
-	if (intersection.x > 0)
+	if (intersection.x >= 0)
 		rayLength = min(rayLength, intersection.x);
 	ScatteringOutput scattering = IntegrateInscattering(rayStart, rayDir, rayLength, planetCenter, 1, lightDir, _LightSamples);
 
@@ -376,5 +376,5 @@ void LightScatteringLUT(uint3 id : SV_DispatchThreadID) {
 	rayDir /= rayLength;
 
 	float3 planetCenter = float3(0, -_PlanetRadius, 0);
-	PrecomputeLightScattering(rayStart, rayDir, rayLength, planetCenter, 1, normalize(_MainLightPosition.xyz), id, d);
+	PrecomputeLightScattering(rayStart, rayDir, rayLength, planetCenter, _DistanceScale, normalize(_MainLightPosition.xyz), id, d);
 }

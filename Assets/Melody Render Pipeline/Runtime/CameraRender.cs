@@ -119,7 +119,7 @@ public partial class CameraRender
         var renderCloud = cloudSettings.enabled && cameraSettings.allowCloud;
         #endregion
         #region Atmosphere Scattering
-        var atmosScatter = atmosphereSettings.updateEveryFrame && cameraSettings.updateAtmosScatter;
+        var atmosScatter = cameraSettings.allowAtmosFog;
         #endregion
         #region SSPR
         cameraBufferSettings.sspr.enabled = cameraBufferSettings.sspr.enabled && cameraSettings.allowSSPR;
@@ -158,10 +158,8 @@ public partial class CameraRender
         cloud.Setup(context, camera, cloudSettings, useHDR);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
-        if (atmosScatter) {
-            atmosphere.PrecomputeAll();
-            atmosphere.UpdateAll();
-        }
+        atmosphere.PrecomputeAll();
+        atmosphere.UpdateAll();
         Setup();
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();
@@ -181,6 +179,9 @@ public partial class CameraRender
             }
         }
         #endregion
+        if (atmosScatter) {
+            atmosphere.RenderFog(colorAttachmentId);
+        }
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         if (postFXStack.IsActive) {

@@ -22,7 +22,7 @@ public class CameraSettings {
     public bool allowSSPR = false;
 	public bool allowSSR = false;
 	public bool allowCloud = true;
-	public bool updateAtmosScatter = true;
+	public bool allowAtmosFog = true;
 	public RenderScaleMode renderScaleMode = RenderScaleMode.Inherit;
 	[Range(0.1f, 2f)]
 	public float renderScale = 1f;

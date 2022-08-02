@@ -8,9 +8,15 @@ public class AtmosphereScatteringSettings : ScriptableObject {
         Common,
         Precompute
     }
+    public enum DebugMode {
+        None,
+        Inscattering,
+        Extinction
+    }
     public bool updateEveryFrame;
     public ComputeShader computeShader;
     public Mode mode = Mode.Common;
+    public DebugMode debugMode = DebugMode.None;
     [Header("Planet Settings")]
     public float planetRadius = 6371000.0f;
     public float atmosphereHeight = 80000.0f;

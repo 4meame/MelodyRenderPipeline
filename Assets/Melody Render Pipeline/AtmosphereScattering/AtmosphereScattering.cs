@@ -8,7 +8,8 @@ public class AtmosphereScattering {
     enum Pass {
         PrecomputeDensity,
         PrecomputeSunColor,
-        PrecomputeAmbient
+        PrecomputeAmbient,
+        AerialPerspective
     }
     const string bufferName = "AtmosphereScattering";
     CommandBuffer buffer = new CommandBuffer {
@@ -33,6 +34,7 @@ public class AtmosphereScattering {
     Texture2D abmeintTexture;
     Texture2D randomVectorsLUT;
     Vector4[] frustumCorners = new Vector4[4];
+    bool precomputeCompleted = false;
 
     int particleDensityLUTId = Shader.PropertyToID("_ParticleDensityLUT");
     int scatterRaylieLUTId = Shader.PropertyToID("_ScatterRaylieLUT");
@@ -80,6 +82,17 @@ public class AtmosphereScattering {
         else{
             buffer.DisableShaderKeyword("_ATMOSPHERE_PRECOMPUTE");
         }
+
+        if (settings.debugMode == DebugMode.None) {
+            buffer.DisableShaderKeyword("_DEBUG_EXTINCTION");
+            buffer.DisableShaderKeyword("_DEBUG_INSCATTERING");
+        }
+        else if (settings.debugMode == DebugMode.Extinction) {
+            buffer.EnableShaderKeyword("_DEBUG_EXTINCTION");
+        }
+        else if (settings.debugMode == DebugMode.Inscattering) {
+            buffer.EnableShaderKeyword("_DEBUG_INSCATTERING");
+        }
     }
 
     void UpdateShaderParameters() {
@@ -102,14 +115,20 @@ public class AtmosphereScattering {
     }
 
     public void PrecomputeAll() {
-        if (settings.updateEveryFrame) {
-            UpdateShaderParameters();
+        UpdateShaderParameters();
+        if (!precomputeCompleted) {
             PrecomputeParticleDensity();
             PrecomputeAtmosphereSky();
+            PrecomputeLightScattering();
             PrecomputeSunColor();
             InitRandomVectors();
             PrecomputeAmbient();
             ExecuteBuffer();
+            precomputeCompleted = true;
+        }
+        if (settings.mode == Mode.Precompute) {
+            //light Scattering ONLY in precompute mode should be calculate every frame, while common mode DO NOT need this
+            PrecomputeLightScattering();
         }
     }
 
@@ -120,8 +139,17 @@ public class AtmosphereScattering {
         }
     }
 
+    public void RenderFog(int sourceId) {
+        Matrix4x4 projection = camera.projectionMatrix;
+        buffer.SetGlobalMatrix("_InvProj", projection.inverse);
+        buffer.SetGlobalMatrix("_InvRot", camera.cameraToWorldMatrix);
+        buffer.SetRenderTarget(sourceId);
+        buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.AerialPerspective, MeshTopology.Triangles, 3);
+        ExecuteBuffer();
+    }
+
     public void CleanUp() {
-        
+
     }
 
     void InitRandomVectors() {
@@ -234,6 +262,38 @@ public class AtmosphereScattering {
             buffer.DispatchCompute(cs, index, scatterRaylieLUT.width / 8, scatterRaylieLUT.height / 8, scatterRaylieLUT.volumeDepth / 8);
             buffer.SetGlobalTexture(scatterRaylieLUTId, scatterRaylieLUT);
             buffer.SetGlobalTexture(scatterMieLUTId, scatterMieLUT);
+        }
+    }
+
+    void PrecomputeLightScattering() {
+        if (settings.mode == Mode.Precompute) {
+            if (inscatteringLUT == null) {
+                inscatteringLUT = new RenderTexture((int)settings.inscatterExtinctionLUTSize.x, (int)settings.inscatterExtinctionLUTSize.y, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+                inscatteringLUT.volumeDepth = (int)settings.inscatterExtinctionLUTSize.z;
+                inscatteringLUT.name = "Inscatteringe LUT";
+                //do not miss texture dimension
+                inscatteringLUT.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
+                //computer sahder need RT with enableRandomWrite
+                inscatteringLUT.enableRandomWrite = true;
+                inscatteringLUT.Create();
+            }
+            if (extinctionLUT == null) {
+                extinctionLUT = new RenderTexture((int)settings.inscatterExtinctionLUTSize.x, (int)settings.inscatterExtinctionLUTSize.y, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+                extinctionLUT.volumeDepth = (int)settings.inscatterExtinctionLUTSize.z;
+                extinctionLUT.name = "Extinction LUT";
+                //do not miss texture dimension
+                extinctionLUT.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;
+                //computer sahder need RT with enableRandomWrite
+                extinctionLUT.enableRandomWrite = true;
+                extinctionLUT.Create();
+            }
+            int index = cs.FindKernel("LightScatteringLUT");
+            buffer.SetComputeTextureParam(cs, index, inscatteringLUTId, inscatteringLUT);
+            buffer.SetComputeTextureParam(cs, index, extinctionLUTId, extinctionLUT);
+            buffer.SetRenderTarget(inscatteringLUT);
+            buffer.DispatchCompute(cs, index, inscatteringLUT.width / 8, inscatteringLUT.height / 8, 1);
+            buffer.SetGlobalTexture(inscatteringLUTId, inscatteringLUT);
+            buffer.SetGlobalTexture(extinctionLUTId, extinctionLUT);
         }
     }
 

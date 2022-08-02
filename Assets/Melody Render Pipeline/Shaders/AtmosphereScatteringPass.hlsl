@@ -30,7 +30,7 @@ SAMPLER(sampler_ScatterRaylieLUT);
 TEXTURE3D(_ScatterMieLUT);
 SAMPLER(sampler_ScatterMieLUT);
 TEXTURE3D(_InscatteringLUT);
-SAMPLER(sample_InscatteringLUT);
+SAMPLER(sampler_InscatteringLUT);
 TEXTURE3D(_ExtinctionLUT);
 SAMPLER(sampler_ExtinctionLUT);
 
