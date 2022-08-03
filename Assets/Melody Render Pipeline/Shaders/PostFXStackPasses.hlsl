@@ -36,17 +36,26 @@ float4 _SMHHighlights;
 float4 _SMHRange;
 float4 _ColorGradingLUTParams;
 bool _ColorGradingLUTInLogC;
-//use bicubic resccling
+//use resccling
+bool _CopyPoint;
 bool _CopyBicubic;
 
 float4 GetSource(float2 screenUV) {
 	//buffer would never have mip maps
-	return SAMPLE_TEXTURE2D_LOD(_PostFXSource, sampler_PostFXSource, screenUV, 0);
+	if (_CopyPoint) {
+		return SAMPLE_TEXTURE2D_LOD(_PostFXSource, sampler_point_clamp, screenUV, 0);
+	}else {
+		return SAMPLE_TEXTURE2D_LOD(_PostFXSource, sampler_PostFXSource, screenUV, 0);
+	}
 }
 
 float4 GetSource2(float2 screenUV) {
 	//buffer would never have mip maps
-	return SAMPLE_TEXTURE2D_LOD(_PostFXSource2, sampler_PostFXSource2, screenUV, 0);
+	if (_CopyPoint) {
+		return SAMPLE_TEXTURE2D_LOD(_PostFXSource2, sampler_point_clamp, screenUV, 0);
+	} else {
+		return SAMPLE_TEXTURE2D_LOD(_PostFXSource2, sampler_PostFXSource2, screenUV, 0);
+	}
 }
 
 float4 GetColor(float2 screenUV) {
@@ -83,6 +92,11 @@ float4 GetSourceTexelSize() {
 //avoid blocky glow result by the bilinear filtering
 float4 GetSourceBicubic(float2 screenUV) {
 	return SampleTexture2DBicubic(TEXTURE2D_ARGS(_PostFXSource, sampler_PostFXSource), screenUV, _PostFXSource_TexelSize.zwxy, 1.0, 0.0);
+}
+
+//get pixel-like result by point sampler
+float4 GetSourcePoint(float2 screenUV) {
+	return SAMPLE_TEXTURE2D_LOD(_PostFXSource, sampler_point_clamp, screenUV, 0);
 }
 
 float3 ApplyBloomThreshold(float3 color) {

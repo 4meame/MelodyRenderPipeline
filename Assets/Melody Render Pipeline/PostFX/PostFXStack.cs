@@ -77,8 +77,9 @@ public class PostFXStack {
     #endregion
     #region Rander Scale
     Vector2Int bufferSize;
-    CameraBufferSettings.BicubicRescalingMode bicubicRescaling;
+    CameraBufferSettings.RescalingMode rescalingMode;
     int finalResultId = Shader.PropertyToID("_FinalResult"),
+        copyPointId = Shader.PropertyToID("_CopyPoint"),
         copyBicubicId = Shader.PropertyToID("_CopyBicubic");
     #endregion
     #region FXAA
@@ -110,7 +111,7 @@ public class PostFXStack {
     int lightShaftsExposure = Shader.PropertyToID("_ShaftsExposure");
     int bloomTintAndThreshold = Shader.PropertyToID("_BloomTintAndThreshold");
     #endregion
-    public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.BicubicRescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
+    public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.RescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
         this.camera = camera;
         this.lighting = lighting;
@@ -121,7 +122,7 @@ public class PostFXStack {
         this.useHDR = useHDR;
         this.colorLUTResolution = colorLUTResolution;
         this.finalBlendMode = finalBlendMode;
-        this.bicubicRescaling = bicubicRescaling;
+        this.rescalingMode = bicubicRescaling;
         this.fxaa = fxaa;
         this.keepAlpha = keepAlhpa;
     }
@@ -423,8 +424,9 @@ public class PostFXStack {
                 //get a original buffer size intermediate RT
                 Draw(sourceId, finalResultId, Pass.FinalColorGrading);
             }
-            bool bicubicSampling = bicubicRescaling == CameraBufferSettings.BicubicRescalingMode.UpAndDown ||
-                                   bicubicRescaling == CameraBufferSettings.BicubicRescalingMode.UpOnly && bufferSize.x < camera.pixelWidth;
+            bool pointSampling = rescalingMode == CameraBufferSettings.RescalingMode.Point;
+            bool bicubicSampling = rescalingMode == CameraBufferSettings.RescalingMode.Bicubic;
+            buffer.SetGlobalFloat(copyPointId, pointSampling ? 1f : 0f);
             buffer.SetGlobalFloat(copyBicubicId, bicubicSampling ? 1f : 0f);
             DrawFinal(finalResultId, Pass.Rescale);
             buffer.ReleaseTemporaryRT(finalResultId);

@@ -12,8 +12,8 @@ public struct CameraBufferSettings {
     public bool usePostGeometryColor;
 	[Range(0.1f, 2f)]
 	public float renderScale;
-	public enum BicubicRescalingMode { Off, UpOnly, UpAndDown }
-	public BicubicRescalingMode bicubicRescaling;
+	public enum RescalingMode { Linear, Point, Bicubic }
+	public RescalingMode rescalingMode;
 	[Serializable]
 	public struct FXAA {
 		public bool enabled;

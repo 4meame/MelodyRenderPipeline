@@ -157,7 +157,7 @@ public partial class CameraRender
         ssr.Setup(context, camera, cullingResults, cameraBufferSettings.ssr, useHDR, useDynamicBatching, useInstancing, useLightsPerObject);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
-        postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
+        postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
         atmosphere.UpdateAll();
