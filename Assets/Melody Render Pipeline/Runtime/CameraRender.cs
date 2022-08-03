@@ -38,6 +38,7 @@ public partial class CameraRender
     bool useColorTexture;
     bool useDepthNormalTexture;
     bool useIntermediateBuffer;
+    bool usePostGeometryColorTexture;
 
     #region Utility Params
     static int timeSinceLevelLoad = Shader.PropertyToID("_Time");
@@ -97,7 +98,7 @@ public partial class CameraRender
             useColorTexture = cameraBufferSettings.copyColor && cameraSettings.copyColor;
         }
         useDepthNormalTexture = cameraBufferSettings.useDepthNormal;
-
+        usePostGeometryColorTexture = cameraBufferSettings.usePostGeometryColor;
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
 
         #region Render Scale
@@ -314,6 +315,9 @@ public partial class CameraRender
         }
         if (useDepthNormalTexture) {
             buffer.ReleaseTemporaryRT(depthNormalTextureId);
+        }
+        if (usePostGeometryColorTexture) {
+            buffer.ReleaseTemporaryRT(postColorTextureId);
         }
         sspr.CleanUp();
         ssr.CleanUp();
