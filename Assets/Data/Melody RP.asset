@@ -43,7 +43,7 @@ MonoBehaviour:
     useDepthNormal: 1
     usePostGeometryColor: 1
     renderScale: 1
-    bicubicRescaling: 1
+    rescalingMode: 2
     fxaa:
       enabled: 1
       fixedThreshold: 0.0359
@@ -74,6 +74,14 @@ MonoBehaviour:
       screenEdgeFade: 0.598
       eyeFadeStart: 0.131
       eyeFadeEnd: 0.606
+    ssao:
+      enabled: 1
+      computeShader: {fileID: 7200000, guid: 292fa2e92df0b4640a68ab2c61571f6e, type: 3}
+      sampleCount: 10
+      radius: 0.5
+      bias: 0
+      magnitude: 1
+      constrast: 1
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}

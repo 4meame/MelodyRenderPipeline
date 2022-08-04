@@ -14,6 +14,7 @@ public struct CameraBufferSettings {
 	public float renderScale;
 	public enum RescalingMode { Linear, Point, Bicubic }
 	public RescalingMode rescalingMode;
+
 	[Serializable]
 	public struct FXAA {
 		public bool enabled;
@@ -40,6 +41,7 @@ public struct CameraBufferSettings {
 		public Quality quality;
 	}
 	public FXAA fxaa;
+
     [Serializable]
     public struct SSPR {
         public enum TextureSize {
@@ -69,6 +71,7 @@ public struct CameraBufferSettings {
         public Color TintColor;
     }
     public SSPR sspr;
+
     [Serializable]
     public struct SSR
     {
@@ -95,4 +98,17 @@ public struct CameraBufferSettings {
         public float eyeFadeEnd;
     }
     public SSR ssr;
+
+    [Serializable]
+    public struct SSAO
+    {
+        public bool enabled;
+        public ComputeShader computeShader;
+        public int sampleCount;
+        public float radius;
+        public float bias;
+        public float magnitude;
+        public float constrast;
+    }
+    public SSAO ssao;
 }

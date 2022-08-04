@@ -19,6 +19,7 @@ public partial class CameraRender
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
     VolumetricCloud cloud = new VolumetricCloud();
+    ScreenSpaceAmbientOcclusion ssao = new ScreenSpaceAmbientOcclusion();
     SSPlanarReflection sspr = new SSPlanarReflection();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
     PostFXStack postFXStack = new PostFXStack();
@@ -153,6 +154,7 @@ public partial class CameraRender
         ExecuteBuffer();
         DrawDepthNormal(useDepthNormalTexture);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
+        ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         ssr.Setup(context, camera, cullingResults, cameraBufferSettings.ssr, useHDR, useDynamicBatching, useInstancing, useLightsPerObject);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
@@ -183,6 +185,7 @@ public partial class CameraRender
         if (atmosScatter) {
             atmosphere.RenderFog(colorAttachmentId);
         }
+        ssao.Render(colorAttachmentId);
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         if (postFXStack.IsActive) {
