@@ -121,6 +121,7 @@ float3 UVToCameraRay(float2 uv) {
 	float4 cameraRay = float4(uv * 2.0 - 1.0, 1.0, 1.0);
 	cameraRay = mul(_InverseProjection, cameraRay);
 	cameraRay = cameraRay / cameraRay.w;
+	//view space to world space
 	return mul((float3x3)_InverseRotation, cameraRay.xyz);
 }
 

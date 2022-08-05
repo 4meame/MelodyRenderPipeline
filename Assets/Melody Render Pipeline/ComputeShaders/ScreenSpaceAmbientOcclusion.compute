@@ -2,6 +2,8 @@
 #pragma kernel SSAOResolve
 
 RWTexture2D<float3> AmbientOcclusionRT;
+float4x4 _CameraProjection;
+float4x4 _CameraInverseProjection;
 
 int sampleCount;
 float radius;
@@ -9,31 +11,46 @@ float bias;
 float magnitude;
 float contrast;
 
-float3 ConvertScreenIDToPosWS(uint2 id) {
-	//input id is compute function's input SV_DispatchThreadID
-	 //[0,RTSize-1] -> screen [0,1] uv
-	float2 screenUV = float2(id.xy / _CameraBufferSize.zw);
-	//get rawDepth(posCS.z) in _CameraDepthTexture
-	float inputPixelRawDepth = _CameraDepthTexture.SampleLevel(sampler_point_clamp, screenUV, 0);
-	//reconstruct ndc using screen [0,1] uv & rawDepth
-	float4 ndc = float4(screenUV * 2.0 - 1.0, inputPixelRawDepth, 1.0);
-	float4 posHWS = mul(_InvViewProjMatrix, ndc); //ndc -> posHWS
-	float3 posWS = posHWS.xyz / posHWS.w; //posHWS -> posWS
-	return posWS;
+float nrand(float2 uv, float dx, float dy) {
+    uv += float2(dx, dy + _Time.x);
+    return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+float3 spherical_kernel(float2 uv, float index) {
+    //nniformaly distributed points
+    //http://mathworld.wolfram.com/SpherePointPicking.html
+    float u = nrand(uv, 0, index) * 2 - 1;
+    float theta = nrand(uv, 1, index) * PI * 2;
+    float u2 = sqrt(1 - u * u);
+    float3 v = float3(u2 * cos(theta), u2 * sin(theta), u);
+    //adjustment for distance distribution.
+    float l = index / sampleCount;
+    return v * lerp(0.1, 1.0, l * l);
 }
 
 [numthreads(8,8,1)]
 void SSAOResolve(uint3 id : SV_DispatchThreadID) {
-	float2 screenUV = float2(id.xy / _CameraBufferSize.zw);
-//------------------------sample common buffers------------------------//
-	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
-	//depth of the DepthNormal is not realiabe, maybe sample Depth Texture instead
-	float4 depthTexture = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0);
-//------------------------calulate buffer informations(view space)------------------------//
-	float3 bufferNormal = DecodeViewNormalStereo(depthNormalTexture);
-	//float bufferDepth = DecodeFloatRG(depthNormalTexture.zw);
-	float bufferDepth = depthTexture.r;
-	float3 bufferPosition = ConvertScreenIDToPosWS(id.xy);
-
-    AmbientOcclusionRT[id.xy] = bufferPosition;
+    //[0,_CameraBufferSize-1] -> screen [0,1] uv
+    float2 screenUV = id.xy / _CameraBufferSize.zw;
+    //calculate camera to far plane ray in the screen
+    float4 cameraRay = float4(screenUV * 2.0 - 1.0, 1.0, 1.0);
+    cameraRay = mul(_CameraInverseProjection, cameraRay);
+    cameraRay.xyz = cameraRay.xyz / cameraRay.w;
+    float rawDepth = _CameraDepthTexture.SampleLevel(sampler_point_clamp, screenUV, 0);
+    float linear01Depth = Linear01Depth(rawDepth, _ZBufferParams);
+    //far camera ray multi 01Depth get view space position
+    float3 positionVS = cameraRay.xyz * linear01Depth;
+    float occlusion = 0.0;
+    for (int i = 0; i < sampleCount; i++) {
+        float3 randomPointInsideSphere = spherical_kernel(screenUV, i);
+        float3 aoTestPositionVS = positionVS + randomPointInsideSphere * radius;
+        //get ao test position uv, from view space to clip space
+        float3 aoTestPositionCS = mul(_CameraProjection, aoTestPositionVS);
+        float2 aoTestUV = (aoTestPositionCS.xy / aoTestPositionCS.z + 1) * 0.5;
+        float aoTestDepth = LinearEyeDepth(_CameraDepthTexture.SampleLevel(sampler_point_clamp, aoTestUV, 0), _ZBufferParams);
+        //occlusion test
+        occlusion += (aoTestDepth < aoTestPositionVS.z);
+    }
+    occlusion /= sampleCount;
+    AmbientOcclusionRT[id.xy] = occlusion.xxx;
 }

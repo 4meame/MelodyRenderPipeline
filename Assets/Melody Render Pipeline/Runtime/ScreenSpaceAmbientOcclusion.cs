@@ -47,6 +47,9 @@ public class ScreenSpaceAmbientOcclusion {
             buffer.SetComputeFloatParam(cs, "bias", settings.bias);
             buffer.SetComputeFloatParam(cs, "magnitude", settings.magnitude);
             buffer.SetComputeFloatParam(cs, "constrast", settings.constrast);
+            Matrix4x4 projection = camera.projectionMatrix;
+            buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
+            buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
             int kernel_SSAOResolve = cs.FindKernel("SSAOResolve");
             buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ssaoResultId);
             buffer.DispatchCompute(cs, kernel_SSAOResolve, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
@@ -59,6 +62,8 @@ public class ScreenSpaceAmbientOcclusion {
         buffer.ReleaseTemporaryRT(ssaoResultId);
         ExecuteBuffer();
     }
+
+
 
     void ExecuteBuffer() {
         context.ExecuteCommandBuffer(buffer);

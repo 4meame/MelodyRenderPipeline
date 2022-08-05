@@ -171,6 +171,7 @@ void SSRResolve(uint3 id : SV_DispatchThreadID)
 	float3 bufferNormal = DecodeViewNormalStereo(depthNormalTexture);
 	//float bufferDepth = DecodeFloatRG(depthNormalTexture.zw);
 	float bufferDepth = depthTexture.r;
+	//Linear01Depth get [0,1] depth, LinearEyeDepth get [near, far] depth
 	float linearDepth = Linear01Depth(bufferDepth, _ZBufferParams);
 	float3 bufferPosition = cameraRay.xyz * linearDepth;
 //------------------------prepare for ray tracing------------------------//

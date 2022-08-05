@@ -32,6 +32,7 @@ CBUFFER_END
 	float4x4 unity_MatrixV;
 	float4x4 unity_MatrixVP;
 	float4x4 glstate_matrix_projection;
+	float4x4 unity_CameraProjection;
 	float3 _WorldSpaceCameraPos;
 	//manual flip the post fx buffer texture, cause some graphics APIs have the texture V coordinate start at the top while others have it start at the bottom
 	float4 _ProjectionParams;

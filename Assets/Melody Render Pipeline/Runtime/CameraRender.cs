@@ -325,6 +325,7 @@ public partial class CameraRender
         sspr.CleanUp();
         ssr.CleanUp();
         cloud.CleanUp();
+        ssao.CleanUp();
     }
 
     //draw depth use "Copy Depth" pass(1)
