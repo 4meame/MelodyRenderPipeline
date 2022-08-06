@@ -20,7 +20,7 @@ MonoBehaviour:
   atmosphereHeight: 80000
   groundHeight: 1000
   densityScaleHeight: {x: 7944, y: 1200}
-  rayleighCoefficients: {x: 5.5, y: 14.08, z: 22.4}
+  rayleighCoefficients: {x: 5.5, y: 14.08, z: 34}
   mieCoefficients: {x: 21, y: 21, z: 21}
   mieG: 0.625
   incomingLight: {r: 3.9533494, g: 3.9533494, b: 3.9533494, a: 4}
@@ -29,7 +29,7 @@ MonoBehaviour:
   distanceScale: 20
   rayleighInscatterScale: 2.2
   rayleighExtinctionScale: 0.94
-  mieInscatterScale: 0.87
+  mieInscatterScale: 1.16
   mieExtinctionScale: 1
   particleDensityLUTSize: 1024
   sunColorLUTSize: 256

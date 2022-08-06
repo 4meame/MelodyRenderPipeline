@@ -35,7 +35,7 @@ MonoBehaviour:
     Tint: 0
   splitToning:
     shadows: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    highlights: {r: 0.75, g: 0.75, b: 0.75, a: 1}
+    highlights: {r: 0.745, g: 0.8203409, b: 1, a: 1}
     balance: -2.6
   channelMixer:
     red: {x: 1, y: 0, z: 0}

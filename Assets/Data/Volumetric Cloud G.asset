@@ -119,9 +119,9 @@ MonoBehaviour:
   erosionEdgeSize: 0.459
   cloudDistortion: 0.114
   cloudDistortionScale: 0.43
-  cloudBaseColor: {r: 0.20561604, g: 0.52960604, b: 0.72400004, a: 1}
+  cloudBaseColor: {r: 0.33445096, g: 0.46265563, b: 0.7254902, a: 1}
   cloudTopColor: {r: 1, g: 1, b: 1, a: 1}
-  sunScale: 0.92
+  sunScale: 2.51
   ambientScale: 0.57
   sunRayLength: 0.188
   coneRadius: 0.532
