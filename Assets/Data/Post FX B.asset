@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27b41432c03b3234aaef4f47937520f9, type: 3}
+  m_Name: Post FX B
+  m_EditorClassIdentifier: 
+  shader: {fileID: 4800000, guid: 94b6d1a1245ff2142b12e2b3962e91b9, type: 3}
+  bloom:
+    maxIterations: 5
+    downscaleLimit: 10
+    bicubicUpsampling: 1
+    threshold: 1.51
+    thresholdKnee: 0.102
+    fadeFireflies: 1
+    mode: 0
+    intensity: 1
+    scatter: 0.497
+    ignoreRenderScale: 1
+  colorAdjustment:
+    postExposure: -0.07
+    constrat: 0
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    hueShift: 0
+    saturation: 17.2
+  whiteBalance:
+    Temperature: 0
+    Tint: 0
+  splitToning:
+    shadows: {r: 0.5, g: 0.5, b: 0.5, a: 0}
+    highlights: {r: 0.75, g: 0.75, b: 0.75, a: 1}
+    balance: -2.6
+  channelMixer:
+    red: {x: 1, y: 0, z: 0}
+    green: {x: 0, y: 1, z: 0}
+    blue: {x: 0, y: 0, z: 1}
+  shadowMidtonesHighlights:
+    shadows: {r: 1, g: 1, b: 1, a: 1}
+    midtones: {r: 1, g: 1, b: 1, a: 1}
+    highlights: {r: 1, g: 1, b: 1, a: 1}
+    shadowsStart: 0
+    shadowsEnd: 0
+    highlightsStart: 0
+    highlightsEnd: 0
+  toneMapping:
+    mode: 3
+  outlineSetting:
+    enable: 0
+    color: {r: 0, g: 0, b: 0, a: 1}
+    outlineScale: 2
+    ColorThreshold: 0
+    depthThreshold: 0
+    normalThreshold: 0
+    depthNormalThreshold: 0
+    depthNormalThresholdScale: 0
+  lightShaftsSetting:
+    mode: 1
+    enable: 1
+    Downsample: 4
+    lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
+    radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}
+    density: 0.983
+    weight: 0.735
+    decay: 0.949
+    exposure: 1.045
+    bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}

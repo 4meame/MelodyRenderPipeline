@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 27b41432c03b3234aaef4f47937520f9, type: 3}
-  m_Name: Post FX
+  m_Name: Post FX A
   m_EditorClassIdentifier: 
   shader: {fileID: 4800000, guid: 94b6d1a1245ff2142b12e2b3962e91b9, type: 3}
   bloom:
