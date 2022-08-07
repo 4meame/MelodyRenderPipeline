@@ -18,7 +18,8 @@ public class MeshGenerator : MonoBehaviour {
     Mesh mesh;
     Vector3[] vertices, normals;
     Vector4[] tangents;
-    void OnEnable() {
+
+    void Update() {
         switch (type) {
             case Type.Quad:
                 GenerateQuad();
@@ -27,7 +28,7 @@ public class MeshGenerator : MonoBehaviour {
                 GeneratePlane(resolution);
                 break;
             case Type.UVSphere:
-
+                GenerateUVSphere(resolution);
                 break;
             case Type.Cubesphere:
 
@@ -39,9 +40,6 @@ public class MeshGenerator : MonoBehaviour {
 
                 break;
         }
-    }
-
-    void Update() {
         vertices = mesh.vertices;
         normals = mesh.normals;
         tangents = mesh.tangents;
@@ -99,6 +97,16 @@ public class MeshGenerator : MonoBehaviour {
         mesh.RecalculateBounds();
         mesh.uv = meshData.uv0;
         GetComponent<MeshFilter>().mesh = mesh;
+    }
+
+    void GenerateUVSphere(int resolution) {
+        mesh = new Mesh {
+            name = "Procedural UV Sphere"
+        };
+        int latitude = resolution;
+        int longitude = resolution;
+        int radius = 1;
+
     }
 
     void OnDrawGizmos() {
