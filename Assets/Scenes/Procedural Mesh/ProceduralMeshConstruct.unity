@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.32265374, g: 0.4278084, b: 0.48802584, a: 0}
+  m_AmbientSkyColor: {r: 0.3810844, g: 0.5192567, b: 0.66657513, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -155,7 +155,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3b6187993e42c04a93b5b49007e8f85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
+  type: 1
+  resolution: 4
 --- !u!23 &745105121
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -212,13 +213,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 745105119}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 151.35, y: 1014.1502, z: -48.92499}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!1 &817985703
 GameObject:
   m_ObjectHideFlags: 0
@@ -247,8 +248,8 @@ Light:
   serializedVersion: 10
   m_Type: 1
   m_Shape: 0
-  m_Color: {r: 0.59763885, g: 0.57670027, b: 0.5569961, a: 1}
-  m_Intensity: 3.033173
+  m_Color: {r: 0.60424703, g: 0.5845636, b: 0.54145265, a: 1}
+  m_Intensity: 3.0086222
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -293,7 +294,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 4.5905e-41, y: 0, z: 0, w: 1.28e-43}
+  m_BoundingSphereOverride: {x: 5.7e-43, y: NaN, z: 0, w: 0.0000000062949645}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -364,7 +365,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.03
-  far clip plane: 100000
+  far clip plane: 300000
   field of view: 60
   orthographic: 0
   orthographic size: 5
