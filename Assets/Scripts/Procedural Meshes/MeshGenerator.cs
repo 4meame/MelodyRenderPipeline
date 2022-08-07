@@ -13,6 +13,7 @@ public class MeshGenerator : MonoBehaviour {
         Icosphere
     }
     public Type type;
+    [Range(0,255)]
     public int resolution;
     public bool showGizmo;
     Mesh mesh;
