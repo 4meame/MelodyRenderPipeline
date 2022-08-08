@@ -2,7 +2,6 @@
 #pragma kernel SSAOResolve
 
 RWTexture2D<float3> AmbientOcclusionRT;
-Texture2D<float3> _RandomVectors;
 float4x4 _CameraProjection;
 float4x4 _CameraInverseProjection;
 
@@ -26,9 +25,8 @@ void SSAOResolve(uint3 id : SV_DispatchThreadID) {
     float3 positionVS = cameraRay.xyz * linear01Depth;
     float occlusion = 0.0;
     for (int i = 0; i < sampleCount; i++) {
-        float3 samplePosition = _RandomVectors.SampleLevel(sampler_linear_clamp, float2((i / sampleCount), 0.5), 0.0).xyz;
+
 
     }
-    occlusion /= sampleCount;
     AmbientOcclusionRT[id.xy] = positionVS;
 }
