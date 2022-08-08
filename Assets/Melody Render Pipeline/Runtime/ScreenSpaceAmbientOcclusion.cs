@@ -15,6 +15,7 @@ public class ScreenSpaceAmbientOcclusion {
     Vector2Int bufferSize;
     ComputeShader cs;
 
+    Texture2D randomVectors;
     int ssaoResultId = Shader.PropertyToID("AmbientOcclusionRT");
 
     public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.SSAO settings) {
@@ -30,6 +31,8 @@ public class ScreenSpaceAmbientOcclusion {
         descriptor.sRGB = false;
         descriptor.enableRandomWrite = true;
         buffer.GetTemporaryRT(ssaoResultId, descriptor);
+
+        InitRandomVectors();
     }
 
     public void Render(int sourceId) {
@@ -51,8 +54,11 @@ public class ScreenSpaceAmbientOcclusion {
             buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
             buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
             int kernel_SSAOResolve = cs.FindKernel("SSAOResolve");
+            buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "_RandomVectors", randomVectors);
             buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ssaoResultId);
             buffer.DispatchCompute(cs, kernel_SSAOResolve, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
+
+            buffer.Blit(ssaoResultId, sourceId);
         }
         buffer.EndSample("SSAO Resolve");
         ExecuteBuffer();
@@ -63,7 +69,20 @@ public class ScreenSpaceAmbientOcclusion {
         ExecuteBuffer();
     }
 
-
+    void InitRandomVectors() {
+        if (randomVectors == null) {
+            int textureSize = settings.sampleCount;
+            randomVectors = new Texture2D(textureSize, 1, TextureFormat.RGBAHalf, false, true);
+            randomVectors.name = "Random Vectors";
+            Color[] colors = new Color[textureSize];
+            for (int i = 0; i < colors.Length; i++) {
+                Vector3 vector = Random.insideUnitSphere;
+                colors[i] = new Color(vector.x, vector.y, vector.z, 1);
+            }
+            randomVectors.SetPixels(colors);
+            randomVectors.Apply();
+        }
+    }
 
     void ExecuteBuffer() {
         context.ExecuteCommandBuffer(buffer);

@@ -2,6 +2,7 @@
 #pragma kernel SSAOResolve
 
 RWTexture2D<float3> AmbientOcclusionRT;
+Texture2D<float3> _RandomVectors;
 float4x4 _CameraProjection;
 float4x4 _CameraInverseProjection;
 
@@ -10,23 +11,6 @@ float radius;
 float bias;
 float magnitude;
 float contrast;
-
-float nrand(float2 uv, float dx, float dy) {
-    uv += float2(dx, dy + _Time.x);
-    return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
-}
-
-float3 spherical_kernel(float2 uv, float index) {
-    //nniformaly distributed points
-    //http://mathworld.wolfram.com/SpherePointPicking.html
-    float u = nrand(uv, 0, index) * 2 - 1;
-    float theta = nrand(uv, 1, index) * PI * 2;
-    float u2 = sqrt(1 - u * u);
-    float3 v = float3(u2 * cos(theta), u2 * sin(theta), u);
-    //adjustment for distance distribution.
-    float l = index / sampleCount;
-    return v * lerp(0.1, 1.0, l * l);
-}
 
 [numthreads(8,8,1)]
 void SSAOResolve(uint3 id : SV_DispatchThreadID) {
@@ -42,15 +26,9 @@ void SSAOResolve(uint3 id : SV_DispatchThreadID) {
     float3 positionVS = cameraRay.xyz * linear01Depth;
     float occlusion = 0.0;
     for (int i = 0; i < sampleCount; i++) {
-        float3 randomPointInsideSphere = spherical_kernel(screenUV, i);
-        float3 aoTestPositionVS = positionVS + randomPointInsideSphere * radius;
-        //get ao test position uv, from view space to clip space
-        float3 aoTestPositionCS = mul(_CameraProjection, aoTestPositionVS);
-        float2 aoTestUV = (aoTestPositionCS.xy / aoTestPositionCS.z + 1) * 0.5;
-        float aoTestDepth = LinearEyeDepth(_CameraDepthTexture.SampleLevel(sampler_point_clamp, aoTestUV, 0), _ZBufferParams);
-        //occlusion test
-        occlusion += (aoTestDepth < aoTestPositionVS.z);
+        float3 samplePosition = _RandomVectors.SampleLevel(sampler_linear_clamp, float2((i / sampleCount), 0.5), 0.0).xyz;
+
     }
     occlusion /= sampleCount;
-    AmbientOcclusionRT[id.xy] = occlusion.xxx;
+    AmbientOcclusionRT[id.xy] = positionVS;
 }
