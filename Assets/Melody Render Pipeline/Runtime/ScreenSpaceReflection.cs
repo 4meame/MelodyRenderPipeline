@@ -15,12 +15,8 @@ public class ScreenSpaceReflection {
     CameraBufferSettings.SSR settings;
     ComputeShader cs;
     bool useHDR;
-    bool useDynamicBatching;
-    bool useInstancing;
-    bool useLightsPerObject;
     int ssrResultId = Shader.PropertyToID("_SSR_Result");
     int ssrBlurId = Shader.PropertyToID("_SSR_Blur");
-    static ShaderTagId SSRTagId = new ShaderTagId("ScreenSpaceReflection");
     //must match compute shader's [numthread(x)]
     const int SHADER_NUMTHREAD_X = 8;
     //must match compute shader's [numthread(y)]
@@ -33,9 +29,6 @@ public class ScreenSpaceReflection {
         this.settings = settings;
         this.cs = settings.computeShader;
         this.useHDR = useHDR;
-        this.useDynamicBatching = useDynamicBatching;
-        this.useInstancing = useInstancing;
-        this.useLightsPerObject = useLightsPerObject;
     }
 
     int GetRTHeight() {
@@ -94,14 +87,13 @@ public class ScreenSpaceReflection {
             int kernel_SSRResolve = cs.FindKernel("SSRResolve");
             buffer.SetComputeTextureParam(cs, kernel_SSRResolve, "ScreenSpaceReflectionRT", ssrResultId);
             buffer.DispatchCompute(cs, kernel_SSRResolve, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
-            buffer.SetGlobalTexture(ssrResultId, new RenderTargetIdentifier(ssrResultId));
-
             //SSR Blur Pass
             int kernel_SSRBlur = cs.FindKernel("SSRBlur");
             buffer.SetComputeFloatParam(cs, "blurOffset", settings.downsample);
             buffer.SetComputeTextureParam(cs, kernel_SSRBlur, "ScreenSpaceReflectionRT", ssrResultId);
             buffer.SetComputeTextureParam(cs, kernel_SSRBlur, "BlurRT", ssrBlurId);
             buffer.DispatchCompute(cs, kernel_SSRBlur, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
+            buffer.SetGlobalTexture(ssrBlurId, new RenderTargetIdentifier(ssrBlurId));
 
             buffer.EndSample("SSR Resolve");
             buffer.EnableShaderKeyword("_SSR_ON");
@@ -109,23 +101,6 @@ public class ScreenSpaceReflection {
             buffer.DisableShaderKeyword("_SSR_ON");
         }
         ExecuteBuffer();
-
-        var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
-        PerObjectData lightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
-        var drawingSettings = new DrawingSettings(SSRTagId, sortingSettings) {
-            enableDynamicBatching = useDynamicBatching,
-            enableInstancing = useInstancing,
-            perObjectData = PerObjectData.Lightmaps | 
-            PerObjectData.LightProbe | 
-            PerObjectData.LightProbeProxyVolume |
-            PerObjectData.ShadowMask | 
-            PerObjectData.OcclusionProbe | 
-            PerObjectData.OcclusionProbeProxyVolume |
-            PerObjectData.ReflectionProbes | 
-            lightsPerObjectFlags
-        };
-        var filteringSettings = new FilteringSettings(RenderQueueRange.all);
-        context.DrawRenderers(cullingResults,ref drawingSettings,ref filteringSettings);
     }
 
     void ExecuteBuffer() {

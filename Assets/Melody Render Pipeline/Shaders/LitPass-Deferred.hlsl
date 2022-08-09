@@ -27,6 +27,9 @@ TEXTURE2D(_DetailNormalMap);
 SAMPLER(sampler_DetailNormalMap);
 TEXTURE2D(_SSR_Blur);
 SAMPLER(sampler_SSR_Blur);
+TEXTURE2D(_SSAO_Blur);
+SAMPLER(sampler_SSAO_Blur);
+
 
 //Support per-instance material data, replace variable with an array reference WHEN NEEDED
 UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
@@ -169,6 +172,10 @@ float4 LitPassFragment(Varyings input) : SV_TARGET {
 	BRDF brdf = GetBRDF(surface);
 #endif
 	GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
+#if defined(_SSAO_ON)
+	float ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Blur, sampler_SSAO_Blur, fragment.screenUV).r;
+	gi.diffuse *= ssaoResult;
+#endif
 
 	float3 color = GetLighting(surface, brdf, gi);
 //emission color

@@ -104,11 +104,12 @@ public struct CameraBufferSettings {
     {
         public bool enabled;
         public ComputeShader computeShader;
+        public Texture2D randomTexture;
         public int sampleCount;
-        public float radius;
-        public float bias;
-        public float magnitude;
-        public float constrast;
+        public float aoRadius;
+        public float filterRadius;
+        public float filterFactor;
+        public Vector4 pureDepthAOParameters;
     }
     public SSAO ssao;
 }

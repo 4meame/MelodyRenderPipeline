@@ -20,6 +20,7 @@ public class CameraSettings {
 	public PostFXSettings postFXSettings = default;
 	public bool allowFXAA = true;
     public bool allowSSPR = false;
+	public bool allowSSAO = false;
 	public bool allowSSR = false;
 	public bool allowCloud = true;
 	public bool allowAtmosFog = true;

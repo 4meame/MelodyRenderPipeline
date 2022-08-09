@@ -80,7 +80,9 @@ float3 DecodeViewNormalStereo(float4 enc4) {
 
 //Fragment data
 SAMPLER(sampler_linear_clamp);
+SAMPLER(sampler_linear_repeat);
 SAMPLER(sampler_point_clamp);
+SAMPLER(sampler_point_repeat);
 #include "Fragment.hlsl"
 
 //lod transition function

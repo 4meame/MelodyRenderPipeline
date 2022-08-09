@@ -14,7 +14,7 @@ public partial class CameraRender
     };
     CullingResults cullingResults;
     static ShaderTagId unlitShaderTagId = new ShaderTagId("MelodyUnlit"),
-                       litShaderTagId = new ShaderTagId("MelodyLit");                    
+                       litShaderTagId = new ShaderTagId("MelodyLit");
 
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
@@ -40,6 +40,7 @@ public partial class CameraRender
     bool useDepthNormalTexture;
     bool useIntermediateBuffer;
     bool usePostGeometryColorTexture;
+    bool useDeferredRender;
 
     #region Utility Params
     static int timeSinceLevelLoad = Shader.PropertyToID("_Time");
@@ -126,9 +127,13 @@ public partial class CameraRender
         #region SSPR
         cameraBufferSettings.sspr.enabled = cameraBufferSettings.sspr.enabled && cameraSettings.allowSSPR;
         #endregion
+        #region SSAO
+        cameraBufferSettings.ssao.enabled = cameraBufferSettings.ssao.enabled && cameraSettings.allowSSAO;
+        #endregion
         #region SSR
         cameraBufferSettings.ssr.enabled = cameraBufferSettings.ssr.enabled && cameraSettings.allowSSR;
         #endregion
+        useDeferredRender = cameraBufferSettings.ssao.enabled || cameraBufferSettings.ssr.enabled;
 
         //render shadows before setting up regular camera
         buffer.BeginSample(SampleName);
@@ -166,6 +171,7 @@ public partial class CameraRender
         Setup();
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();
+        ssao.Render();
         ssr.Render();
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
@@ -185,7 +191,6 @@ public partial class CameraRender
         if (atmosScatter) {
             atmosphere.RenderFog(colorAttachmentId);
         }
-        ssao.Render(colorAttachmentId);
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         if (postFXStack.IsActive) {
@@ -204,7 +209,7 @@ public partial class CameraRender
         if (useDepthNormalTexture) {
             buffer.name = "Draw DepthNormal";
             //set camera properties, including view and projection, so set the current rendertarget after that
-            context.SetupCameraProperties(camera);           
+            context.SetupCameraProperties(camera);
             buffer.GetTemporaryRT(depthNormalTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.ARGB64);
             buffer.SetRenderTarget(depthNormalTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.ClearRenderTarget(true, true, Color.black);
@@ -232,7 +237,7 @@ public partial class CameraRender
         PerObjectData lightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
         var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
         var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings) { enableDynamicBatching = useDynamicBatching, enableInstancing = useInstancing,
-                                                  perObjectData = PerObjectData.Lightmaps | PerObjectData.LightProbe | PerObjectData.LightProbeProxyVolume | 
+            perObjectData = PerObjectData.Lightmaps | PerObjectData.LightProbe | PerObjectData.LightProbeProxyVolume |
                                                                   PerObjectData.ShadowMask | PerObjectData.OcclusionProbe | PerObjectData.OcclusionProbeProxyVolume |
                                                                   PerObjectData.ReflectionProbes | lightsPerObjectFlags };
 
@@ -250,6 +255,27 @@ public partial class CameraRender
         drawingSettings.sortingSettings = sortingSettings;
         filteringSettings.renderQueueRange = RenderQueueRange.transparent;
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+
+        if (useDeferredRender) {
+            //draw Deferred Object
+            var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
+            PerObjectData deferredLightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
+            ShaderTagId DeferredTagId = new ShaderTagId("ScreenSpaceDeferred");
+            var deferredDrawingSettings = new DrawingSettings(DeferredTagId, deferredSortingSettings) {
+                enableDynamicBatching = useDynamicBatching,
+                enableInstancing = useInstancing,
+                perObjectData = PerObjectData.Lightmaps |
+                PerObjectData.LightProbe |
+                PerObjectData.LightProbeProxyVolume |
+                PerObjectData.ShadowMask |
+                PerObjectData.OcclusionProbe |
+                PerObjectData.OcclusionProbeProxyVolume |
+                PerObjectData.ReflectionProbes |
+                deferredLightsPerObjectFlags
+            };
+            var deferredFilteringSettings = new FilteringSettings(RenderQueueRange.all);
+            context.DrawRenderers(cullingResults, ref deferredDrawingSettings, ref deferredFilteringSettings);
+        }
     }
 
     void Setup() {

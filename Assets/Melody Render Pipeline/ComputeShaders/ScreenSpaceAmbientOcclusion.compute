@@ -1,32 +1,131 @@
 ﻿#include "../ShaderLibrary/Common.hlsl"
-#pragma kernel SSAOResolve
+#pragma kernel PureDepthSSAO
+#pragma kernel BilateralFilter
 
 RWTexture2D<float3> AmbientOcclusionRT;
+RWTexture2D<float3> FilteredResult;
+Texture2D<float3> RandomTexture;
+Texture2D<float3> aoResult;
 float4x4 _CameraProjection;
 float4x4 _CameraInverseProjection;
-
+//shared properties
 int sampleCount;
-float radius;
-float bias;
-float magnitude;
-float contrast;
+float aoRadius;
+float2 filterRadius;
+float filterFactor;
+//pure depth method properties
+float threshold;
+float area;
+float strength;
+float correction;
+
+//refer to : https://theorangeduck.com/page/pure-depth-ssao
+float3 normalFromDepth(float depth, float2 texCoords) {
+    const float2 offset1 = float2(0.0, 0.001);
+    const float2 offset2 = float2(0.001, 0.0);
+    float depth1 = LinearEyeDepth(SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, texCoords + offset1, 0), _ZBufferParams);
+    float depth2 = LinearEyeDepth(SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, texCoords + offset2, 0), _ZBufferParams);
+    float3 p1 = float3(offset1, depth1 - depth);
+    float3 p2 = float3(offset2, depth2 - depth);
+    float3 normal = cross(p1, p2);
+    normal.z = -normal.z;
+    return normalize(normal);
+}
 
 [numthreads(8,8,1)]
-void SSAOResolve(uint3 id : SV_DispatchThreadID) {
+void PureDepthSSAO(uint3 id : SV_DispatchThreadID) {
+    float3 sample_sphere[16] = {
+        float3(0.5381, 0.1856,-0.4319), float3(0.1379, 0.2486, 0.4430),
+        float3(0.3371, 0.5679,-0.0057), float3(-0.6999,-0.0451,-0.0019),
+        float3(0.0689,-0.1598,-0.8547), float3(0.0560, 0.0069,-0.1843),
+        float3(-0.0146, 0.1402, 0.0762), float3(0.0100,-0.1924,-0.0344),
+        float3(-0.3577,-0.5301,-0.4358), float3(-0.3169, 0.1063, 0.0158),
+        float3(0.0103,-0.5869, 0.0046), float3(-0.0897,-0.4940, 0.3287),
+        float3(0.7119,-0.0154,-0.0918), float3(-0.0533, 0.0596,-0.5411),
+        float3(0.0352,-0.0631, 0.5460), float3(-0.4776, 0.2847,-0.0271)
+    };
     //[0,_CameraBufferSize-1] -> screen [0,1] uv
     float2 screenUV = id.xy / _CameraBufferSize.zw;
-    //calculate camera to far plane ray in the screen
-    float4 cameraRay = float4(screenUV * 2.0 - 1.0, 1.0, 1.0);
-    cameraRay = mul(_CameraInverseProjection, cameraRay);
-    cameraRay.xyz = cameraRay.xyz / cameraRay.w;
-    float rawDepth = _CameraDepthTexture.SampleLevel(sampler_point_clamp, screenUV, 0);
-    float linear01Depth = Linear01Depth(rawDepth, _ZBufferParams);
-    //far camera ray multi 01Depth get view space position
-    float3 positionVS = cameraRay.xyz * linear01Depth;
+    float rawDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0);
+    float linearDepth = LinearEyeDepth(rawDepth, _ZBufferParams);
+    float3 random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_clamp, screenUV, 0).rgb);
+    random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_repeat, screenUV + random, 0).rgb);
+    float3 position = float3(screenUV, linearDepth);
+    float3 normal = normalFromDepth(linearDepth, screenUV);
+    float4 depthNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
+    normal = DecodeViewNormalStereo(depthNormal);
+    //near big far small
+    float sampleRadius = aoRadius / linearDepth;
     float occlusion = 0.0;
-    for (int i = 0; i < sampleCount; i++) {
-
-
+    for (int i = 0; i < 16; i++) {
+        float3 ray = sampleRadius * reflect(sample_sphere[i], random);
+        float3 hemiRay = position + sign(dot(ray, normal)) * ray;
+        float occlusionDepth = LinearEyeDepth(SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, saturate(hemiRay.xy), 0), _ZBufferParams);
+        float difference = linearDepth - occlusionDepth;
+        occlusion += step(threshold, difference) * (1.0 - smoothstep(threshold, area, difference));
     }
-    AmbientOcclusionRT[id.xy] = positionVS;
+    float ao = 1 - strength * occlusion / 16;
+    ao = saturate(ao + correction);
+    AmbientOcclusionRT[id.xy] = ao.xxx;
+}
+
+float3 GetSource(float2 screenUV) {
+    return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0);
+}
+
+float3 GetNormal(float2 screenUV) {
+    float4 depthNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
+    float3 normal = DecodeViewNormalStereo(depthNormal);
+    return normal;
+}
+
+float CompareNormal(float3 normal0, float3 normal1) {
+    return smoothstep(filterFactor, 1.0, dot(normal0, normal1));
+}
+
+//puppet_master
+[numthreads(8, 8, 1)]
+void BilateralFilter(uint3 id : SV_DispatchThreadID) {
+    float2 delta = filterRadius * _CameraBufferSize.xy;
+    //[0,_CameraBufferSize-1] -> screen [0,1] uv
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 uv0a = uv - delta;
+    float2 uv0b = uv + delta;
+    float2 uv1a = uv - 2.0 * delta;
+    float2 uv1b = uv + 2.0 * delta;
+    float2 uv2a = uv - 3.0 * delta;
+    float2 uv2b = uv + 3.0 * delta;
+    //get normal
+    float3 normal = GetNormal(uv);
+    float3 normal0a = GetNormal(uv0a);
+    float3 normal0b = GetNormal(uv0b);
+    float3 normal1a = GetNormal(uv1a);
+    float3 normal1b = GetNormal(uv1b);
+    float3 normal2a = GetNormal(uv2a);
+    float3 normal2b = GetNormal(uv2b);
+    //get source
+    float3 source = GetSource(uv);
+    float3 source0a = GetSource(uv0a);
+    float3 source0b = GetSource(uv0b);
+    float3 source1a = GetSource(uv1a);
+    float3 source1b = GetSource(uv1b);
+    float3 source2a = GetSource(uv2a);
+    float3 source2b = GetSource(uv2b);
+    //calculate weight
+    float w = 0.37004005286;
+    float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
+    float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
+    float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
+    float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
+    float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
+    float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
+    float3 result = w * source;
+    result += w0a * source0a;
+    result += w0b * source0b;
+    result += w1a * source1a;
+    result += w1b * source1b;
+    result += w2a * source2a;
+    result += w2b * source2b;
+    result = result /(w + w0a + w0b + w1a + w1b + w2a + w2b);
+    FilteredResult[id.xy] = result;
 }

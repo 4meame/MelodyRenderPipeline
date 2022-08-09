@@ -1,4 +1,4 @@
-﻿Shader "Melody RP/Standard/SSR"
+﻿Shader "Melody RP/Standard/Deferred"
 {
     Properties
     {
@@ -59,8 +59,8 @@
         
         Pass
         {
-            Name "ScreenSpaceReflection"
-            Tags { "LightMode" = "ScreenSpaceReflection" }
+            Name "ScreenSpaceDeferred"
+            Tags { "LightMode" = "ScreenSpaceDeferred" }
 
             Blend[_SrcBlend][_DstBlend], One OneMinusSrcAlpha
             ZWrite[_ZWrite]
@@ -77,10 +77,11 @@
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile _ _LIGHTS_PER_OBJECT
+            #pragma multi_compile _ _SSAO_ON
             #pragma multi_compile _ _SSR_ON
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
-            #include "LitPass-SSR.hlsl"
+            #include "LitPass-Deferred.hlsl"
             ENDHLSL
         }
 

@@ -31,9 +31,9 @@ MonoBehaviour:
     other:
       atlasSize: 1024
       filter: 3
-  atmosphere: {fileID: 11400000, guid: 40b97409a5a8e9a488d282afbe8256cc, type: 2}
-  cloud: {fileID: 11400000, guid: 40389096b9f7d2d44a3199bab3705f16, type: 2}
-  postFXSettings: {fileID: 11400000, guid: b4828196f5e88184d928f696687e89a2, type: 2}
+  atmosphere: {fileID: 11400000, guid: 38a539761d3a0f8448f79f428ec6d661, type: 2}
+  cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
+  postFXSettings: {fileID: 11400000, guid: ceba552ee508b8244ba6a81cbcfd905c, type: 2}
   cameraBufferSettings:
     allowHDR: 1
     copyDepth: 1
@@ -77,11 +77,12 @@ MonoBehaviour:
     ssao:
       enabled: 1
       computeShader: {fileID: 7200000, guid: 292fa2e92df0b4640a68ab2c61571f6e, type: 3}
-      sampleCount: 10
-      radius: 0.5
-      bias: 0
-      magnitude: 1
-      constrast: 1
+      randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
+      sampleCount: 64
+      aoRadius: 0.53
+      filterRadius: 2.69
+      filterFactor: 0.89
+      pureDepthAOParameters: {x: 0.001, y: 6.67, z: 1.5, w: 0.4}
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}
