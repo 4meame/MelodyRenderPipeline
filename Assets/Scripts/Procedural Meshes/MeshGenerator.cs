@@ -15,6 +15,7 @@ public class MeshGenerator : MonoBehaviour {
     public Type type;
     [Range(0,255)]
     public int resolution;
+    public float size;
     public bool showGizmo;
     Mesh mesh;
     Vector3[] vertices, normals;
@@ -77,7 +78,7 @@ public class MeshGenerator : MonoBehaviour {
         int triangleIndex = 0;
         for (int y = 0; y < height + 1; y++) {
             for (int x = 0; x < width + 1; x++) {
-                meshData.vertices[vertexIndex] = new Vector3(width / -2 + x, 0, height / -2 + y);
+                meshData.vertices[vertexIndex] = new Vector3(x / (float)width, 0, y / (float)height) * size;
                 if (x < width && y < height) {
                     meshData.triangles[triangleIndex] = vertexIndex;
                     meshData.triangles[triangleIndex + 1] = vertexIndex + width + 1;
@@ -106,8 +107,38 @@ public class MeshGenerator : MonoBehaviour {
         };
         int latitude = resolution;
         int longitude = resolution;
-        int radius = 1;
-
+        MeshData meshData = new MeshData(latitude, longitude);
+        int vertexIndex = 0;
+        int triangleIndex = 0;
+        for (int v = 0; v < longitude + 1; v++)
+        {
+            for (int u = 0; u < latitude + 1; u++)
+            {
+                meshData.vertices[vertexIndex].x = u / (float)latitude;
+                meshData.vertices[vertexIndex].y = 0f;
+                meshData.vertices[vertexIndex].z = v / (float)longitude;
+                meshData.vertices[vertexIndex] *= size;
+                if (u < latitude && v < longitude)
+                {
+                    meshData.triangles[triangleIndex] = vertexIndex;
+                    meshData.triangles[triangleIndex + 1] = vertexIndex + latitude + 1;
+                    meshData.triangles[triangleIndex + 2] = vertexIndex + 1;
+                    meshData.triangles[triangleIndex + 3] = vertexIndex + 1;
+                    meshData.triangles[triangleIndex + 4] = vertexIndex + latitude + 1;
+                    meshData.triangles[triangleIndex + 5] = vertexIndex + latitude + 2;
+                    triangleIndex += 6;
+                }
+                meshData.uv0[vertexIndex] = new Vector3(u / (float)latitude, v / (float)longitude);
+                vertexIndex++;
+            }
+        }
+        mesh.vertices = meshData.vertices;
+        mesh.triangles = meshData.triangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+        mesh.uv = meshData.uv0;
+        GetComponent<MeshFilter>().mesh = mesh;
     }
 
     void OnDrawGizmos() {
