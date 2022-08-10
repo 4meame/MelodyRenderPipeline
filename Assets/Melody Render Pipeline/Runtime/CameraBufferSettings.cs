@@ -73,8 +73,7 @@ public struct CameraBufferSettings {
     public SSPR sspr;
 
     [Serializable]
-    public struct SSR
-    {
+    public struct SSR {
         public bool enabled;
         public ComputeShader computeShader;
         [Header("Trace")]
@@ -100,8 +99,14 @@ public struct CameraBufferSettings {
     public SSR ssr;
 
     [Serializable]
-    public struct SSAO
-    {
+    public struct SSAO {
+        public enum AOType {
+            pureDepthAO,
+            SSAO,
+            HBAO,
+            GTAO,
+        }
+        public AOType type;
         public bool enabled;
         public ComputeShader computeShader;
         public Texture2D randomTexture;

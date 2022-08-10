@@ -26,7 +26,7 @@ public class ScreenSpaceAmbientOcclusion {
     }
 
     void Configure() {
-        RenderTextureDescriptor descriptor = new RenderTextureDescriptor(bufferSize.x, bufferSize.y, RenderTextureFormat.RGB111110Float, 0, 0);
+        RenderTextureDescriptor descriptor = new RenderTextureDescriptor(bufferSize.x, bufferSize.y, RenderTextureFormat.RFloat, 0, 0);
         descriptor.sRGB = false;
         descriptor.enableRandomWrite = true;
         buffer.GetTemporaryRT(ambientOcclusionId, descriptor);
@@ -45,17 +45,25 @@ public class ScreenSpaceAmbientOcclusion {
             Configure();
             buffer.SetComputeIntParam(cs, "sampleCount", settings.sampleCount);
             buffer.SetComputeFloatParam(cs, "aoRadius", settings.aoRadius);
-            buffer.SetComputeFloatParam(cs, "threshold", settings.pureDepthAOParameters.x);
-            buffer.SetComputeFloatParam(cs, "area", settings.pureDepthAOParameters.y);
-            buffer.SetComputeFloatParam(cs, "strength", settings.pureDepthAOParameters.z);
-            buffer.SetComputeFloatParam(cs, "correction", settings.pureDepthAOParameters.w);
-            Matrix4x4 projection = camera.projectionMatrix;
-            buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
-            buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
-            int kernel_SSAOResolve = cs.FindKernel("PureDepthSSAO");
-            buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "RandomTexture", settings.randomTexture);
-            buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
-            buffer.DispatchCompute(cs, kernel_SSAOResolve, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
+            if (settings.type == CameraBufferSettings.SSAO.AOType.pureDepthAO) {
+                buffer.SetComputeFloatParam(cs, "threshold", settings.pureDepthAOParameters.x);
+                buffer.SetComputeFloatParam(cs, "area", settings.pureDepthAOParameters.y);
+                buffer.SetComputeFloatParam(cs, "strength", settings.pureDepthAOParameters.z);
+                buffer.SetComputeFloatParam(cs, "correction", settings.pureDepthAOParameters.w);
+                int kernel_SSAOResolve = cs.FindKernel("PureDepthSSAO");
+                buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "RandomTexture", settings.randomTexture);
+                buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
+                buffer.DispatchCompute(cs, kernel_SSAOResolve, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
+            }
+            else if (settings.type == CameraBufferSettings.SSAO.AOType.SSAO) {
+                Matrix4x4 projection = camera.projectionMatrix;
+                buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
+                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
+                int kernel_SSAOResolve = cs.FindKernel("SSAO");
+                buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "RandomTexture", settings.randomTexture);
+                buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
+                buffer.DispatchCompute(cs, kernel_SSAOResolve, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
+            }
 
             int kernel_SSAOFilter = cs.FindKernel("BilateralFilter");
             buffer.SetComputeVectorParam(cs, "filterRadius", new Vector2(settings.filterRadius, 0));
