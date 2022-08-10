@@ -108,30 +108,7 @@ public class MeshGenerator : MonoBehaviour {
         int latitude = resolution;
         int longitude = resolution;
         MeshData meshData = new MeshData(latitude, longitude);
-        int vertexIndex = 0;
-        int triangleIndex = 0;
-        for (int v = 0; v < longitude + 1; v++)
-        {
-            for (int u = 0; u < latitude + 1; u++)
-            {
-                meshData.vertices[vertexIndex].x = u / (float)latitude;
-                meshData.vertices[vertexIndex].y = 0f;
-                meshData.vertices[vertexIndex].z = v / (float)longitude;
-                meshData.vertices[vertexIndex] *= size;
-                if (u < latitude && v < longitude)
-                {
-                    meshData.triangles[triangleIndex] = vertexIndex;
-                    meshData.triangles[triangleIndex + 1] = vertexIndex + latitude + 1;
-                    meshData.triangles[triangleIndex + 2] = vertexIndex + 1;
-                    meshData.triangles[triangleIndex + 3] = vertexIndex + 1;
-                    meshData.triangles[triangleIndex + 4] = vertexIndex + latitude + 1;
-                    meshData.triangles[triangleIndex + 5] = vertexIndex + latitude + 2;
-                    triangleIndex += 6;
-                }
-                meshData.uv0[vertexIndex] = new Vector3(u / (float)latitude, v / (float)longitude);
-                vertexIndex++;
-            }
-        }
+
         mesh.vertices = meshData.vertices;
         mesh.triangles = meshData.triangles;
         mesh.RecalculateNormals();
