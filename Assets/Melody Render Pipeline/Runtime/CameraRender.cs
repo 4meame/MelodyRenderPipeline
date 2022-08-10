@@ -173,6 +173,7 @@ public partial class CameraRender
         sspr.Render();
         ssao.Render();
         ssr.Render();
+        DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
         }
@@ -255,7 +256,9 @@ public partial class CameraRender
         drawingSettings.sortingSettings = sortingSettings;
         filteringSettings.renderQueueRange = RenderQueueRange.transparent;
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+    }
 
+    void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
         if (useDeferredRender) {
             //draw Deferred Object
             var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
