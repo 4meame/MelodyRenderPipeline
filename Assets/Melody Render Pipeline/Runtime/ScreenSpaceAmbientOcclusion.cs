@@ -26,7 +26,10 @@ public class ScreenSpaceAmbientOcclusion {
     }
 
     void Configure() {
-        RenderTextureDescriptor descriptor = new RenderTextureDescriptor(bufferSize.x, bufferSize.y, RenderTextureFormat.RFloat, 0, 0);
+        RenderTextureDescriptor descriptor = new RenderTextureDescriptor(bufferSize.x, bufferSize.y, RenderTextureFormat.R8, 0, 0);
+        if (settings.debug) { 
+            descriptor.colorFormat = RenderTextureFormat.RGB111110Float;
+        }
         descriptor.sRGB = false;
         descriptor.enableRandomWrite = true;
         buffer.GetTemporaryRT(ambientOcclusionId, descriptor);
@@ -56,6 +59,10 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.DispatchCompute(cs, kernel_SSAOResolve, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
             }
             else if (settings.type == CameraBufferSettings.SSAO.AOType.SSAO) {
+                buffer.SetComputeFloatParam(cs, "bias", settings.SSAOParameters.x);
+                buffer.SetComputeFloatParam(cs, "contrast", settings.SSAOParameters.y);
+                buffer.SetComputeFloatParam(cs, "magnitude", settings.SSAOParameters.z);
+                buffer.SetComputeFloatParam(cs, "power", settings.SSAOParameters.w);
                 Matrix4x4 projection = camera.projectionMatrix;
                 buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
                 buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
@@ -83,6 +90,13 @@ public class ScreenSpaceAmbientOcclusion {
         }
         buffer.EndSample("SSAO Resolve");
         ExecuteBuffer();
+    }
+
+    public void Debug(int sourceId) {
+        if (settings.enabled && settings.debug) {
+            buffer.Blit(ambientOcclusionId, sourceId);
+            ExecuteBuffer();
+        }
     }
 
     public void CleanUp() {

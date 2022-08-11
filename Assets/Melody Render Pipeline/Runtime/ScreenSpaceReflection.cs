@@ -94,13 +94,19 @@ public class ScreenSpaceReflection {
             buffer.SetComputeTextureParam(cs, kernel_SSRBlur, "BlurRT", ssrBlurId);
             buffer.DispatchCompute(cs, kernel_SSRBlur, dispatchThreadGroupXCount, dispatchThreadGroupYCount, dispatchThreadGroupZCount);
             buffer.SetGlobalTexture(ssrBlurId, new RenderTargetIdentifier(ssrBlurId));
-
-            buffer.EndSample("SSR Resolve");
             buffer.EnableShaderKeyword("_SSR_ON");
         } else {
             buffer.DisableShaderKeyword("_SSR_ON");
         }
+        buffer.EndSample("SSR Resolve");
         ExecuteBuffer();
+    }
+
+    public void Debug(int sourceId) {
+        if (settings.enabled && settings.debug) {
+            buffer.Blit(ssrResultId, sourceId);
+            ExecuteBuffer();
+        }
     }
 
     void ExecuteBuffer() {

@@ -94,7 +94,8 @@ public struct CameraBufferSettings {
         [Range(0, 1f)]
         public float eyeFadeStart;
         [Range(0, 1)]
-        public float eyeFadeEnd;
+        public float eyeFadeEnd; 
+        public bool debug;
     }
     public SSR ssr;
 
@@ -113,8 +114,11 @@ public struct CameraBufferSettings {
         public int sampleCount;
         public float aoRadius;
         public float filterRadius;
+        [Range(0, 1)]
         public float filterFactor;
         public Vector4 pureDepthAOParameters;
+        public Vector4 SSAOParameters;
+        public bool debug;
     }
     public SSAO ssao;
 }

@@ -19,6 +19,12 @@ float threshold;
 float area;
 float strength;
 float correction;
+//ssao method properties
+float bias;
+float contrast;
+float magnitude;
+float power;
+
 
 //refer to : https://theorangeduck.com/page/pure-depth-ssao
 float3 normalFromDepth(float depth, float2 texCoords) {
@@ -61,7 +67,7 @@ void PureDepthSSAO(uint3 id : SV_DispatchThreadID) {
         float3 hemiRay = position + sign(dot(ray, normal)) * ray;
         float occlusionDepth = LinearEyeDepth(SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, saturate(hemiRay.xy), 0), _ZBufferParams);
         float difference = linearDepth - occlusionDepth;
-        occlusion += step(threshold, difference) * (1.0 - smoothstep(threshold, area, difference));
+        occlusion += step(threshold, difference) * (1.0 - smoothstep(threshold, area, length(ray)));
     }
     float ao = 1 - strength * occlusion / 16;
     ao = saturate(ao + correction);
@@ -70,42 +76,17 @@ void PureDepthSSAO(uint3 id : SV_DispatchThreadID) {
 
 [numthreads(8, 8, 1)]
 void SSAO(uint3 id : SV_DispatchThreadID) {
-    //precalculated hemisphere kernel (low discrepancy noiser)
-    float3 sample_sphere[32] = {
-        float3(-0.668154f, -0.084296f, 0.219458f),
-        float3(-0.092521f,  0.141327f, 0.505343f),
-        float3(-0.041960f,  0.700333f, 0.365754f),
-        float3(0.722389f, -0.015338f, 0.084357f),
-        float3(-0.815016f,  0.253065f, 0.465702f),
-        float3(0.018993f, -0.397084f, 0.136878f),
-        float3(0.617953f, -0.234334f, 0.513754f),
-        float3(-0.281008f, -0.697906f, 0.240010f),
-        float3(0.303332f, -0.443484f, 0.588136f),
-        float3(-0.477513f,  0.559972f, 0.310942f),
-        float3(0.307240f,  0.076276f, 0.324207f),
-        float3(-0.404343f, -0.615461f, 0.098425f),
-        float3(0.152483f, -0.326314f, 0.399277f),
-        float3(0.435708f,  0.630501f, 0.169620f),
-        float3(0.878907f,  0.179609f, 0.266964f),
-        float3(-0.049752f, -0.232228f, 0.264012f),
-        float3(0.537254f, -0.047783f, 0.693834f),
-        float3(0.001000f,  0.177300f, 0.096643f),
-        float3(0.626400f,  0.524401f, 0.492467f),
-        float3(-0.708714f, -0.223893f, 0.182458f),
-        float3(-0.106760f,  0.020965f, 0.451976f),
-        float3(-0.285181f, -0.388014f, 0.241756f),
-        float3(0.241154f, -0.174978f, 0.574671f),
-        float3(-0.405747f,  0.080275f, 0.055816f),
-        float3(0.079375f,  0.289697f, 0.348373f),
-        float3(0.298047f, -0.309351f, 0.114787f),
-        float3(-0.616434f, -0.117369f, 0.475924f),
-        float3(-0.035249f,  0.134591f, 0.840251f),
-        float3(0.175849f,  0.971033f, 0.211778f),
-        float3(0.024805f,  0.348056f, 0.240006f),
-        float3(-0.267123f,  0.204885f, 0.688595f),
-        float3(-0.077639f, -0.753205f, 0.070938f)
+    float3 sample_sphere[16] = {
+        float3(0.5381, 0.1856,-0.4319), float3(0.1379, 0.2486, 0.4430),
+        float3(0.3371, 0.5679,-0.0057), float3(-0.6999,-0.0451,-0.0019),
+        float3(0.0689,-0.1598,-0.8547), float3(0.0560, 0.0069,-0.1843),
+        float3(-0.0146, 0.1402, 0.0762), float3(0.0100,-0.1924,-0.0344),
+        float3(-0.3577,-0.5301,-0.4358), float3(-0.3169, 0.1063, 0.0158),
+        float3(0.0103,-0.5869, 0.0046), float3(-0.0897,-0.4940, 0.3287),
+        float3(0.7119,-0.0154,-0.0918), float3(-0.0533, 0.0596,-0.5411),
+        float3(0.0352,-0.0631, 0.5460), float3(-0.4776, 0.2847,-0.0271)
     };
-    float2 screenUV = id.xy / _CameraBufferSize.zw;;
+    float2 screenUV = id.xy / _CameraBufferSize.zw;
     //calculate camera to far plane ray in the screen
     float4 cameraRay = float4(screenUV * 2.0 - 1.0, 1.0, 1.0);
     cameraRay = mul(_CameraInverseProjection, cameraRay);
@@ -123,10 +104,17 @@ void SSAO(uint3 id : SV_DispatchThreadID) {
     float3 bufferPosition = cameraRay.xyz * linear01Depth;
     float3 random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_clamp, screenUV, 0).rgb);
     random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_repeat, screenUV + random, 0).rgb);
+    //NOTE : need this matrix to transform the sample vectors from tangent space to view space, but I do not know how
+    float3 normal = normalize(bufferNormal);
+    float3 tangent = normalize(random - normal * dot(random, normal));
+    float3 binormal = cross(bufferNormal, tangent);
+    float3x3 tbn = float3x3(tangent, binormal, normal);
     float occlusion = 0.0;
-    for (int i = 0; i < 32; i++) {
-        float3 ray = aoRadius * reflect(sample_sphere[i], random);
-        float3 samplePositionVS = bufferPosition + sign(dot(ray, bufferNormal)) * ray;
+    for (int i = 0; i < 16; i++) {
+        float3 ray = aoRadius * normalize(reflect(sample_sphere[i], random));
+        ray = mul(tbn, ray);
+        //invert positive direction ray
+        float3 samplePositionVS = bufferPosition + ray;
         //project sample point into clip space
         float4 samplePositionCS = mul(_CameraProjection, float4(samplePositionVS, 1));
         samplePositionCS.xy /= samplePositionCS.w;
@@ -134,12 +122,54 @@ void SSAO(uint3 id : SV_DispatchThreadID) {
         samplePositionCS.xy += 0.5;
         //get sample point scene depth
         float sampleDepth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, samplePositionCS.xy, 0);
-        float difference = -samplePositionVS.z - sampleDepth;
-        occlusion += step(0.1, difference) * smoothstep(0.0, 1.0, aoRadius/difference);
+        sampleDepth = LinearEyeDepth(sampleDepth, _ZBufferParams);
+        float sampleDistance = -samplePositionVS.z;
+        float difference = sampleDistance - sampleDepth;
+        //weight by cos angle
+        float weight = smoothstep(0.001, contrast, dot(ray, normal));
+        occlusion +=  weight * step(0.001, difference);
     }
-    occlusion /= 32;
-    AmbientOcclusionRT[id.xy] = occlusion.xxx;
+    float ao = 1 - magnitude * occlusion / 16;
+    ao = saturate(ao + bias);
+    ao = pow(ao, power);
+    AmbientOcclusionRT[id.xy] = ao.xxx;
 }
+
+//precalculated hemisphere kernel (low discrepancy noiser)
+float3 sample_sphere[32] = {
+    float3(-0.668154f, -0.084296f, 0.219458f),
+    float3(-0.092521f,  0.141327f, 0.505343f),
+    float3(-0.041960f,  0.700333f, 0.365754f),
+    float3(0.722389f, -0.015338f, 0.084357f),
+    float3(-0.815016f,  0.253065f, 0.465702f),
+    float3(0.018993f, -0.397084f, 0.136878f),
+    float3(0.617953f, -0.234334f, 0.513754f),
+    float3(-0.281008f, -0.697906f, 0.240010f),
+    float3(0.303332f, -0.443484f, 0.588136f),
+    float3(-0.477513f,  0.559972f, 0.310942f),
+    float3(0.307240f,  0.076276f, 0.324207f),
+    float3(-0.404343f, -0.615461f, 0.098425f),
+    float3(0.152483f, -0.326314f, 0.399277f),
+    float3(0.435708f,  0.630501f, 0.169620f),
+    float3(0.878907f,  0.179609f, 0.266964f),
+    float3(-0.049752f, -0.232228f, 0.264012f),
+    float3(0.537254f, -0.047783f, 0.693834f),
+    float3(0.001000f,  0.177300f, 0.096643f),
+    float3(0.626400f,  0.524401f, 0.492467f),
+    float3(-0.708714f, -0.223893f, 0.182458f),
+    float3(-0.106760f,  0.020965f, 0.451976f),
+    float3(-0.285181f, -0.388014f, 0.241756f),
+    float3(0.241154f, -0.174978f, 0.574671f),
+    float3(-0.405747f,  0.080275f, 0.055816f),
+    float3(0.079375f,  0.289697f, 0.348373f),
+    float3(0.298047f, -0.309351f, 0.114787f),
+    float3(-0.616434f, -0.117369f, 0.475924f),
+    float3(-0.035249f,  0.134591f, 0.840251f),
+    float3(0.175849f,  0.971033f, 0.211778f),
+    float3(0.024805f,  0.348056f, 0.240006f),
+    float3(-0.267123f,  0.204885f, 0.688595f),
+    float3(-0.077639f, -0.753205f, 0.070938f)
+};
 
 float3 GetSource(float2 screenUV) {
     return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0);

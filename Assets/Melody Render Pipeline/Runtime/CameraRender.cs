@@ -193,6 +193,8 @@ public partial class CameraRender
             atmosphere.RenderFog(colorAttachmentId);
         }
         DrawUnsupportedShaders();
+        ssao.Debug(colorAttachmentId);
+        ssr.Debug(colorAttachmentId);
         DrawGizmosBeforeFX();
         if (postFXStack.IsActive) {
             postFXStack.Render(colorAttachmentId);
@@ -352,9 +354,9 @@ public partial class CameraRender
             buffer.ReleaseTemporaryRT(postColorTextureId);
         }
         sspr.CleanUp();
+        ssao.CleanUp();
         ssr.CleanUp();
         cloud.CleanUp();
-        ssao.CleanUp();
     }
 
     //draw depth use "Copy Depth" pass(1)

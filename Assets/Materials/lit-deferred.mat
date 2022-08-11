@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: lit-ssr
+  m_Name: lit-deferred
   m_Shader: {fileID: 4800000, guid: 4f7547601c3a8a94fa3f036de7bce949, type: 3}
   m_ShaderKeywords: _RECEIVE_SHADOWS _SHADOWS_ON
   m_LightmapFlags: 4
@@ -87,7 +87,7 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _NormalScale: 1
-    - _Occlusion: 1
+    - _Occlusion: 0.5
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _PremulAlpha: 0
@@ -100,6 +100,6 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _BaseColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+    - _Color: {r: 0.8, g: 0.8, b: 0.8, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
