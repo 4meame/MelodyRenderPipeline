@@ -64,6 +64,7 @@ public class PostFXStack {
     int smhMidtonesId = Shader.PropertyToID("_SMHMidtones");
     int smhHighlightsId = Shader.PropertyToID("_SMHHighlights");
     int smhRangeId = Shader.PropertyToID("_SMHRange");
+    int colorLevelId = Shader.PropertyToID("_ColorLevel");
     //lut
     int colorLUTResolution;
     int colorGradingLUTId = Shader.PropertyToID("_ColorGradingLUT");
@@ -352,6 +353,11 @@ public class PostFXStack {
         buffer.SetGlobalVector(smhRangeId, new Vector4(smh.shadowsStart, smh.shadowsEnd, smh.highlightsStart, smh.highlightsEnd));
     }
 
+    void ConfigureColorGradePosterize() {
+        Posterize posterize = settings.posterizes;
+        buffer.SetGlobalInt(colorLevelId, posterize.colorLevel);
+    }
+
     void ConfigureFXAA() {
         if (fxaa.quality == CameraBufferSettings.FXAA.Quality.Low) {
             buffer.EnableShaderKeyword(fxaaQualityLowKeyword);
@@ -373,6 +379,7 @@ public class PostFXStack {
         ConfigureSplitToning();
         ConfigureChannelMixer();
         ConfigureShadowsMidtonesHightlights();
+        ConfigureColorGradePosterize();
         #region LUT
         // lut is 3D, but we render it to a 2D texture, so the width is square the height 
         int lutHeight = colorLUTResolution;

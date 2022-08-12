@@ -103,6 +103,12 @@ public class PostFXSettings : ScriptableObject {
     }
 
     [System.Serializable]
+    public struct Posterize {
+        [Range(2, 255)]
+        public int colorLevel;
+    }
+
+    [System.Serializable]
     public struct ToneMappingSettings
     {
         //None is color grading only
@@ -162,7 +168,7 @@ public class PostFXSettings : ScriptableObject {
     [SerializeField]
     ChannelMixerSettings channelMixer = new ChannelMixerSettings { red = Vector3.right, green = Vector3.up, blue = Vector3.forward };
     [SerializeField]
-    ShadowMidtonesHighlightsSettings shadowMidtonesHighlights = new ShadowMidtonesHighlightsSettings {
+    ShadowMidtonesHighlightsSettings shadowMidtonesHighlight = new ShadowMidtonesHighlightsSettings {
         shadows = Color.white,
         midtones = Color.white,
         highlights = Color.white,
@@ -170,6 +176,8 @@ public class PostFXSettings : ScriptableObject {
         highlightsStart = 0.55f,
         highlightsEnd = 1f
     };
+    [SerializeField]
+    Posterize posterize = new Posterize { colorLevel = 2 };
     [SerializeField]
     ToneMappingSettings toneMapping = default;
     [SerializeField]
@@ -181,7 +189,8 @@ public class PostFXSettings : ScriptableObject {
     public WhiteBalanceSettings WhiteBalance => whiteBalance;
     public SplitToningSettings SplitToning => splitToning;
     public ChannelMixerSettings ChannelMixer => channelMixer;
-    public ShadowMidtonesHighlightsSettings ShadowMidtonesHighlights => shadowMidtonesHighlights;
+    public ShadowMidtonesHighlightsSettings ShadowMidtonesHighlights => shadowMidtonesHighlight;
+    public Posterize posterizes => posterize;
     public ToneMappingSettings ToneMapping => toneMapping;
     public OutlineSettings OutlineSetting => outlineSetting;
     public LightShaftsSettings LightShaftsSetting => lightShaftsSetting;
