@@ -20,7 +20,7 @@ MonoBehaviour:
     maxDistance: 120
     distanceFade: 0.303
     directional:
-      atlasSize: 2048
+      atlasSize: 4096
       filter: 3
       cascadeCount: 1
       cascadeRatio1: 0.478
@@ -29,7 +29,7 @@ MonoBehaviour:
       cascadeFade: 0.237
       cascadeBlend: 1
     other:
-      atlasSize: 1024
+      atlasSize: 2048
       filter: 3
   atmosphere: {fileID: 11400000, guid: 21777d4397c8a5842bd9927000c6afc3, type: 2}
   cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
@@ -72,8 +72,8 @@ MonoBehaviour:
       pixelStrideZCuttoff: 2.62
       thickness: 1.23
       screenEdgeFade: 0.918
-      eyeFadeStart: 0.19
-      eyeFadeEnd: 0.633
+      eyeFadeStart: 0.024
+      eyeFadeEnd: 1
       debug: 0
     ssao:
       type: 1
