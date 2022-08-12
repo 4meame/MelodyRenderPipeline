@@ -34,6 +34,7 @@ float4 _SMHShadows;
 float4 _SMHMidtones;
 float4 _SMHHighlights;
 float4 _SMHRange;
+float _ColorLevel;
 float4 _ColorGradingLUTParams;
 bool _ColorGradingLUTInLogC;
 //use resccling
@@ -178,6 +179,11 @@ float3 ColorGradeSaturation(float3 color, bool useACES) {
 	return (color - luminance) * _ColorAdjustment.w + luminance;
 }
 
+float3 ColorGragePosterize(float3 color) {
+
+	return color;
+}
+
 float3 ColorGrade(float3 color, bool useACES = false) {
 	color = min(color, 60.0);
 	color = ColorGradePostExposure(color);
@@ -188,6 +194,7 @@ float3 ColorGrade(float3 color, bool useACES = false) {
 	color = max(color, 0.0);
 	color = ColorGradeSplitToning(color, useACES);
 	color = ColorGradeChannelMixer(color);
+	color = ColorGragePosterize(color);
 	//negative weight will get negative result
 	color = max(color, 0.0);
 	color = ColorGradeShadowsMidtonesHighlighes(color, useACES);
