@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54eb3ceb11826404a9f982167e9b640e, type: 3}
+  m_Name: Atmosphere Scattering C
+  m_EditorClassIdentifier: 
+  updateEveryFrame: 1
+  computeShader: {fileID: 7200000, guid: 5676ee6232d7d8d47b30a1d09dd6105a, type: 3}
+  mode: 1
+  debugMode: 0
+  planetRadius: 6371000
+  atmosphereHeight: 80000
+  groundHeight: 1000
+  densityScaleHeight: {x: 7944, y: 1200}
+  rayleighCoefficients: {x: 5.26, y: 12.84, z: 27.07}
+  mieCoefficients: {x: 21, y: 21, z: 21}
+  mieG: 0.625
+  incomingLight: {r: 3.9533494, g: 3.9533494, b: 3.9533494, a: 4}
+  sunIntensity: 0.3
+  lightSamples: 64
+  distanceScale: 2
+  rayleighInscatterScale: 1.6
+  rayleighExtinctionScale: 0.94
+  mieInscatterScale: 1.2
+  mieExtinctionScale: 1
+  particleDensityLUTSize: 1024
+  sunColorLUTSize: 256
+  ambientLUTSize: 128
+  atmosphereScatterLUTSize: {x: 32, y: 128, z: 32}
+  inscatterExtinctionLUTSize: {x: 8, y: 8, z: 64}

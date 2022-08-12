@@ -111,6 +111,8 @@ public struct CameraBufferSettings {
         public bool enabled;
         public ComputeShader computeShader;
         public Texture2D randomTexture;
+        [Range(1, 2)]
+        public int downSample;
         public int sampleCount;
         public float aoRadius;
         public float filterRadius;

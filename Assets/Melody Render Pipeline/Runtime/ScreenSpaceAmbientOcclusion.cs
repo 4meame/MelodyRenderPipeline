@@ -20,7 +20,7 @@ public class ScreenSpaceAmbientOcclusion {
     public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.SSAO settings) {
         this.context = context;
         this.camera = camera;
-        this.bufferSize = bufferSize;
+        this.bufferSize = bufferSize / settings.downSample;
         this.settings = settings;
         this.cs = settings.computeShader;
     }
@@ -48,6 +48,7 @@ public class ScreenSpaceAmbientOcclusion {
             Configure();
             buffer.SetComputeIntParam(cs, "sampleCount", settings.sampleCount);
             buffer.SetComputeFloatParam(cs, "aoRadius", settings.aoRadius);
+            buffer.SetComputeIntParam(cs, "downSample", settings.downSample);
             if (settings.type == CameraBufferSettings.SSAO.AOType.pureDepthAO) {
                 buffer.SetComputeFloatParam(cs, "threshold", settings.pureDepthAOParameters.x);
                 buffer.SetComputeFloatParam(cs, "area", settings.pureDepthAOParameters.y);
