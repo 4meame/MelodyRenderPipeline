@@ -36,6 +36,11 @@ public class AtmosphereScatteringSettings : ScriptableObject {
     public float rayleighExtinctionScale = 1.0f;
     public float mieInscatterScale = 1.0f;
     public float mieExtinctionScale = 1.0f;
+    [Header("Lighting")]
+    [Range(0, 2)]
+    public float directIntensity = 1.0f;
+    [Range(0, 2)]
+    public float ambientIntensity = 1.0f;
     [Header("Texture Settings")]
     public int particleDensityLUTSize = 1024;
     public int sunColorLUTSize = 256;

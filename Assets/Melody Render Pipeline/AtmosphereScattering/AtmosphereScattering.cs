@@ -312,7 +312,7 @@ public class AtmosphereScattering {
         float length = c.magnitude;
         c /= length;
         sun.color = new Color(Mathf.Max(c.x, 0.01f), Mathf.Max(c.y, 0.01f), Mathf.Max(c.z, 0.01f), 1);
-        sun.intensity = Mathf.Max(length, 0.01f);
+        sun.intensity = Mathf.Max(length, 0.01f) * settings.directIntensity;
     }
 
     void UpdateAmbient() {
@@ -325,7 +325,7 @@ public class AtmosphereScattering {
         float cosAngle = Vector3.Dot(Vector3.up, -sun.transform.forward);
         float cosAngle01 = cosAngle * 0.5f + 0.5f;
         Color color = abmeintTexture.GetPixel((int)(cosAngle01 * abmeintTexture.width), 0).gamma;
-        RenderSettings.ambientLight = color;
+        RenderSettings.ambientLight = color * settings.ambientIntensity;
     }
 
     void ExecuteBuffer() {

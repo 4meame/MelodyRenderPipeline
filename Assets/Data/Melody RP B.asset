@@ -66,7 +66,7 @@ MonoBehaviour:
       computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
       downsample: 1
       maxDistance: 25
-      iterations: 256
+      iterations: 200
       binarySearchIterations: 6
       pixelStrideSize: 1
       pixelStrideZCuttoff: 2.62
