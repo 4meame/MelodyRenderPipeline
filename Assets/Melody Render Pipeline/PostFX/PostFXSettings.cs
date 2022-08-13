@@ -105,7 +105,9 @@ public class PostFXSettings : ScriptableObject {
     [System.Serializable]
     public struct Posterize {
         [Range(2, 255)]
-        public int colorLevel;
+        public int colorRamp;
+        [Range(0, 3)]
+        public float rampGamma;
     }
 
     [System.Serializable]
@@ -177,7 +179,7 @@ public class PostFXSettings : ScriptableObject {
         highlightsEnd = 1f
     };
     [SerializeField]
-    Posterize posterize = new Posterize { colorLevel = 2 };
+    Posterize posterize = new Posterize { colorRamp = 256, rampGamma = 0.3f };
     [SerializeField]
     ToneMappingSettings toneMapping = default;
     [SerializeField]

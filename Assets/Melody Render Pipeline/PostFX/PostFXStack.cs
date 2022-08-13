@@ -64,7 +64,8 @@ public class PostFXStack {
     int smhMidtonesId = Shader.PropertyToID("_SMHMidtones");
     int smhHighlightsId = Shader.PropertyToID("_SMHHighlights");
     int smhRangeId = Shader.PropertyToID("_SMHRange");
-    int colorLevelId = Shader.PropertyToID("_ColorLevel");
+    int colorRampId = Shader.PropertyToID("_ColorRamp");
+    int rampGammaId = Shader.PropertyToID("_RampGamma");
     //lut
     int colorLUTResolution;
     int colorGradingLUTId = Shader.PropertyToID("_ColorGradingLUT");
@@ -355,7 +356,8 @@ public class PostFXStack {
 
     void ConfigureColorGradePosterize() {
         Posterize posterize = settings.posterizes;
-        buffer.SetGlobalInt(colorLevelId, posterize.colorLevel);
+        buffer.SetGlobalFloat(colorRampId, posterize.colorRamp);
+        buffer.SetGlobalFloat(rampGammaId, posterize.rampGamma);
     }
 
     void ConfigureFXAA() {
