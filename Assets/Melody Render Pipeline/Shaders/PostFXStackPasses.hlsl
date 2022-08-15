@@ -180,7 +180,7 @@ float3 ColorGradeSaturation(float3 color, bool useACES) {
 	return (color - luminance) * _ColorAdjustment.w + luminance;
 }
 
-//NOTE : core idea is decrease picture's bit depth(32/24 ----> 4)
+//NOTE : core idea is decrease picture's bit depth(32/24 bit ----> 4 bit)
 float3 ColorGradePosterize(float3 color) {
 	color = pow(color, float3(_RampGamma, _RampGamma, _RampGamma));
 	color = color * _ColorRamp;

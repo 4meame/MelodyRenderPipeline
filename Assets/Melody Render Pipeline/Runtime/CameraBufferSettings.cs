@@ -113,14 +113,19 @@ public struct CameraBufferSettings {
         public Texture2D randomTexture;
         [Range(1, 2)]
         public int downSample;
+        [Range(1, 32)]
         public int sampleCount;
         public float aoRadius;
         public float filterRadius;
         [Range(0, 1)]
         public float filterFactor;
+        [Header("Pure Depth AO")]
         public Vector4 pureDepthAOParameters;
+        [Header("SSAO")]
         public Vector4 SSAOParameters;
-        public bool debug;
+        [Header("HBAO")]
+        [Range(1, 32)]
+        public int numDirections;
     }
     public SSAO ssao;
 }
