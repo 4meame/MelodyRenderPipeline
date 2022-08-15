@@ -126,6 +126,7 @@ public struct CameraBufferSettings {
         [Header("HBAO")]
         [Range(1, 32)]
         public int numDirections;
+        public bool debug;
     }
     public SSAO ssao;
 }
