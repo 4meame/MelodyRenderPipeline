@@ -2,10 +2,12 @@
 #pragma kernel PureDepthSSAO
 #pragma kernel SSAO
 #pragma kernel HBAO
-#pragma kernel BilateralFilter
+#pragma kernel BilateralFilter0
+#pragma kernel BilateralFilter1
 
 RWTexture2D<float3> AmbientOcclusionRT;
-RWTexture2D<float3> FilteredResult;
+RWTexture2D<float3> Filtered0;
+RWTexture2D<float3> Filtered1;
 Texture2D<float3> RandomTexture;
 Texture2D<float3> aoResult;
 float4x4 _CameraProjection;
@@ -162,10 +164,10 @@ float CompareNormal(float3 normal0, float3 normal1) {
 }
 
 [numthreads(8, 8, 1)]
-void BilateralFilter(uint3 id : SV_DispatchThreadID) {
-    float2 delta = filterRadius * (_CameraBufferSize.xy * downSample);
+void BilateralFilter0(uint3 id : SV_DispatchThreadID) {
+    float2 delta = filterRadius * _CameraBufferSize.xy;
     //[0,_CameraBufferSize-1] -> screen [0,1] uv
-    float2 uv = id.xy / (_CameraBufferSize.zw / downSample);
+    float2 uv = id.xy / _CameraBufferSize.zw;
     float2 uv0a = uv - delta;
     float2 uv0b = uv + delta;
     float2 uv1a = uv - 2.0 * delta;
@@ -204,7 +206,53 @@ void BilateralFilter(uint3 id : SV_DispatchThreadID) {
     result += w2a * source2a;
     result += w2b * source2b;
     result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
-    FilteredResult[id.xy] = result;
+    Filtered0[id.xy] = result;
+}
+
+[numthreads(8, 8, 1)]
+void BilateralFilter1(uint3 id : SV_DispatchThreadID) {
+    float2 delta = filterRadius * _CameraBufferSize.xy;
+    //[0,_CameraBufferSize-1] -> screen [0,1] uv
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 uv0a = uv - delta;
+    float2 uv0b = uv + delta;
+    float2 uv1a = uv - 2.0 * delta;
+    float2 uv1b = uv + 2.0 * delta;
+    float2 uv2a = uv - 3.0 * delta;
+    float2 uv2b = uv + 3.0 * delta;
+    //get normal
+    float3 normal = GetNormal(uv);
+    float3 normal0a = GetNormal(uv0a);
+    float3 normal0b = GetNormal(uv0b);
+    float3 normal1a = GetNormal(uv1a);
+    float3 normal1b = GetNormal(uv1b);
+    float3 normal2a = GetNormal(uv2a);
+    float3 normal2b = GetNormal(uv2b);
+    //get source
+    float3 source = GetSource(uv);
+    float3 source0a = GetSource(uv0a);
+    float3 source0b = GetSource(uv0b);
+    float3 source1a = GetSource(uv1a);
+    float3 source1b = GetSource(uv1b);
+    float3 source2a = GetSource(uv2a);
+    float3 source2b = GetSource(uv2b);
+    //calculate weight
+    float w = 0.37004005286;
+    float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
+    float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
+    float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
+    float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
+    float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
+    float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
+    float3 result = w * source;
+    result += w0a * source0a;
+    result += w0b * source0b;
+    result += w1a * source1a;
+    result += w1b * source1b;
+    result += w2a * source2a;
+    result += w2b * source2b;
+    result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
+    Filtered1[id.xy] = result;
 }
 
 float3 MinDiff(float3 p, float3 p1, float3 p2) {

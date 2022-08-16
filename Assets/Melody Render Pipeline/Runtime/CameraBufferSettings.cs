@@ -111,7 +111,7 @@ public struct CameraBufferSettings {
         public bool enabled;
         public ComputeShader computeShader;
         public Texture2D randomTexture;
-        [Range(1, 2)]
+        [Range(1, 4)]
         public int downSample;
         [Range(1, 32)]
         public int sampleCount;
