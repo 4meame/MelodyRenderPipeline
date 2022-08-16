@@ -254,7 +254,7 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
                 dist = length(H - p);
                 if (dist < aoRadius && tanH > tanT) {
                     float sinH = TanToSin(tanH);
-                    ao += (sinH - sinT);
+                    ao += FallOff(dist) * (sinH - sinT);
                     tanT = tanH;
                     sinT = sinH;
                 }
