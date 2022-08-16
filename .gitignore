@@ -58,6 +58,5 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
-# Models
-*.obj
-*.fbx
+# Ignore Models
+[Aa]ssets/Models
