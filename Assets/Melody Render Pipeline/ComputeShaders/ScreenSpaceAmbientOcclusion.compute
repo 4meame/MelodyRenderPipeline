@@ -27,8 +27,11 @@ float contrast;
 float magnitude;
 float power;
 //hbao method properties
-float _CameraNearPlane;
-float maxRadiusPixels;
+float CameraNearPlane;
+int numDirections;
+int maxRadiusPixels;
+float tanBias;
+float hbaoStrength;
 
 //refer to : https://theorangeduck.com/page/pure-depth-ssao
 float3 normalFromDepth(float depth, float2 texCoords) {
@@ -150,27 +153,35 @@ float3 MinDiff(float3 p, float3 p1, float3 p2) {
     return (length(v1) < length(v2)) ? v1 : v2;
 }
 
-void ComputeSteps(inout float2 stepSize, inout float numSteps, float radiusPixel, float rand, float invAORes) {
-    //avoid oversampling if numSteps is greater than the kernel radius in pixels
-    numSteps = min(sampleCount, radiusPixel);
-    //divide by Ns+1 so that the farthest samples are not fully attenuated
-    float stepSizePix = radiusPixel / (numSteps + 1);
-    //clamp numSteps if it is greater than the max kernel footprint
-    float maxNumSteps = maxRadiusPixels / stepSizePix;
-    if (maxNumSteps < numSteps) {
-        //use dithering to avoid AO discontinuities
-        numSteps = floor(maxNumSteps + rand);
-        numSteps = max(numSteps, 1);
-        stepSizePix = maxRadiusPixels / numSteps;
-    }
-    //step size in uv space
-    stepSize = stepSizePix * invAORes;
+float2 RotateDirections(float2 dir, float2 CosSin) {
+    return float2(
+        dir.x * CosSin.x - dir.y * CosSin.y, 
+        dir.x * CosSin.y + dir.y * CosSin.x
+        );
+}
+
+float2 SnapUVOffset(float2 uv, float2 bufferSize, float2 invBufferSize) {
+    return floor(uv * bufferSize + 0.5) * invBufferSize;
+}
+
+float GetTangent(float3 v) {
+    //tange(V) = Vz/Vxy
+    return v.z * rsqrt(dot(v.xy, v.xy));
+}
+
+float TanToSin(float x) {
+    return x * rsqrt(x * x + 1.0);
+}
+
+float FallOff(float distance) {
+    return 1 - (distance * distance) / (aoRadius * aoRadius);
 }
 
 [numthreads(8, 8, 1)]
 void HBAO(uint3 id : SV_DispatchThreadID) {
-    float2 screenUV = id.xy / (_CameraBufferSize.zw / downSample);
+    float2 bufferSize = _CameraBufferSize.zw / downSample;
     float2 invBufferSize = _CameraBufferSize.xy * downSample;
+    float2 screenUV = id.xy / bufferSize;
     float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
     //depth of the DepthNormal is not realiabe, maybe sample Depth Texture instead
     float4 depthTexture = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0);
@@ -187,25 +198,72 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
     pl = UvToViewSpace(screenUV + float2(-invBufferSize.x, 0), linear01Depth);
     pt = UvToViewSpace(screenUV + float2(0, invBufferSize.y), linear01Depth);
     pb = UvToViewSpace(screenUV + float2(0, -invBufferSize.y), linear01Depth);
-    //get ddx&ddy
-    float3 ddx = MinDiff(p, pr, pl);
-    float3 ddy = MinDiff(p, pt, pb) * _CameraBufferSize.x * _CameraBufferSize.w;
+    //get view space position delta of the point p in screen space
+    float3 dpdu = MinDiff(p, pr, pl);
+    float3 dpdv = MinDiff(p, pt, pb) * _CameraBufferSize.x * _CameraBufferSize.w;
     //random is used to offset sample direction
     float3 random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_clamp, screenUV, 0).rgb);
     random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_repeat, screenUV + random, 0).rgb);
     //calculate the projected size of the hemisphere
-    float2 sampleRadiusUV = 0.5 * aoRadius * _CameraNearPlane / linearDepth;
+    float2 sampleRadiusUV = 0.5 * aoRadius * CameraNearPlane / linearDepth;
     float radiusPixel = sampleRadiusUV.x * (_CameraBufferSize.zw / downSample);
-    float ao = 0.0;
+    float ao = 1.0;
     //make sure the radius of the projected hemisphere is more than a pixel
     if (radiusPixel > 1.0) {
         //avoid oversampling if numSteps is greater than the kernel radius in pixels
-        float numSteps;
-        float2 stepSize;
-        ComputeSteps(stepSize, numSteps, radiusPixel, random.x, invBufferSize);
+        float numSteps = min(sampleCount, radiusPixel);
+        //divide by Ns+1 so that the farthest samples are not fully attenuated(normally numSteps is equal to sampleCount)
+        float stepSizePix = radiusPixel / (numSteps + 1);
+        //clamp numSteps if it is greater than the max kernel footprint
+        float maxNumSteps = maxRadiusPixels / stepSizePix;
+        if (maxNumSteps < numSteps) {
+            //use dithering to avoid AO discontinuities
+            numSteps = floor(maxNumSteps + random.z);
+            numSteps = max(numSteps, 1);
+            stepSizePix = maxRadiusPixels / numSteps;
+        }
+        //step size in uv space
+        float2 stepSize = stepSizePix * invBufferSize;
+        //radius diff
+        float alpha = 2.0 * PI / numDirections;
+        //calculate the horizon occlusion of each direction
+        for (int i = 0; i < numDirections; ++i) {
+            float theta = alpha * i;
+            //random offset the direction
+            float2 dir = RotateDirections(float2(cos(theta), sin(theta)), random.xy);
+            float2 deltaUV = dir * stepSize;
+            //offset sample start point
+            float2 uv = screenUV + SnapUVOffset(random.xy * deltaUV, bufferSize, invBufferSize);
+            deltaUV = SnapUVOffset(deltaUV, bufferSize, invBufferSize);
+            //calculate the tangent vector
+            float3 T = deltaUV.x * dpdu + deltaUV.y * dpdv;
+            //get the angle of tangent vector from the view space axis
+            float tanT = GetTangent(T) + tanBias;
+            float sinT = TanToSin(tanT);
+            //get horizontal vector
+            float3 H;
+            float tanH;
+            float dist;
+            for (int j = 1; j <= sampleCount; ++j) {
+                uv += deltaUV;
+                float depth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
+                depth = Linear01Depth(depth, _ZBufferParams);
+                H = UvToViewSpace(uv, depth);
+                //horizontal ray from sample point
+                tanH = GetTangent(H - p);
+                dist = length(H - p);
+                if (dist < aoRadius && tanH > tanT) {
+                    float sinH = TanToSin(tanH);
+                    ao += (sinH - sinT);
+                    tanT = tanH;
+                    sinT = sinH;
+                }
+            }
+        }
+        ao = 1.0 - ao / numDirections * hbaoStrength;
     }
 
-    AmbientOcclusionRT[id.xy] = linear01Depth.xxx;
+    AmbientOcclusionRT[id.xy] = ao.xxx;
 }
 
 float3 GetSource(float2 screenUV) {

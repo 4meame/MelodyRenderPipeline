@@ -115,7 +115,9 @@ public struct CameraBufferSettings {
         public int downSample;
         [Range(1, 32)]
         public int sampleCount;
+        [Range(0, 32)]
         public float aoRadius;
+        [Range(0, 16)]
         public float filterRadius;
         [Range(0, 1)]
         public float filterFactor;
@@ -126,6 +128,12 @@ public struct CameraBufferSettings {
         [Header("HBAO")]
         [Range(1, 32)]
         public int numDirections;
+        [Range(1, 100)]
+        public int maxRadiusPixels;
+        [Range(-1, 1)]
+        public float tanBias;
+        [Range(0, 5)]
+        public float hbaoStrength;
         public bool debug;
     }
     public SSAO ssao;

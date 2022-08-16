@@ -74,6 +74,10 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
                 buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
                 buffer.SetComputeFloatParam(cs, "CameraNearPlane", camera.nearClipPlane);
+                buffer.SetComputeIntParam(cs, "numDirections", settings.numDirections);
+                buffer.SetComputeIntParam(cs, "maxRadiusPixels", settings.maxRadiusPixels);
+                buffer.SetComputeFloatParam(cs, "tanBias", settings.tanBias);
+                buffer.SetComputeFloatParam(cs, "hbaoStrength", settings.hbaoStrength);
                 int kernel_SSAOResolve = cs.FindKernel("HBAO");
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "RandomTexture", settings.randomTexture);
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
