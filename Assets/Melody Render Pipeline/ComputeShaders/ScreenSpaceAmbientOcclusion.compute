@@ -404,6 +404,7 @@ void ProcessRadius(float2 uv0, float2 deltaUV, float d0, inout float totalAO, in
     float ao;
     float d;
     float2 uv;
+    [loop]
     for (int r = 1; r <= kernelSize; r++) {
         uv = uv0 + r * deltaUV;
         GetAoAndDepth(uv, ao, d);

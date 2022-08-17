@@ -101,14 +101,14 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.DispatchCompute(cs, kernel_SSAOFilter1, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
             } else if (settings.filterType == CameraBufferSettings.SSAO.FilterType.DepthBilateral) {
                 int kernel_SSAOFilter0 = cs.FindKernel("DepthBilateralFilter0");
-                buffer.SetComputeVectorParam(cs, "filterRadius", new Vector2(settings.filterRadius, 0));
+                buffer.SetComputeVectorParam(cs, "filterRadius", new Vector2(settings.filterRadius, settings.filterRadius));
                 buffer.SetComputeFloatParam(cs, "filterFactor", settings.filterFactor);
                 buffer.SetComputeIntParam(cs, "kernelSize", settings.kernelSize);
                 buffer.SetComputeTextureParam(cs, kernel_SSAOFilter0, "aoResult", ambientOcclusionId);
                 buffer.SetComputeTextureParam(cs, kernel_SSAOFilter0, "Filtered0", filtered0Id);
                 buffer.DispatchCompute(cs, kernel_SSAOFilter0, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
                 int kernel_SSAOFilter1 = cs.FindKernel("DepthBilateralFilter1");
-                buffer.SetComputeVectorParam(cs, "filterRadius", new Vector2(0, settings.filterRadius));
+                buffer.SetComputeVectorParam(cs, "filterRadius", new Vector2(-settings.filterRadius, -settings.filterRadius));
                 buffer.SetComputeFloatParam(cs, "filterFactor", settings.filterFactor);
                 buffer.SetComputeIntParam(cs, "kernelSize", settings.kernelSize);
                 buffer.SetComputeTextureParam(cs, kernel_SSAOFilter1, "aoResult", filtered0Id);
