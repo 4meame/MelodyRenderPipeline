@@ -107,7 +107,12 @@ public struct CameraBufferSettings {
             HBAO,
             GTAO,
         }
-        public AOType type;
+        public enum FilterType {
+            NormalBilateral,
+            DepthBilateral,
+        }
+        public AOType aOType;
+        public FilterType filterType;
         public bool enabled;
         public ComputeShader computeShader;
         public Texture2D randomTexture;
@@ -120,6 +125,8 @@ public struct CameraBufferSettings {
         [Range(0, 16)]
         public float filterRadius;
         public float filterFactor;
+        [Range(0, 16)]
+        public int kernelSize;
         [Header("Pure Depth AO")]
         public Vector4 pureDepthAOParameters;
         [Header("SSAO")]

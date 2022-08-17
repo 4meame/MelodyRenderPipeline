@@ -2,8 +2,10 @@
 #pragma kernel PureDepthSSAO
 #pragma kernel SSAO
 #pragma kernel HBAO
-#pragma kernel BilateralFilter0
-#pragma kernel BilateralFilter1
+#pragma kernel NormalBilateralFilter0
+#pragma kernel NormalBilateralFilter1
+#pragma kernel DepthBilateralFilter0
+#pragma kernel DepthBilateralFilter1
 
 RWTexture2D<float3> AmbientOcclusionRT;
 RWTexture2D<float3> Filtered0;
@@ -34,6 +36,7 @@ int numDirections;
 int maxRadiusPixels;
 float tanBias;
 float hbaoStrength;
+int kernelSize;
 
 //refer to : https://theorangeduck.com/page/pure-depth-ssao
 float3 normalFromDepth(float depth, float2 texCoords) {
@@ -147,112 +150,6 @@ void SSAO(uint3 id : SV_DispatchThreadID) {
     ao = saturate(ao + bias);
     ao = pow(ao, power);
     AmbientOcclusionRT[id.xy] = ao.xxx;
-}
-
-float3 GetSource(float2 screenUV) {
-    return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0);
-}
-
-float3 GetNormal(float2 screenUV) {
-    float4 depthNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
-    float3 normal = DecodeViewNormalStereo(depthNormal);
-    return normal;
-}
-
-float CompareNormal(float3 normal0, float3 normal1) {
-    return smoothstep(filterFactor, 1.0, dot(normal0, normal1));
-}
-
-[numthreads(8, 8, 1)]
-void BilateralFilter0(uint3 id : SV_DispatchThreadID) {
-    float2 delta = filterRadius * _CameraBufferSize.xy;
-    //[0,_CameraBufferSize-1] -> screen [0,1] uv
-    float2 uv = id.xy / _CameraBufferSize.zw;
-    float2 uv0a = uv - delta;
-    float2 uv0b = uv + delta;
-    float2 uv1a = uv - 2.0 * delta;
-    float2 uv1b = uv + 2.0 * delta;
-    float2 uv2a = uv - 3.0 * delta;
-    float2 uv2b = uv + 3.0 * delta;
-    //get normal
-    float3 normal = GetNormal(uv);
-    float3 normal0a = GetNormal(uv0a);
-    float3 normal0b = GetNormal(uv0b);
-    float3 normal1a = GetNormal(uv1a);
-    float3 normal1b = GetNormal(uv1b);
-    float3 normal2a = GetNormal(uv2a);
-    float3 normal2b = GetNormal(uv2b);
-    //get source
-    float3 source = GetSource(uv);
-    float3 source0a = GetSource(uv0a);
-    float3 source0b = GetSource(uv0b);
-    float3 source1a = GetSource(uv1a);
-    float3 source1b = GetSource(uv1b);
-    float3 source2a = GetSource(uv2a);
-    float3 source2b = GetSource(uv2b);
-    //calculate weight
-    float w = 0.37004005286;
-    float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
-    float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
-    float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
-    float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
-    float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
-    float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
-    float3 result = w * source;
-    result += w0a * source0a;
-    result += w0b * source0b;
-    result += w1a * source1a;
-    result += w1b * source1b;
-    result += w2a * source2a;
-    result += w2b * source2b;
-    result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
-    Filtered0[id.xy] = result;
-}
-
-[numthreads(8, 8, 1)]
-void BilateralFilter1(uint3 id : SV_DispatchThreadID) {
-    float2 delta = filterRadius * _CameraBufferSize.xy;
-    //[0,_CameraBufferSize-1] -> screen [0,1] uv
-    float2 uv = id.xy / _CameraBufferSize.zw;
-    float2 uv0a = uv - delta;
-    float2 uv0b = uv + delta;
-    float2 uv1a = uv - 2.0 * delta;
-    float2 uv1b = uv + 2.0 * delta;
-    float2 uv2a = uv - 3.0 * delta;
-    float2 uv2b = uv + 3.0 * delta;
-    //get normal
-    float3 normal = GetNormal(uv);
-    float3 normal0a = GetNormal(uv0a);
-    float3 normal0b = GetNormal(uv0b);
-    float3 normal1a = GetNormal(uv1a);
-    float3 normal1b = GetNormal(uv1b);
-    float3 normal2a = GetNormal(uv2a);
-    float3 normal2b = GetNormal(uv2b);
-    //get source
-    float3 source = GetSource(uv);
-    float3 source0a = GetSource(uv0a);
-    float3 source0b = GetSource(uv0b);
-    float3 source1a = GetSource(uv1a);
-    float3 source1b = GetSource(uv1b);
-    float3 source2a = GetSource(uv2a);
-    float3 source2b = GetSource(uv2b);
-    //calculate weight
-    float w = 0.37004005286;
-    float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
-    float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
-    float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
-    float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
-    float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
-    float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
-    float3 result = w * source;
-    result += w0a * source0a;
-    result += w0b * source0b;
-    result += w1a * source1a;
-    result += w1b * source1b;
-    result += w2a * source2a;
-    result += w2b * source2b;
-    result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
-    Filtered1[id.xy] = result;
 }
 
 float3 MinDiff(float3 p, float3 p1, float3 p2) {
@@ -374,6 +271,116 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
     AmbientOcclusionRT[id.xy] = ao.xxx;
 }
 
+
+
+float3 GetSource(float2 screenUV) {
+    return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0);
+}
+
+float3 GetNormal(float2 screenUV) {
+    float4 depthNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
+    float3 normal = DecodeViewNormalStereo(depthNormal);
+    return normal;
+}
+
+float CompareNormal(float3 normal0, float3 normal1) {
+    return smoothstep(filterFactor, 1.0, dot(normal0, normal1));
+}
+
+//blur with full resolution
+[numthreads(8, 8, 1)]
+void NormalBilateralFilter0(uint3 id : SV_DispatchThreadID) {
+    float2 delta = filterRadius * _CameraBufferSize.xy;
+    //[0,_CameraBufferSize-1] -> screen [0,1] uv
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 uv0a = uv - delta;
+    float2 uv0b = uv + delta;
+    float2 uv1a = uv - 2.0 * delta;
+    float2 uv1b = uv + 2.0 * delta;
+    float2 uv2a = uv - 3.0 * delta;
+    float2 uv2b = uv + 3.0 * delta;
+    //get normal
+    float3 normal = GetNormal(uv);
+    float3 normal0a = GetNormal(uv0a);
+    float3 normal0b = GetNormal(uv0b);
+    float3 normal1a = GetNormal(uv1a);
+    float3 normal1b = GetNormal(uv1b);
+    float3 normal2a = GetNormal(uv2a);
+    float3 normal2b = GetNormal(uv2b);
+    //get source
+    float3 source = GetSource(uv);
+    float3 source0a = GetSource(uv0a);
+    float3 source0b = GetSource(uv0b);
+    float3 source1a = GetSource(uv1a);
+    float3 source1b = GetSource(uv1b);
+    float3 source2a = GetSource(uv2a);
+    float3 source2b = GetSource(uv2b);
+    //calculate weight
+    float w = 0.37004005286;
+    float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
+    float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
+    float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
+    float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
+    float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
+    float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
+    float3 result = w * source;
+    result += w0a * source0a;
+    result += w0b * source0b;
+    result += w1a * source1a;
+    result += w1b * source1b;
+    result += w2a * source2a;
+    result += w2b * source2b;
+    result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
+    Filtered0[id.xy] = result;
+}
+
+//blur with full resolution
+[numthreads(8, 8, 1)]
+void NormalBilateralFilter1(uint3 id : SV_DispatchThreadID) {
+    float2 delta = filterRadius * _CameraBufferSize.xy;
+    //[0,_CameraBufferSize-1] -> screen [0,1] uv
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 uv0a = uv - delta;
+    float2 uv0b = uv + delta;
+    float2 uv1a = uv - 2.0 * delta;
+    float2 uv1b = uv + 2.0 * delta;
+    float2 uv2a = uv - 3.0 * delta;
+    float2 uv2b = uv + 3.0 * delta;
+    //get normal
+    float3 normal = GetNormal(uv);
+    float3 normal0a = GetNormal(uv0a);
+    float3 normal0b = GetNormal(uv0b);
+    float3 normal1a = GetNormal(uv1a);
+    float3 normal1b = GetNormal(uv1b);
+    float3 normal2a = GetNormal(uv2a);
+    float3 normal2b = GetNormal(uv2b);
+    //get source
+    float3 source = GetSource(uv);
+    float3 source0a = GetSource(uv0a);
+    float3 source0b = GetSource(uv0b);
+    float3 source1a = GetSource(uv1a);
+    float3 source1b = GetSource(uv1b);
+    float3 source2a = GetSource(uv2a);
+    float3 source2b = GetSource(uv2b);
+    //calculate weight
+    float w = 0.37004005286;
+    float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
+    float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
+    float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
+    float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
+    float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
+    float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
+    float3 result = w * source;
+    result += w0a * source0a;
+    result += w0b * source0b;
+    result += w1a * source1a;
+    result += w1b * source1b;
+    result += w2a * source2a;
+    result += w2b * source2b;
+    result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
+    Filtered1[id.xy] = result;
+}
+
 void GetAoAndDepth(float2 uv, inout float ao, inout float depth) {
     ao = SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, uv, 0);
     depth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
@@ -385,4 +392,51 @@ float CrossBilateralWeight(float r, float d, float d0) {
     float blurFalloff = 1.0 / (2.0 * blurSigma * blurSigma);
     float dz = (d0 - d) * _ProjectionParams.z * filterFactor;
     return exp2(-r * r * blurFalloff - dz * dz);
+}
+
+void ProcessSample(float ao, float d, float r, float d0, inout float totalAO, inout float totalW) {
+    float w = CrossBilateralWeight(r, d, d0);
+    totalW += w;
+    totalAO += w * ao;
+}
+
+void ProcessRadius(float2 uv0, float2 deltaUV, float d0, inout float totalAO, inout float totalW) {
+    float ao;
+    float d;
+    float2 uv;
+    for (int r = 1; r <= kernelSize; r++) {
+        uv = uv0 + r * deltaUV;
+        GetAoAndDepth(uv, ao, d);
+        ProcessSample(ao, d, r, d0, totalAO, totalW);
+    }
+}
+
+//blur with full resolution
+[numthreads(8, 8, 1)]
+void DepthBilateralFilter0(uint3 id : SV_DispatchThreadID) {
+    //[0,_CameraBufferSize-1] -> screen [0,1] uv
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 deltaUV = filterRadius / _CameraBufferSize.zw;
+    float totalAO;
+    float depth;
+    GetAoAndDepth(uv, totalAO, depth);
+    float totalW = 1.0;
+    ProcessRadius(uv, deltaUV, depth, totalAO, totalW);
+    totalAO /= totalW;
+    Filtered0[id.xy] = totalAO.xxx;
+}
+
+//blur with full resolution
+[numthreads(8, 8, 1)]
+void DepthBilateralFilter1(uint3 id : SV_DispatchThreadID) {
+    //[0,_CameraBufferSize-1] -> screen [0,1] uv
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 deltaUV = filterRadius / _CameraBufferSize.zw;
+    float totalAO;
+    float depth;
+    GetAoAndDepth(uv, totalAO, depth);
+    float totalW = 1.0;
+    ProcessRadius(uv, deltaUV, depth, totalAO, totalW);
+    totalAO /= totalW;
+    Filtered1[id.xy] = totalAO.xxx;
 }
