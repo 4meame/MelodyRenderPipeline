@@ -2,6 +2,7 @@
 #pragma kernel PureDepthSSAO
 #pragma kernel SSAO
 #pragma kernel HBAO
+#pragma kernel GTAO
 #pragma kernel NormalBilateralFilter0
 #pragma kernel NormalBilateralFilter1
 #pragma kernel DepthBilateralFilter0
@@ -271,7 +272,34 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
     AmbientOcclusionRT[id.xy] = ao.xxx;
 }
 
+[numthreads(8, 8, 1)]
+void GTAO(uint3 id : SV_DispatchThreadID) {
+    float2 bufferSize = _CameraBufferSize.zw / downSample;
+    float2 invBufferSize = _CameraBufferSize.xy * downSample;
+    float2 screenUV = id.xy / bufferSize;
+    float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
+    //depth of the DepthNormal is not realiabe, maybe sample Depth Texture instead
+    float4 depthTexture = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0);
+    float3 bufferNormal = DecodeViewNormalStereo(depthNormalTexture);
+    //float bufferDepth = DecodeFloatRG(depthNormalTexture.zw);
+    float bufferDepth = depthTexture.r;
+    //Linear01Depth get [0,1] depth, LinearEyeDepth get [near, far] depth
+    float linearDepth = LinearEyeDepth(bufferDepth, _ZBufferParams);
+    float linear01Depth = Linear01Depth(bufferDepth, _ZBufferParams);
+    //point and surroundings
+    float3 p, pr, pl, pt, pb;
+    p = UvToViewSpace(screenUV, linear01Depth);
+    pr = UvToViewSpace(screenUV + float2(invBufferSize.x, 0), linear01Depth);
+    pl = UvToViewSpace(screenUV + float2(-invBufferSize.x, 0), linear01Depth);
+    pt = UvToViewSpace(screenUV + float2(0, invBufferSize.y), linear01Depth);
+    pb = UvToViewSpace(screenUV + float2(0, -invBufferSize.y), linear01Depth);
+    //get view space position delta of the point p in screen space
+    float3 dpdu = MinDiff(p, pr, pl);
+    float3 dpdv = MinDiff(p, pt, pb) * _CameraBufferSize.x * _CameraBufferSize.w;
+    float3 geometricNormal = normalize(cross(dpdu, dpdv));
 
+    AmbientOcclusionRT[id.xy] = geometricNormal;
+}
 
 float3 GetSource(float2 screenUV) {
     return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0);

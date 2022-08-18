@@ -84,6 +84,13 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "RandomTexture", settings.randomTexture);
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
                 buffer.DispatchCompute(cs, kernel_SSAOResolve, aoBufferSize.x / 8, aoBufferSize.y / 8, 1);
+            } else if(settings.aOType == CameraBufferSettings.SSAO.AOType.GTAO) {
+                Matrix4x4 projection = camera.projectionMatrix;
+                buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
+                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
+                int kernel_SSAOResolve = cs.FindKernel("GTAO");
+                buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
+                buffer.DispatchCompute(cs, kernel_SSAOResolve, aoBufferSize.x / 8, aoBufferSize.y / 8, 1);
             }
 
             if(settings.filterType == CameraBufferSettings.SSAO.FilterType.NormalBilateral) {
