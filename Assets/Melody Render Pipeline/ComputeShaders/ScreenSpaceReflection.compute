@@ -96,6 +96,7 @@ inline bool TraceScreenSpaceRay(float3 rayOrigin, float3 rayDirection, float jit
 	float4 pqk = float4(P0, Q0.z, k0);
 	float4 dPQK = float4(dP, dQ.z, dk);
 	bool intersect = false;
+	[loop]
 	for (i = 0; i < iterations && intersect == false; i++) {
 		pqk += dPQK;
 		zA = zB;

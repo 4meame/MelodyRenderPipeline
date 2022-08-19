@@ -75,7 +75,7 @@ public class ScreenSpaceAmbientOcclusion {
                 Matrix4x4 projection = camera.projectionMatrix;
                 buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
                 buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
-                buffer.SetComputeFloatParam(cs, "CameraNearPlane", camera.nearClipPlane);
+                buffer.SetComputeFloatParam(cs, "_CameraNearPlane", camera.nearClipPlane);
                 buffer.SetComputeIntParam(cs, "numDirections", settings.numDirections);
                 buffer.SetComputeIntParam(cs, "maxRadiusPixels", settings.maxRadiusPixels);
                 buffer.SetComputeFloatParam(cs, "tanBias", settings.tanBias);

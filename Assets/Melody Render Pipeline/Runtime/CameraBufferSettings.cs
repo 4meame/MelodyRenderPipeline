@@ -140,6 +140,9 @@ public struct CameraBufferSettings {
         public float tanBias;
         [Range(0, 5)]
         public float hbaoStrength;
+        [Header("GTAO")]
+        public float thickness;
+
         public bool debug;
     }
     public SSAO ssao;

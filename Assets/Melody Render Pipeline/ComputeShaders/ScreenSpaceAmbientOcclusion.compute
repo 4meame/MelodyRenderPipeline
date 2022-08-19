@@ -32,12 +32,17 @@ float contrast;
 float magnitude;
 float power;
 //hbao method properties
-float CameraNearPlane;
+float _CameraNearPlane;
 int numDirections;
 int maxRadiusPixels;
 float tanBias;
 float hbaoStrength;
 int kernelSize;
+//gtao method properties
+float _HalfProjScale;
+float4 fadeParams;
+float numSlice;
+float thickness;
 
 //refer to : https://theorangeduck.com/page/pure-depth-ssao
 float3 normalFromDepth(float depth, float2 texCoords) {
@@ -57,6 +62,7 @@ float3 UvToViewSpace(float2 uv, float depth) {
     float4 cameraRay = float4(uv * 2.0 - 1.0, 1.0, 1.0);
     cameraRay = mul(_CameraInverseProjection, cameraRay);
     cameraRay.xyz = cameraRay.xyz / cameraRay.w;
+    //linear depth 0-1
     return cameraRay.xyz * depth;
 }
 
@@ -83,6 +89,7 @@ void PureDepthSSAO(uint3 id : SV_DispatchThreadID) {
     //near big far small
     float sampleRadius = aoRadius / linearDepth;
     float occlusion = 0.0;
+    [loop]
     for (int i = 0; i < 16; i++) {
         float3 ray = sampleRadius * reflect(sample_sphere[i], random);
         float3 hemiRay = position + sign(dot(ray, normal)) * ray;
@@ -128,6 +135,7 @@ void SSAO(uint3 id : SV_DispatchThreadID) {
     float3 binormal = cross(bufferNormal, tangent);
     float3x3 tbn = float3x3(tangent, binormal, normal);
     float occlusion = 0.0;
+    [loop]
     for (int i = 0; i < 16; i++) {
         float3 ray = aoRadius * normalize(reflect(sample_sphere[i], random));
         ray = mul(tbn, ray);
@@ -199,11 +207,17 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
     float linear01Depth = Linear01Depth(bufferDepth, _ZBufferParams);
     //point and surroundings
     float3 p, pr, pl, pt, pb;
+    //scale this tiny tiny delta
+    float2 delta = invBufferSize * 1.2;
     p = UvToViewSpace(screenUV, linear01Depth);
-    pr = UvToViewSpace(screenUV + float2(invBufferSize.x, 0), linear01Depth);
-    pl = UvToViewSpace(screenUV + float2(-invBufferSize.x, 0), linear01Depth);
-    pt = UvToViewSpace(screenUV + float2(0, invBufferSize.y), linear01Depth);
-    pb = UvToViewSpace(screenUV + float2(0, -invBufferSize.y), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(delta.x, 0), 0) , _ZBufferParams);
+    pr = UvToViewSpace(screenUV + float2(delta.x, 0), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(-delta.x, 0), 0), _ZBufferParams);
+    pl = UvToViewSpace(screenUV + float2(-delta.x, 0), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(0, delta.y), 0), _ZBufferParams);
+    pt = UvToViewSpace(screenUV + float2(0, delta.y), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(0, -delta.y), 0), _ZBufferParams);
+    pb = UvToViewSpace(screenUV + float2(0, -delta.y), linear01Depth);
     //get view space position delta of the point p in screen space
     float3 dpdu = MinDiff(p, pr, pl);
     float3 dpdv = MinDiff(p, pt, pb) * _CameraBufferSize.x * _CameraBufferSize.w;
@@ -211,7 +225,7 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
     float3 random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_clamp, screenUV, 0).rgb);
     random = normalize(SAMPLE_TEXTURE2D_LOD(RandomTexture, sampler_linear_repeat, screenUV + random, 0).rgb);
     //calculate the projected size of the hemisphere
-    float2 sampleRadiusUV = 0.5 * aoRadius * CameraNearPlane / linearDepth;
+    float2 sampleRadiusUV = 0.5 * aoRadius * _CameraNearPlane / linearDepth;
     float radiusPixel = sampleRadiusUV.x * (_CameraBufferSize.zw / downSample);
     float ao = 1.0;
     //make sure the radius of the projected hemisphere is more than a pixel
@@ -233,6 +247,7 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
         //radius diff
         float alpha = 2.0 * PI / numDirections;
         //calculate the horizon occlusion of each direction
+        [loop]
         for (int i = 0; i < numDirections; ++i) {
             float theta = alpha * i;
             //random offset the direction
@@ -250,6 +265,7 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
             float3 H;
             float tanH;
             float dist;
+            [loop]
             for (int j = 1; j <= sampleCount; ++j) {
                 uv += deltaUV;
                 float depth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
@@ -272,6 +288,21 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
     AmbientOcclusionRT[id.xy] = ao.xxx;
 }
 
+//refer to : Practical Realtime Strategies for Accurate Indirect Occlusion from siggraph 2016
+float SpatialDirection(float2 uv) {
+    float noise = (1.0 / 16.0) * ((((int)(uv.x + uv.y) & 0x3) << 2) + ((int)uv.x & 0x3));
+    return noise;
+}
+//refer to : Practical Realtime Strategies for Accurate Indirect Occlusion from siggraph 2016
+float SpatialOffset(float2 uv) {
+    float noise = (1.0 / 4.0) * ((int)(uv.y - uv.x) & 0x3);
+    return noise;
+}
+
+float ComputeDistanceFade(float distance) {
+    return saturate(max(0, distance - fadeParams.x) * fadeParams.y);
+}
+
 [numthreads(8, 8, 1)]
 void GTAO(uint3 id : SV_DispatchThreadID) {
     float2 bufferSize = _CameraBufferSize.zw / downSample;
@@ -286,17 +317,90 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     //Linear01Depth get [0,1] depth, LinearEyeDepth get [near, far] depth
     float linearDepth = LinearEyeDepth(bufferDepth, _ZBufferParams);
     float linear01Depth = Linear01Depth(bufferDepth, _ZBufferParams);
-    //point and surroundings
     float3 p, pr, pl, pt, pb;
+    //scale this tiny tiny delta
+    float2 delta = invBufferSize * 1.2;
     p = UvToViewSpace(screenUV, linear01Depth);
-    pr = UvToViewSpace(screenUV + float2(invBufferSize.x, 0), linear01Depth);
-    pl = UvToViewSpace(screenUV + float2(-invBufferSize.x, 0), linear01Depth);
-    pt = UvToViewSpace(screenUV + float2(0, invBufferSize.y), linear01Depth);
-    pb = UvToViewSpace(screenUV + float2(0, -invBufferSize.y), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(delta.x, 0), 0), _ZBufferParams);
+    pr = UvToViewSpace(screenUV + float2(delta.x, 0), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(-delta.x, 0), 0), _ZBufferParams);
+    pl = UvToViewSpace(screenUV + float2(-delta.x, 0), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(0, delta.y), 0), _ZBufferParams);
+    pt = UvToViewSpace(screenUV + float2(0, delta.y), linear01Depth);
+    linear01Depth = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV + float2(0, -delta.y), 0), _ZBufferParams);
+    pb = UvToViewSpace(screenUV + float2(0, -delta.y), linear01Depth);
     //get view space position delta of the point p in screen space
     float3 dpdu = MinDiff(p, pr, pl);
     float3 dpdv = MinDiff(p, pt, pb) * _CameraBufferSize.x * _CameraBufferSize.w;
     float3 geometricNormal = normalize(cross(dpdu, dpdv));
+    float3 shadingNromal = normalize(bufferNormal);
+    //from position to camera
+    float3 viewVector = normalize(-p);
+    float2 RAT = lerp(float2(aoRadius, thickness), fadeParams.zw, ComputeDistanceFade(abs(p.z)).xx);
+    float radius = RAT.x;
+    float thickness = RAT.y;
+    //divide by Ns+1 so that the farthest samples are not fully attenuated
+    float stepRadius = (max(min((radius * _HalfProjScale) / abs(p.z), 512), (float)numSlice)) / ((float)numSlice + 1);
+    float noiseOffset = SpatialOffset(screenUV);
+    float noiseDirection = SpatialDirection(screenUV);
+    float ao = 0.0;
+    //slice rotation per angle
+    float angle;
+    float3 sliceDir;
+    //plane is a half round slice of hemisphere, its normal can be calculated by cross product of vieDir and sliceDir cause all hemisphere is face to view
+    float3 planeNormal, planeTangent;
+    //cos weighting normal projection
+    float3 normalSliceProj;
+    float normalProjLength;
+    //angle of view and projected normal
+    float cos_gamma, gamma;
+    //h1, h2 is positive and negative max occluded angle
+    float3 h1, h2;
+    float2 h, H, h1h2, h1h2Length, falloff;
+    float2 uvOffset;
+    float4 uvSlice;
+    //
+    float bentAngle;
+    float3 bentNormal;
+    //hemisphere is along to view, and sample in several directions
+    [loop]
+    for (int i = 0; i < sampleCount; i++) {
+        //rotate from 0 to PI makes a full circle
+        angle = (i + noiseDirection) * (PI / (float)sampleCount);
+        sliceDir = float3(float2(cos(angle), sin(angle)), 0);
+        planeNormal = normalize(cross(sliceDir, viewVector));
+        planeTangent = cross(planeNormal, viewVector);
+        //geometric normal projected on the slice, by Gram－Schmidt methods
+        normalSliceProj = geometricNormal - planeNormal * dot(geometricNormal, planeNormal);
+        normalProjLength = length(normalSliceProj);
+        //calculate a gamma angle to clamp h1&h2 later in the normal hemispehre(instead of view hemisphere)
+        cos_gamma = clamp(dot(normalize(normalSliceProj), viewVector), -1, 1);
+        //it is sigened
+        gamma = -sign(dot(normalSliceProj, planeTangent)) * acos(cos_gamma);
+        //init h params
+        h = -1;
+        [loop]
+        for (int j = 0; j < numSlice; j++) {
+            //sample slices by steps marching(imagine sample points is climbing on the sphere surfacce and projected in the radius)
+            uvOffset = sliceDir.xy * invBufferSize * max(stepRadius * (j + noiseOffset), 1 + j);
+            uvSlice = screenUV.xyxy + float4(uvOffset.xy, -uvOffset.xy);
+            //calculate h1&h2 vectors
+            float depth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, uvSlice.xy, 0);
+            depth = Linear01Depth(depth, _ZBufferParams);
+            h1 = UvToViewSpace(uvSlice.xy, depth) - p;
+            depth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, uvSlice.zw, 0);
+            depth = Linear01Depth(depth, _ZBufferParams);
+            h2 = UvToViewSpace(uvSlice.zw, depth) - p;
+            //calculate distance falloff
+            h1h2 = float2(dot(h1, h1), dot(h2, h2));
+            falloff = saturate(h1h2 * (2 / (aoRadius * aoRadius)));
+            //count angle of h1&h1 in one params
+            h1h2Length = rsqrt(h1h2);
+            H = float2(dot(h1, viewVector), dot(h2, viewVector)) * h1h2Length;
+            h = (H.xy > h.xy) ? lerp(H, h, falloff) : lerp(H.xy, h.xy, thickness);
+        }
+    }
+
 
     AmbientOcclusionRT[id.xy] = geometricNormal;
 }
@@ -409,63 +513,14 @@ void NormalBilateralFilter1(uint3 id : SV_DispatchThreadID) {
     Filtered1[id.xy] = result;
 }
 
-void GetAoAndDepth(float2 uv, inout float ao, inout float depth) {
-    ao = SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, uv, 0);
-    depth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
-    depth = Linear01Depth(depth, _ZBufferParams);
-}
-
-float CrossBilateralWeight(float r, float d, float d0) {
-    float blurSigma = filterRadius * 0.5;
-    float blurFalloff = 1.0 / (2.0 * blurSigma * blurSigma);
-    float dz = (d0 - d) * _ProjectionParams.z * filterFactor;
-    return exp2(-r * r * blurFalloff - dz * dz);
-}
-
-void ProcessSample(float ao, float d, float r, float d0, inout float totalAO, inout float totalW) {
-    float w = CrossBilateralWeight(r, d, d0);
-    totalW += w;
-    totalAO += w * ao;
-}
-
-void ProcessRadius(float2 uv0, float2 deltaUV, float d0, inout float totalAO, inout float totalW) {
-    float ao;
-    float d;
-    float2 uv;
-    [loop]
-    for (int r = 1; r <= kernelSize; r++) {
-        uv = uv0 + r * deltaUV;
-        GetAoAndDepth(uv, ao, d);
-        ProcessSample(ao, d, r, d0, totalAO, totalW);
-    }
-}
-
 //blur with full resolution
 [numthreads(8, 8, 1)]
 void DepthBilateralFilter0(uint3 id : SV_DispatchThreadID) {
-    //[0,_CameraBufferSize-1] -> screen [0,1] uv
-    float2 uv = id.xy / _CameraBufferSize.zw;
-    float2 deltaUV = filterRadius / _CameraBufferSize.zw;
-    float totalAO;
-    float depth;
-    GetAoAndDepth(uv, totalAO, depth);
-    float totalW = 1.0;
-    ProcessRadius(uv, deltaUV, depth, totalAO, totalW);
-    totalAO /= totalW;
-    Filtered0[id.xy] = totalAO.xxx;
+    Filtered0[id.xy] = 0;
 }
 
 //blur with full resolution
 [numthreads(8, 8, 1)]
 void DepthBilateralFilter1(uint3 id : SV_DispatchThreadID) {
-    //[0,_CameraBufferSize-1] -> screen [0,1] uv
-    float2 uv = id.xy / _CameraBufferSize.zw;
-    float2 deltaUV = filterRadius / _CameraBufferSize.zw;
-    float totalAO;
-    float depth;
-    GetAoAndDepth(uv, totalAO, depth);
-    float totalW = 1.0;
-    ProcessRadius(uv, deltaUV, depth, totalAO, totalW);
-    totalAO /= totalW;
-    Filtered1[id.xy] = totalAO.xxx;
+    Filtered1[id.xy] = 1;
 }

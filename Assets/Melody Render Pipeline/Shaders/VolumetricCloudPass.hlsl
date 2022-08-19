@@ -347,6 +347,7 @@ float3 SampleLight(float3 origin, float originDensity, float pixelAlpha, float3 
 	float energy = 0.0;
 	//optical thickness 
 	float thickness = 0.0;
+	[loop]
 	for (float i = 0.0; i < iterations; i++) {
 		randomOffset = RandomUnitSphere[i] * coneRadius;
 		ray += rayStep;
@@ -487,6 +488,7 @@ float4 BaseFragment(Varyings input) : SV_TARGET{
 		float zeroThreshold = 4.0;
 		int zeroCount = 0;
 		float cosAngle = dot(rayDirection, _MainLightPosition);
+		[loop]
 		while (true) {
 			//early exit if reaching max iterations or full opacity or atmosphere or hit scene object
 			if (i >= _MaxIterations || color.a >= 1.0 || heightFraction >= 1.0 || travelling >= risInfo.y) {
