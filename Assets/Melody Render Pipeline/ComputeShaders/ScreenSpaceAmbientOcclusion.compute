@@ -33,16 +33,17 @@ float magnitude;
 float power;
 //hbao method properties
 float _CameraNearPlane;
-int numDirections;
-int maxRadiusPixels;
+int numDirection;
+int maxRadiusPixel;
 float tanBias;
 float hbaoStrength;
 int kernelSize;
 //gtao method properties
 float _HalfProjScale;
 float4 fadeParams;
-float numSlice;
+int numSlice;
 float thickness;
+float gtaoStrength;
 
 //refer to : https://theorangeduck.com/page/pure-depth-ssao
 float3 normalFromDepth(float depth, float2 texCoords) {
@@ -235,20 +236,20 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
         //divide by Ns+1 so that the farthest samples are not fully attenuated(normally numSteps is equal to sampleCount)
         float stepSizePix = radiusPixel / (numSteps + 1);
         //clamp numSteps if it is greater than the max kernel footprint
-        float maxNumSteps = maxRadiusPixels / stepSizePix;
+        float maxNumSteps = maxRadiusPixel / stepSizePix;
         if (maxNumSteps < numSteps) {
             //use dithering to avoid AO discontinuities
             numSteps = floor(maxNumSteps + random.z);
             numSteps = max(numSteps, 1);
-            stepSizePix = maxRadiusPixels / numSteps;
+            stepSizePix = maxRadiusPixel / numSteps;
         }
         //step size in uv space
         float2 stepSize = stepSizePix * invBufferSize;
         //radius diff
-        float alpha = 2.0 * PI / numDirections;
+        float alpha = 2.0 * PI / numDirection;
         //calculate the horizon occlusion of each direction
         [loop]
-        for (int i = 0; i < numDirections; ++i) {
+        for (int i = 0; i < numDirection; ++i) {
             float theta = alpha * i;
             //random offset the direction
             float2 dir = RotateDirections(float2(cos(theta), sin(theta)), random.xy);
@@ -282,25 +283,36 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
                 }
             }
         }
-        ao = 1.0 - ao / numDirections * hbaoStrength;
+        ao = 1.0 - ao / numDirection * hbaoStrength;
     }
 
     AmbientOcclusionRT[id.xy] = ao.xxx;
 }
 
 //refer to : Practical Realtime Strategies for Accurate Indirect Occlusion from siggraph 2016
-float SpatialDirection(float2 uv) {
-    float noise = (1.0 / 16.0) * ((((int)(uv.x + uv.y) & 0x3) << 2) + ((int)uv.x & 0x3));
+float SpatialDirection(float2 position) {
+    float noise = (1.0 / 16.0) * ((((int)(position.x + position.y) & 0x3) << 2) + ((int)position.x & 0x3));
     return noise;
 }
 //refer to : Practical Realtime Strategies for Accurate Indirect Occlusion from siggraph 2016
-float SpatialOffset(float2 uv) {
-    float noise = (1.0 / 4.0) * ((int)(uv.y - uv.x) & 0x3);
+float SpatialOffset(float2 position) {
+    float noise = (1.0 / 4.0) * ((int)(position.y - position.x) & 0x3);
     return noise;
 }
 
 float ComputeDistanceFade(float distance) {
     return saturate(max(0, distance - fadeParams.x) * fadeParams.y);
+}
+
+float IntegrateArc_UniformWeighting(float2 h) {
+    float2 Arc = 1 - cos(h);
+    return Arc.x + Arc.y;
+}
+
+float IntegrateArc_CosineWeighting(float2 h, float gamma) {
+    //add cos(gamma) to make result 0 when gamma is 0
+    float2 Arc = -cos(2 * h - gamma) + cos(gamma) + 2 * h * sin(gamma);
+    return 0.25 * (Arc.x + Arc.y);
 }
 
 [numthreads(8, 8, 1)]
@@ -341,9 +353,9 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     float thickness = RAT.y;
     //divide by Ns+1 so that the farthest samples are not fully attenuated
     float stepRadius = (max(min((radius * _HalfProjScale) / abs(p.z), 512), (float)numSlice)) / ((float)numSlice + 1);
-    float noiseOffset = SpatialOffset(screenUV);
-    float noiseDirection = SpatialDirection(screenUV);
-    float ao = 0.0;
+    float noiseOffset = SpatialOffset(screenUV * bufferSize);
+    float noiseDirection = SpatialDirection(screenUV * bufferSize);
+    float occlusion = 0.0;
     //slice rotation per angle
     float angle;
     float3 sliceDir;
@@ -359,7 +371,7 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     float2 h, H, h1h2, h1h2Length, falloff;
     float2 uvOffset;
     float4 uvSlice;
-    //
+    //bent normal use for specular occlusion
     float bentAngle;
     float3 bentNormal;
     //hemisphere is along to view, and sample in several directions
@@ -368,8 +380,9 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
         //rotate from 0 to PI makes a full circle
         angle = (i + noiseDirection) * (PI / (float)sampleCount);
         sliceDir = float3(float2(cos(angle), sin(angle)), 0);
+        //NOTE : vecort order of the cross product MAKE SENSE(positive or negative dir)
         planeNormal = normalize(cross(sliceDir, viewVector));
-        planeTangent = cross(planeNormal, viewVector);
+        planeTangent = cross(viewVector, planeNormal);
         //geometric normal projected on the slice, by Gram－Schmidt methods
         normalSliceProj = geometricNormal - planeNormal * dot(geometricNormal, planeNormal);
         normalProjLength = length(normalSliceProj);
@@ -393,16 +406,25 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
             h2 = UvToViewSpace(uvSlice.zw, depth) - p;
             //calculate distance falloff
             h1h2 = float2(dot(h1, h1), dot(h2, h2));
-            falloff = saturate(h1h2 * (2 / (aoRadius * aoRadius)));
+            falloff = saturate(h1h2 * (2 / (radius * radius)));
             //count angle of h1&h1 in one params
             h1h2Length = rsqrt(h1h2);
             H = float2(dot(h1, viewVector), dot(h2, viewVector)) * h1h2Length;
-            h = (H.xy > h.xy) ? lerp(H, h, falloff) : lerp(H.xy, h.xy, thickness);
+            h = (H.xy > h.xy) ? lerp(H, h, falloff) : lerp(H, h, thickness);
         }
+        h = acos(clamp(h, -1, 1));
+        //clamp h with the normal hemisphere
+        h.x = gamma + max(-h.x - gamma, -PI / 2);
+        h.y = gamma + min(h.y - gamma, PI / 2);
+        //construct bent normal
+        bentAngle = (h.x + h.y) * 0.5;
+        bentNormal += viewVector * cos(bentAngle) - planeTangent * sin(bentAngle);
+        //integrate occlusion
+        occlusion += normalProjLength * IntegrateArc_CosineWeighting(h, gamma);
     }
+    occlusion = saturate(pow(occlusion / (float)sampleCount, gtaoStrength));
 
-
-    AmbientOcclusionRT[id.xy] = geometricNormal;
+    AmbientOcclusionRT[id.xy] = occlusion;
 }
 
 float3 GetSource(float2 screenUV) {

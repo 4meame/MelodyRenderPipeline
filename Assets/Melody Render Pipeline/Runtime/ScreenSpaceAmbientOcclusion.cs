@@ -76,8 +76,8 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
                 buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
                 buffer.SetComputeFloatParam(cs, "_CameraNearPlane", camera.nearClipPlane);
-                buffer.SetComputeIntParam(cs, "numDirections", settings.numDirections);
-                buffer.SetComputeIntParam(cs, "maxRadiusPixels", settings.maxRadiusPixels);
+                buffer.SetComputeIntParam(cs, "numDirection", settings.numDirection);
+                buffer.SetComputeIntParam(cs, "maxRadiusPixel", settings.maxRadiusPixel);
                 buffer.SetComputeFloatParam(cs, "tanBias", settings.tanBias);
                 buffer.SetComputeFloatParam(cs, "hbaoStrength", settings.hbaoStrength);
                 int kernel_SSAOResolve = cs.FindKernel("HBAO");
@@ -85,6 +85,13 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
                 buffer.DispatchCompute(cs, kernel_SSAOResolve, aoBufferSize.x / 8, aoBufferSize.y / 8, 1);
             } else if(settings.aOType == CameraBufferSettings.SSAO.AOType.GTAO) {
+                buffer.SetComputeVectorParam(cs, "fadeParams", settings.fadeParams);
+                buffer.SetComputeIntParam(cs, "numSlice", settings.numSlice);
+                buffer.SetComputeFloatParam(cs, "thickness", settings.thickness);
+                buffer.SetComputeFloatParam(cs, "gtaoStrength", settings.gtaoStrength);
+                float fovRad = camera.fieldOfView * Mathf.Deg2Rad;
+                float projScale = aoBufferSize.y / (Mathf.Tan(fovRad * 0.5f) * 2) * 0.5f;
+                buffer.SetComputeFloatParam(cs, "_HalfProjScale", projScale);
                 Matrix4x4 projection = camera.projectionMatrix;
                 buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
                 buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);

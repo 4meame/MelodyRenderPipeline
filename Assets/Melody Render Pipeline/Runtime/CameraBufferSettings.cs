@@ -133,15 +133,18 @@ public struct CameraBufferSettings {
         public Vector4 SSAOParameters;
         [Header("HBAO")]
         [Range(1, 32)]
-        public int numDirections;
+        public int numDirection;
         [Range(1, 100)]
-        public int maxRadiusPixels;
+        public int maxRadiusPixel;
         [Range(-1, 1)]
         public float tanBias;
         [Range(0, 5)]
         public float hbaoStrength;
         [Header("GTAO")]
+        public Vector4 fadeParams;
+        public int numSlice;
         public float thickness;
+        public float gtaoStrength;
 
         public bool debug;
     }
