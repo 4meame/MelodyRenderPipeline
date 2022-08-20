@@ -159,7 +159,7 @@ public partial class CameraRender
         ExecuteBuffer();
         DrawDepthNormal(useDepthNormalTexture);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
-        ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao);
+        ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         ssr.Setup(context, camera, cullingResults, cameraBufferSettings.ssr, useHDR, useDynamicBatching, useInstancing, useLightsPerObject);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);

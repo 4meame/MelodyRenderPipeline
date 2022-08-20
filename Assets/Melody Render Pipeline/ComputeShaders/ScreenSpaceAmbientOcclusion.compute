@@ -7,12 +7,14 @@
 #pragma kernel NormalBilateralFilter1
 #pragma kernel DepthBilateralFilter0
 #pragma kernel DepthBilateralFilter1
+#pragma kernel Debug
 
-RWTexture2D<float3> AmbientOcclusionRT;
-RWTexture2D<float3> Filtered0;
-RWTexture2D<float3> Filtered1;
+RWTexture2D<float4> AmbientOcclusionRT;
+RWTexture2D<float4> Filtered0;
+RWTexture2D<float4> Filtered1;
 Texture2D<float3> RandomTexture;
-Texture2D<float3> aoResult;
+Texture2D<float4> aoResult;
+RWTexture2D<float3> debugResult;
 float4x4 _CameraProjection;
 float4x4 _CameraInverseProjection;
 //shared properties
@@ -100,7 +102,7 @@ void PureDepthSSAO(uint3 id : SV_DispatchThreadID) {
     }
     float ao = 1 - strength * occlusion / 16;
     ao = saturate(ao + correction);
-    AmbientOcclusionRT[id.xy] = ao.xxx;
+    AmbientOcclusionRT[id.xy] = float4(0, 0, 0, ao);
 }
 
 //there are many methods about SSAO,such as sphere-sample based、hemisphere-sample based(cos angle weight) and linear-sample based(distance weight), this is the simple sphere-sample based method
@@ -159,7 +161,7 @@ void SSAO(uint3 id : SV_DispatchThreadID) {
     float ao = 1 - magnitude * occlusion / 16;
     ao = saturate(ao + bias);
     ao = pow(ao, power);
-    AmbientOcclusionRT[id.xy] = ao.xxx;
+    AmbientOcclusionRT[id.xy] = float4(0, 0, 0, ao);
 }
 
 float3 MinDiff(float3 p, float3 p1, float3 p2) {
@@ -286,7 +288,7 @@ void HBAO(uint3 id : SV_DispatchThreadID) {
         ao = 1.0 - ao / numDirection * hbaoStrength;
     }
 
-    AmbientOcclusionRT[id.xy] = ao.xxx;
+    AmbientOcclusionRT[id.xy] = float4(0, 0, 0, ao);
 }
 
 //refer to : Practical Realtime Strategies for Accurate Indirect Occlusion from siggraph 2016
@@ -424,10 +426,10 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     }
     occlusion = saturate(pow(occlusion / (float)sampleCount, gtaoStrength));
 
-    AmbientOcclusionRT[id.xy] = occlusion;
+    AmbientOcclusionRT[id.xy] = float4(bentNormal, occlusion);
 }
 
-float3 GetSource(float2 screenUV) {
+float4 GetSource(float2 screenUV) {
     return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0);
 }
 
@@ -462,13 +464,13 @@ void NormalBilateralFilter0(uint3 id : SV_DispatchThreadID) {
     float3 normal2a = GetNormal(uv2a);
     float3 normal2b = GetNormal(uv2b);
     //get source
-    float3 source = GetSource(uv);
-    float3 source0a = GetSource(uv0a);
-    float3 source0b = GetSource(uv0b);
-    float3 source1a = GetSource(uv1a);
-    float3 source1b = GetSource(uv1b);
-    float3 source2a = GetSource(uv2a);
-    float3 source2b = GetSource(uv2b);
+    float4 source = GetSource(uv);
+    float4 source0a = GetSource(uv0a);
+    float4 source0b = GetSource(uv0b);
+    float4 source1a = GetSource(uv1a);
+    float4 source1b = GetSource(uv1b);
+    float4 source2a = GetSource(uv2a);
+    float4 source2b = GetSource(uv2b);
     //calculate weight
     float w = 0.37004005286;
     float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
@@ -477,7 +479,7 @@ void NormalBilateralFilter0(uint3 id : SV_DispatchThreadID) {
     float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
     float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
     float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
-    float3 result = w * source;
+    float4 result = w * source;
     result += w0a * source0a;
     result += w0b * source0b;
     result += w1a * source1a;
@@ -509,13 +511,13 @@ void NormalBilateralFilter1(uint3 id : SV_DispatchThreadID) {
     float3 normal2a = GetNormal(uv2a);
     float3 normal2b = GetNormal(uv2b);
     //get source
-    float3 source = GetSource(uv);
-    float3 source0a = GetSource(uv0a);
-    float3 source0b = GetSource(uv0b);
-    float3 source1a = GetSource(uv1a);
-    float3 source1b = GetSource(uv1b);
-    float3 source2a = GetSource(uv2a);
-    float3 source2b = GetSource(uv2b);
+    float4 source = GetSource(uv);
+    float4 source0a = GetSource(uv0a);
+    float4 source0b = GetSource(uv0b);
+    float4 source1a = GetSource(uv1a);
+    float4 source1b = GetSource(uv1b);
+    float4 source2a = GetSource(uv2a);
+    float4 source2b = GetSource(uv2b);
     //calculate weight
     float w = 0.37004005286;
     float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
@@ -524,7 +526,7 @@ void NormalBilateralFilter1(uint3 id : SV_DispatchThreadID) {
     float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
     float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
     float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
-    float3 result = w * source;
+    float4 result = w * source;
     result += w0a * source0a;
     result += w0b * source0b;
     result += w1a * source1a;
@@ -545,4 +547,9 @@ void DepthBilateralFilter0(uint3 id : SV_DispatchThreadID) {
 [numthreads(8, 8, 1)]
 void DepthBilateralFilter1(uint3 id : SV_DispatchThreadID) {
     Filtered1[id.xy] = 1;
+}
+
+[numthreads(8, 8, 1)]
+void Debug(uint3 id : SV_DispatchThreadID) {
+    debugResult[id.xy] = Filtered1[id.xy].www;
 }

@@ -111,8 +111,14 @@ public struct CameraBufferSettings {
             NormalBilateral,
             DepthBilateral,
         }
+        public enum DebugType {
+            Common,
+            AO,
+            RO
+        }
         public AOType aOType;
         public FilterType filterType;
+        public DebugType debugType;
         public bool enabled;
         public ComputeShader computeShader;
         public Texture2D randomTexture;
@@ -146,7 +152,6 @@ public struct CameraBufferSettings {
         public float thickness;
         public float gtaoStrength;
 
-        public bool debug;
     }
     public SSAO ssao;
 }

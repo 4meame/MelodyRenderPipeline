@@ -11,6 +11,7 @@ public class ScreenSpaceAmbientOcclusion {
     };
     ScriptableRenderContext context;
     Camera camera;
+    bool useHDR;
     CameraBufferSettings.SSAO settings;
     Vector2Int aoBufferSize;
     Vector2Int blurBufferSize;
@@ -19,9 +20,11 @@ public class ScreenSpaceAmbientOcclusion {
     int ambientOcclusionId = Shader.PropertyToID("AmbientOcclusionRT");
     int filtered0Id = Shader.PropertyToID("Filtered0");
     int filtered1Id = Shader.PropertyToID("Filtered1");
-    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.SSAO settings) {
+    int debugResultId = Shader.PropertyToID("debugResult");
+    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.SSAO settings, bool useHDR) {
         this.context = context;
         this.camera = camera;
+        this.useHDR = useHDR;
         this.aoBufferSize = bufferSize / settings.downSample;
         this.blurBufferSize = bufferSize;
         this.settings = settings;
@@ -29,10 +32,7 @@ public class ScreenSpaceAmbientOcclusion {
     }
 
     void Configure() {
-        RenderTextureDescriptor descriptor = new RenderTextureDescriptor(aoBufferSize.x, aoBufferSize.y, RenderTextureFormat.R8, 0, 0);
-        if (settings.debug) { 
-            descriptor.colorFormat = RenderTextureFormat.RGB111110Float;
-        }
+        RenderTextureDescriptor descriptor = new RenderTextureDescriptor(aoBufferSize.x, aoBufferSize.y, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default, 0, 0);
         descriptor.sRGB = false;
         descriptor.enableRandomWrite = true;
         buffer.GetTemporaryRT(ambientOcclusionId, descriptor);
@@ -40,6 +40,7 @@ public class ScreenSpaceAmbientOcclusion {
         descriptor.height = blurBufferSize.y;
         buffer.GetTemporaryRT(filtered0Id, descriptor);
         buffer.GetTemporaryRT(filtered1Id, descriptor);
+        buffer.GetTemporaryRT(debugResultId, descriptor);
     }
 
     public void Render() {
@@ -139,8 +140,11 @@ public class ScreenSpaceAmbientOcclusion {
     }
 
     public void Debug(int sourceId) {
-        if (settings.enabled && settings.debug) {
-            buffer.Blit(filtered1Id, sourceId);
+        if (settings.enabled && settings.debugType == CameraBufferSettings.SSAO.DebugType.AO) {
+            int kernel_Debug = cs.FindKernel("Debug");
+            buffer.SetComputeTextureParam(cs, kernel_Debug, "debugResult", debugResultId);
+            buffer.DispatchCompute(cs, kernel_Debug, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
+            buffer.Blit(debugResultId, sourceId);
             ExecuteBuffer();
         }
     }
@@ -149,6 +153,7 @@ public class ScreenSpaceAmbientOcclusion {
         buffer.ReleaseTemporaryRT(ambientOcclusionId);
         buffer.ReleaseTemporaryRT(filtered0Id);
         buffer.ReleaseTemporaryRT(filtered1Id);
+        buffer.ReleaseTemporaryRT(debugResultId);
         ExecuteBuffer();
     }
 
