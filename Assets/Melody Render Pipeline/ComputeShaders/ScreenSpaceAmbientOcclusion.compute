@@ -23,6 +23,7 @@ int downSample;
 float aoRadius;
 float2 filterRadius;
 float filterFactor;
+int kernelSize;
 //pure depth method properties
 float threshold;
 float area;
@@ -39,7 +40,6 @@ int numDirection;
 int maxRadiusPixel;
 float tanBias;
 float hbaoStrength;
-int kernelSize;
 //gtao method properties
 float _HalfProjScale;
 float4 fadeParams;
@@ -427,7 +427,7 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     }
     occlusion = saturate(pow(occlusion / (float)sampleCount, gtaoStrength));
 
-    AmbientOcclusionRT[id.xy] = float3(occlusion, 0, 0);
+    AmbientOcclusionRT[id.xy] = float3(occlusion, 0, -p.z);
 }
 
 float3 GetSource(float2 screenUV) {
@@ -538,24 +538,76 @@ void NormalBilateralFilter1(uint3 id : SV_DispatchThreadID) {
     Filtered1[id.xy] = result;
 }
 
+void GetAO_RO_Depth(float2 uv, inout float2 AO_RO, inout float AO_Depth) {
+    float3 SSAOTexture = SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, uv, 0);
+    AO_RO = SSAOTexture.xy;
+    AO_Depth = SSAOTexture.z;
+}
 
+float CrossBilateralWeight(float r, float d, float d0) {
+    float blurSigma = (float)kernelSize * 0.5;
+    float blurFalloff = 1 / (2 * blurSigma * blurSigma);
+    float dz = (d0 - d) * _ProjectionParams.z * filterFactor;
+    return exp2(-r * r * blurFalloff - dz * dz);
+}
+
+void ProcessSample(float3 AO_RO_Depth, float r, float d0, inout float2 totalAORO, inout float totalW) {
+    float w = CrossBilateralWeight(r, d0, AO_RO_Depth.z);
+    totalW += w;
+    totalAORO += w * AO_RO_Depth.xy;
+}
+
+void ProcessRadius(float2 uv0, float2 deltaUV, float d0, inout float2 totalAORO, inout float totalW) {
+    float r = 1.0;
+    float z = 0.0;
+    float2 uv = 0.0;
+    float2 AO_RO = 0.0;
+    for (; r <= kernelSize / 2; r += 1) {
+        uv = uv0 + r * deltaUV;
+        GetAO_RO_Depth(uv, AO_RO, z);
+        ProcessSample(float3(AO_RO, z), r, d0, totalAORO, totalW);
+    }
+    for (; r <= kernelSize; r += 2) {
+        uv = uv0 + (r + 0.5) * deltaUV;
+        GetAO_RO_Depth(uv, AO_RO, z);
+        ProcessSample(float3(AO_RO, z), r, d0, totalAORO, totalW);
+    }
+}
 
 //blur with full resolution
 [numthreads(8, 8, 1)]
 void DepthBilateralFilter0(uint3 id : SV_DispatchThreadID) {
-    Filtered0[id.xy] = 0;
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 deltaUV = filterRadius * _CameraBufferSize.xy;
+    float depth;
+    float2 totalAORO;
+    GetAO_RO_Depth(uv, totalAORO, depth);
+    float totalW = 1;
+    ProcessRadius(uv, -deltaUV, depth, totalAORO, totalW);
+    ProcessRadius(uv, deltaUV, depth, totalAORO, totalW);
+    totalAORO /= totalW;
+    Filtered0[id.xy] = float3(totalAORO, depth);
 }
 
 //blur with full resolution
 [numthreads(8, 8, 1)]
 void DepthBilateralFilter1(uint3 id : SV_DispatchThreadID) {
-    Filtered1[id.xy] = 1;
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float2 deltaUV = filterRadius * _CameraBufferSize.xy;
+    float depth;
+    float2 totalAORO;
+    GetAO_RO_Depth(uv, totalAORO, depth);
+    float totalW = 1;
+    ProcessRadius(uv, -deltaUV, depth, totalAORO, totalW);
+    ProcessRadius(uv, deltaUV, depth, totalAORO, totalW);
+    totalAORO /= totalW;
+    Filtered1[id.xy] = float3(totalAORO, depth);
 }
 
 [numthreads(8, 8, 1)]
 void DebugAO(uint3 id : SV_DispatchThreadID) {
     float2 uv = id.xy / _CameraBufferSize.zw;
-    float3 ao = Filtered1[id.xy].rrr;
+    float3 ao = Filtered1[id.xy].xxx;
     if (multipleBounce == 1) {
         float3 albedo = SAMPLE_TEXTURE2D_LOD(_CameraAlbedoTexture, sampler_linear_clamp, uv, 0);
         ao = MultiBounce(ao.r, albedo);

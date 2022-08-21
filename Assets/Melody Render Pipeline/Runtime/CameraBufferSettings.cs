@@ -131,6 +131,7 @@ public struct CameraBufferSettings {
         public float aoRadius;
         [Range(0, 16)]
         public float filterRadius;
+        [Range(0, 1)]
         public float filterFactor;
         [Range(0, 16)]
         public int kernelSize;
