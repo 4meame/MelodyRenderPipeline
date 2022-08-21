@@ -9,7 +9,8 @@ public struct CameraBufferSettings {
 	public bool copyDepth, copyDepthReflections;
 	public bool copyColor, copyColorReflections;
 	public bool useDepthNormal;
-    public bool useAlbedo;
+    public bool useDiffuse;
+    public bool useSpecular;
     public bool usePostGeometryColor;
 	[Range(0.1f, 2f)]
 	public float renderScale;

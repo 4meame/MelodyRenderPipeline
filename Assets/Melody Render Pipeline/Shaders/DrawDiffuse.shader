@@ -1,6 +1,9 @@
-﻿Shader "Hidden/DrawAlbedoTexture" {
+﻿Shader "Hidden/DrawDiffuseTexture" {
     Properties{
         _BaseMap("", 2D) = "white" {}
+        [NoScaleOffset]_MaskMap("Mask Map<MODS>", 2D) = "white" {}
+        _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
+        _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.5
         _Cutoff("", Float) = 0.5
         _BaseColor("", Color) = (1,1,1,1)
     }
@@ -35,13 +38,26 @@
         }
 
         uniform sampler2D _BaseMap;
+        uniform sampler2D _MaskMap;
+        uniform fixed _Metallic;
+        uniform fixed _Smoothness;
         uniform fixed _Cutoff;
         uniform fixed4 _BaseColor;
+        #define MIN_REFLECTIVITY 0.04
+
+        float OneMinusReflectivity(float metallic) {
+            float range = 1.0 - MIN_REFLECTIVITY;
+            return range - metallic * range;
+        }
 
         fixed4 frag(v2f i) : SV_Target{
-            fixed4 texcol = tex2D(_BaseMap, i.uv) * _BaseColor;
+            fixed4 texcol = tex2D(_BaseMap, i.uv);
+            fixed4 maskMap = tex2D(_MaskMap, i.uv);
+            fixed metallic = maskMap.r * _Metallic;
+            fixed oneMinusReflectivity = OneMinusReflectivity(metallic);
+            fixed3 diffuse = texcol.rgb * _BaseColor.rgb * oneMinusReflectivity;
             clip(texcol.a * _BaseColor.a - _Cutoff);
-            return texcol;
+            return fixed4(diffuse, 1);
         }
 
         ENDCG

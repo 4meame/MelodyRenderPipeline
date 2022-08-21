@@ -8,6 +8,7 @@ public class PerObjectMaterialProperties : MonoBehaviour
     static int baseMapID = Shader.PropertyToID("_BaseMap"),
                baseColorID = Shader.PropertyToID("_BaseColor"),
                cufoffID = Shader.PropertyToID("_Cutoff"),
+               maskMapID = Shader.PropertyToID("_MaskMap"),
                metallicID = Shader.PropertyToID("_Metallic"),
                smoothnessID = Shader.PropertyToID("_Smoothness"),
                emissionColorID = Shader.PropertyToID("_EmissionColor"),
@@ -16,6 +17,8 @@ public class PerObjectMaterialProperties : MonoBehaviour
                normalScaleId = Shader.PropertyToID("_NormalScale");
     [SerializeField]
     Texture2D baseMap;
+    [SerializeField]
+    Texture2D maskMap;
     [SerializeField]
     Texture2D normalMap;
     [SerializeField, ColorUsage(true, true)]
@@ -37,6 +40,7 @@ public class PerObjectMaterialProperties : MonoBehaviour
         block.SetTexture(baseMapID, baseMap == null ? Texture2D.whiteTexture : baseMap);
         block.SetColor(baseColorID, baseColor);
         block.SetFloat(cufoffID, cutoff);
+        block.SetTexture(maskMapID, maskMap == null ? Texture2D.whiteTexture : maskMap);
         block.SetFloat(metallicID, metallic);
         block.SetFloat(smoothnessID, smoothness);
         block.SetColor(emissionColorID, emissionColor);

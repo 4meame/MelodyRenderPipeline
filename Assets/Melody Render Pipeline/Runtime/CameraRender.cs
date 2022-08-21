@@ -38,7 +38,8 @@ public partial class CameraRender
     bool useDepthTexture;
     bool useColorTexture;
     bool useDepthNormalTexture;
-    bool useAlbedo;
+    bool useDiffuse;
+    bool useSpecular;
     bool useIntermediateBuffer;
     bool usePostGeometryColorTexture;
     bool useDeferredRender;
@@ -57,13 +58,17 @@ public partial class CameraRender
     static int bufferSizeId = Shader.PropertyToID("_CameraBufferSize");
     public const float renderScaleMin = 0.1f, renderScaleMax = 2f;
     #endregion
-    #region Depth Normal
+    #region Depth Normal Buffer
     static ShaderTagId depthNormalTagId = new ShaderTagId("DepthNormal");
     static int depthNormalTextureId = Shader.PropertyToID("_CameraDepthNormalTexture");
     #endregion
-    #region Albedo
-    static ShaderTagId albedoTagId = new ShaderTagId("Albedo");
-    static int albedoTextureId = Shader.PropertyToID("_CameraAlbedoTexture");
+    #region Diffuse Buffer
+    static ShaderTagId diffuseTagId = new ShaderTagId("Diffuse");
+    static int diffuseTextureId = Shader.PropertyToID("_CameraDiffuseTexture");
+    #endregion
+    #region Specular Buffer
+    static ShaderTagId specularTagId = new ShaderTagId("Specular");
+    static int specularTextureId = Shader.PropertyToID("_CameraSpecularTexture");
     #endregion
     static CameraSettings defaultCameraSettings = new CameraSettings();
     //WebGL 2.0 support
@@ -105,7 +110,8 @@ public partial class CameraRender
             useColorTexture = cameraBufferSettings.copyColor && cameraSettings.copyColor;
         }
         useDepthNormalTexture = cameraBufferSettings.useDepthNormal;
-        useAlbedo = cameraBufferSettings.useAlbedo;
+        useDiffuse = cameraBufferSettings.useDiffuse;
+        useSpecular = cameraBufferSettings.useSpecular;
         usePostGeometryColorTexture = cameraBufferSettings.usePostGeometryColor;
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
 
@@ -164,7 +170,8 @@ public partial class CameraRender
         #endregion
         ExecuteBuffer();
         DrawDepthNormal(useDepthNormalTexture);
-        DrawAlbedo(useAlbedo);
+        DrawDiffuse(useDiffuse);
+        DrawSpecular(useSpecular);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
@@ -243,24 +250,47 @@ public partial class CameraRender
         }
     }
 
-    void DrawAlbedo(bool useAlbedo) {
-        if (useAlbedo) {
-            buffer.name = "Draw Albedo";
+    void DrawDiffuse(bool useDiffuse) {
+        if (useDiffuse) {
+            buffer.name = "Draw Diffuse";
             //set camera properties, including view and projection, so set the current rendertarget after that
             context.SetupCameraProperties(camera);
-            buffer.GetTemporaryRT(albedoTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.ARGB64);
-            buffer.SetRenderTarget(albedoTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.GetTemporaryRT(diffuseTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.ARGB64);
+            buffer.SetRenderTarget(diffuseTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
             //shader should be refered to package
-            var albedoMaterial = new Material(Shader.Find("Hidden/DrawAlbedoTexture"));
+            var albedoMaterial = new Material(Shader.Find("Hidden/DrawDiffuseTexture"));
             var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
-            var drawingSettings = new DrawingSettings(albedoTagId, sortingSettings);
+            var drawingSettings = new DrawingSettings(diffuseTagId, sortingSettings);
             drawingSettings.overrideMaterial = albedoMaterial;
             var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
             context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
-            //will not draw transparent
+            //will not draw transparent for now
+            buffer.EndSample(SampleName);
+            ExecuteBuffer();
+        }
+    }
+
+    void DrawSpecular(bool useSpecular) {
+        if (useSpecular) {
+            buffer.name = "Draw Specular";
+            //set camera properties, including view and projection, so set the current rendertarget after that
+            context.SetupCameraProperties(camera);
+            buffer.GetTemporaryRT(diffuseTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.ARGB64);
+            buffer.SetRenderTarget(diffuseTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.ClearRenderTarget(true, true, Color.black);
+            buffer.BeginSample(SampleName);
+            ExecuteBuffer();
+            //shader should be refered to package
+            var specularMaterial = new Material(Shader.Find("Hidden/DrawSpecularTexture"));
+            var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
+            var drawingSettings = new DrawingSettings(specularTagId, sortingSettings);
+            drawingSettings.overrideMaterial = specularMaterial;
+            var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
+            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+            //will not draw transparent for now
             buffer.EndSample(SampleName);
             ExecuteBuffer();
         }

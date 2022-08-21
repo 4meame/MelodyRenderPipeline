@@ -83,8 +83,12 @@ float4 GetDepthNormal(float2 screenUV) {
 	return float4(normal, depth);
 }
 
-float3 GetAlbedo(float2 screenUV) {
-	return SAMPLE_TEXTURE2D_LOD(_CameraAlbedoTexture, sampler_linear_clamp, screenUV, 0).rgb;
+float3 GetDiffuse(float2 screenUV) {
+	return SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, screenUV, 0).rgb;
+}
+
+float3 GetSpecular(float2 screenUV) {
+	return SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, screenUV, 0).rgb;
 }
 
 float4 GetSourceTexelSize() {

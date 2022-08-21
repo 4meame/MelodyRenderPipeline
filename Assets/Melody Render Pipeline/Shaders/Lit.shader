@@ -104,8 +104,21 @@
 
         Pass
         {
-            Name "Albedo"
-            Tags { "LightMode" = "Albedo" }
+            Name "Diffuse"
+            Tags { "LightMode" = "Diffuse" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex ShadowCasterPassVertex
+            #pragma fragment ShadowCasterPassFragment
+            #include "ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Specular"
+            Tags { "LightMode" = "Specular" }
 
             HLSLPROGRAM
             #pragma target 3.5

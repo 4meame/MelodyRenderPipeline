@@ -609,7 +609,7 @@ void DebugAO(uint3 id : SV_DispatchThreadID) {
     float2 uv = id.xy / _CameraBufferSize.zw;
     float3 ao = Filtered1[id.xy].xxx;
     if (multipleBounce == 1) {
-        float3 albedo = SAMPLE_TEXTURE2D_LOD(_CameraAlbedoTexture, sampler_linear_clamp, uv, 0);
+        float3 albedo = SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, uv, 0);
         ao = MultiBounce(ao.r, albedo);
         debugResult[id.xy] = ao;
     }
