@@ -38,6 +38,7 @@ public partial class CameraRender
     bool useDepthTexture;
     bool useColorTexture;
     bool useDepthNormalTexture;
+    bool useAlbedo;
     bool useIntermediateBuffer;
     bool usePostGeometryColorTexture;
     bool useDeferredRender;
@@ -59,6 +60,10 @@ public partial class CameraRender
     #region Depth Normal
     static ShaderTagId depthNormalTagId = new ShaderTagId("DepthNormal");
     static int depthNormalTextureId = Shader.PropertyToID("_CameraDepthNormalTexture");
+    #endregion
+    #region Albedo
+    static ShaderTagId albedoTagId = new ShaderTagId("Albedo");
+    static int albedoTextureId = Shader.PropertyToID("_CameraAlbedoTexture");
     #endregion
     static CameraSettings defaultCameraSettings = new CameraSettings();
     //WebGL 2.0 support
@@ -100,6 +105,7 @@ public partial class CameraRender
             useColorTexture = cameraBufferSettings.copyColor && cameraSettings.copyColor;
         }
         useDepthNormalTexture = cameraBufferSettings.useDepthNormal;
+        useAlbedo = cameraBufferSettings.useAlbedo;
         usePostGeometryColorTexture = cameraBufferSettings.usePostGeometryColor;
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
 
@@ -158,6 +164,7 @@ public partial class CameraRender
         #endregion
         ExecuteBuffer();
         DrawDepthNormal(useDepthNormalTexture);
+        DrawAlbedo(useAlbedo);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
@@ -218,7 +225,8 @@ public partial class CameraRender
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
-            var depthNormalMaterial = CoreUtils.CreateEngineMaterial("Hidden/Internal-DepthNormalsTexture");
+            //var depthNormalMaterial = CoreUtils.CreateEngineMaterial("Hidden/DrawDepthNormalTexture");
+            var depthNormalMaterial = new Material(Shader.Find("Hidden/DrawDepthNormalTexture"));
             var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
             var drawingSettings = new DrawingSettings(depthNormalTagId, sortingSettings);
             drawingSettings.overrideMaterial = depthNormalMaterial;
@@ -230,6 +238,29 @@ public partial class CameraRender
             filteringSettings.renderQueueRange = RenderQueueRange.transparent;
             context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
 
+            buffer.EndSample(SampleName);
+            ExecuteBuffer();
+        }
+    }
+
+    void DrawAlbedo(bool useAlbedo) {
+        if (useAlbedo) {
+            buffer.name = "Draw Albedo";
+            //set camera properties, including view and projection, so set the current rendertarget after that
+            context.SetupCameraProperties(camera);
+            buffer.GetTemporaryRT(albedoTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.ARGB64);
+            buffer.SetRenderTarget(albedoTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.ClearRenderTarget(true, true, Color.black);
+            buffer.BeginSample(SampleName);
+            ExecuteBuffer();
+            //shader should be refered to package
+            var albedoMaterial = new Material(Shader.Find("Hidden/DrawAlbedoTexture"));
+            var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
+            var drawingSettings = new DrawingSettings(albedoTagId, sortingSettings);
+            drawingSettings.overrideMaterial = albedoMaterial;
+            var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
+            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+            //will not draw transparent
             buffer.EndSample(SampleName);
             ExecuteBuffer();
         }

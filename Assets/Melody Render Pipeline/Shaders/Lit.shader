@@ -101,6 +101,19 @@
             #include "ShadowCasterPass.hlsl"
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "Albedo"
+            Tags { "LightMode" = "Albedo" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex ShadowCasterPassVertex
+            #pragma fragment ShadowCasterPassFragment
+            #include "ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
     }
 
     CustomEditor "MelodyShaderGUI"
