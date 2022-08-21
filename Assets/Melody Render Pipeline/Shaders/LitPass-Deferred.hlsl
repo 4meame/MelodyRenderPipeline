@@ -173,7 +173,11 @@ float4 LitPassFragment(Varyings input) : SV_TARGET {
 #endif
 	GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
 #if defined(_SSAO_ON)
-	float ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Blur, sampler_SSAO_Blur, fragment.screenUV).r;
+	float3 ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Blur, sampler_SSAO_Blur, fragment.screenUV).rrr;
+#if defined(_Multiple_Bounce_AO)
+		float3 albedo = SAMPLE_TEXTURE2D_LOD(_CameraAlbedoTexture, sampler_linear_clamp, fragment.screenUV, 0);
+		ssaoResult = MultiBounce(ssaoResult.r, albedo);
+#endif
 	gi.diffuse *= ssaoResult;
 #endif
 

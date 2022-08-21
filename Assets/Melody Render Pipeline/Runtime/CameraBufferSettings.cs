@@ -152,6 +152,7 @@ public struct CameraBufferSettings {
         public int numSlice;
         public float thickness;
         public float gtaoStrength;
+        public bool multipleBounce;
 
     }
     public SSAO ssao;

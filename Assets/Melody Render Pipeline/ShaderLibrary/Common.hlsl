@@ -93,4 +93,12 @@ void ClipLOD(Fragment fragment, float fade) {
 #endif
 }
 
+//GTAO multiply bounce symbolic expression
+float3 MultiBounce(float AO, float3 Albedo) {
+	float3 A = 2.0404 * Albedo - 0.3324;
+	float3 B = -4.7951 * Albedo + 0.6417;
+	float3 C = 2.7552 * Albedo + 0.6903;
+	return max(AO, ((AO * A + B) * AO + C) * AO);
+}
+
 #endif

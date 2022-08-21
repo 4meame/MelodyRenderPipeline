@@ -99,6 +99,11 @@ public class ScreenSpaceAmbientOcclusion {
                 int kernel_SSAOResolve = cs.FindKernel("GTAO");
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
                 buffer.DispatchCompute(cs, kernel_SSAOResolve, aoBufferSize.x / 8, aoBufferSize.y / 8, 1);
+                if (settings.multipleBounce) {
+                    buffer.EnableShaderKeyword("_Multiple_Bounce_AO");
+                } else {
+                    buffer.DisableShaderKeyword("_Multiple_Bounce_AO");
+                }
             }
 
             if(settings.filterType == CameraBufferSettings.SSAO.FilterType.NormalBilateral) {
@@ -141,8 +146,9 @@ public class ScreenSpaceAmbientOcclusion {
 
     public void Debug(int sourceId) {
         if (settings.enabled && settings.debugType == CameraBufferSettings.SSAO.DebugType.AO) {
-            int kernel_Debug = cs.FindKernel("Debug");
+            int kernel_Debug = cs.FindKernel("DebugAO");
             buffer.SetComputeTextureParam(cs, kernel_Debug, "debugResult", debugResultId);
+            buffer.SetComputeIntParam(cs, "multipleBounce", settings.multipleBounce ? 1 : 0);
             buffer.DispatchCompute(cs, kernel_Debug, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
             buffer.Blit(debugResultId, sourceId);
             ExecuteBuffer();

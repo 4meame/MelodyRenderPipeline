@@ -78,6 +78,7 @@
             #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile _ _LIGHTS_PER_OBJECT
             #pragma multi_compile _ _SSAO_ON
+            #pragma multi_compile _ _Multiple_Bounce_AO
             #pragma multi_compile _ _SSR_ON
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
