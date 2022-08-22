@@ -160,6 +160,13 @@ public class ScreenSpaceAmbientOcclusion {
             buffer.DispatchCompute(cs, kernel_Debug, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
             buffer.Blit(debugResultId, sourceId);
             ExecuteBuffer();
+        } else if (settings.enabled && settings.debugType == CameraBufferSettings.SSAO.DebugType.RO) {
+            int kernel_Debug = cs.FindKernel("DebugRO");
+            buffer.SetComputeTextureParam(cs, kernel_Debug, "Filtered1", filtered1Id);
+            buffer.SetComputeTextureParam(cs, kernel_Debug, "debugResult", debugResultId);
+            buffer.DispatchCompute(cs, kernel_Debug, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
+            buffer.Blit(debugResultId, sourceId);
+            ExecuteBuffer();
         }
     }
 

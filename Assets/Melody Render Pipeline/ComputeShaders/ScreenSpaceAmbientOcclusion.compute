@@ -9,6 +9,7 @@
 #pragma kernel AdaptionBilateralFilter0
 #pragma kernel AdaptionBilateralFilter1
 #pragma kernel DebugAO
+#pragma kernel DebugRO
 
 RWTexture2D<float3> AmbientOcclusionRT;
 RWTexture2D<float3> UpSampleRT;
@@ -320,6 +321,21 @@ float IntegrateArc_CosineWeighting(float2 h, float gamma) {
     return 0.25 * (Arc.x + Arc.y);
 }
 
+float ConeConeIntersection(float ArcLength0, float ArcLength1, float AngleBetweenCones) {
+    float AngleDifference = abs(ArcLength0 - ArcLength1);
+    float AngleBlendAlpha = saturate((AngleBetweenCones - AngleDifference) / (ArcLength0 + ArcLength1 - AngleDifference));
+    return smoothstep(0, 1, 1 - AngleBlendAlpha);
+}
+
+float ReflectionOcclusion(float3 BentNormal, float3 ReflectionVector, float Roughness, float OcclusionStrength) {
+    float BentNormalLength = length(BentNormal);
+    float ReflectionConeAngle = max(Roughness, 0.04) * PI;
+    float UnoccludedAngle = BentNormalLength * PI * OcclusionStrength;
+    float AngleBetween = acos(dot(BentNormal, ReflectionVector) / max(BentNormalLength, 0.001));
+    half ReflectionOcclusion = ConeConeIntersection(ReflectionConeAngle, UnoccludedAngle, AngleBetween);
+    return lerp(0, ReflectionOcclusion, saturate((UnoccludedAngle - 0.1) / 0.2));
+}
+
 [numthreads(8, 8, 1)]
 void GTAO(uint3 id : SV_DispatchThreadID) {
     float2 bufferSize = _CameraBufferSize.zw / downSample;
@@ -360,7 +376,8 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     float stepRadius = (max(min((radius * _HalfProjScale) / abs(p.z), 512), (float)numSlice)) / ((float)numSlice + 1);
     float noiseOffset = SpatialOffset(screenUV * bufferSize);
     float noiseDirection = SpatialDirection(screenUV * bufferSize);
-    float occlusion = 0.0;
+    float ao = 0.0;
+    float ro = 0.0;
     //slice rotation per angle
     float angle;
     float3 sliceDir;
@@ -376,7 +393,7 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     float2 h, H, h1h2, h1h2Length, falloff;
     float2 uvOffset;
     float4 uvSlice;
-    //bent normal use for specular occlusion
+    //bent normal use for reflection occlusion
     float bentAngle;
     float3 bentNormal;
     //hemisphere is along to view, and sample in several directions
@@ -425,11 +442,17 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
         bentAngle = (h.x + h.y) * 0.5;
         bentNormal += viewVector * cos(bentAngle) - planeTangent * sin(bentAngle);
         //integrate occlusion
-        occlusion += normalProjLength * IntegrateArc_CosineWeighting(h, gamma);
+        ao += normalProjLength * IntegrateArc_CosineWeighting(h, gamma);
     }
-    occlusion = saturate(pow(occlusion / (float)sampleCount, gtaoStrength));
+    ao = saturate(pow(ao / (float)sampleCount, gtaoStrength));
+    bentNormal = normalize(normalize(bentNormal) - viewVector * 0.5);
+    //calculate reflection occlusion
+    float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, screenUV, 0);
+    float roughness = 1 - specular.a;
+    float3 reflectVector = reflect(viewVector, geometricNormal);
+    ro = ReflectionOcclusion(bentNormal, reflectVector, roughness,0.5);
 
-    AmbientOcclusionRT[id.xy] = float3(occlusion, 0, linear01Depth);
+    AmbientOcclusionRT[id.xy] = float3(ao, ro, linear01Depth);
 }
 
 float3 GetSource(float2 screenUV) {
@@ -650,4 +673,11 @@ void DebugAO(uint3 id : SV_DispatchThreadID) {
         debugResult[id.xy] = ao;
     }
     debugResult[id.xy] = ao;
+}
+
+[numthreads(8, 8, 1)]
+void DebugRO(uint3 id : SV_DispatchThreadID) {
+    float2 uv = id.xy / _CameraBufferSize.zw;
+    float3 ro = Filtered1[id.xy].yyy;
+    debugResult[id.xy] = ro;
 }
