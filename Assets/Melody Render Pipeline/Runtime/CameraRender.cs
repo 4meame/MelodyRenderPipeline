@@ -255,16 +255,16 @@ public partial class CameraRender
             buffer.name = "Draw Diffuse";
             //set camera properties, including view and projection, so set the current rendertarget after that
             context.SetupCameraProperties(camera);
-            buffer.GetTemporaryRT(diffuseTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.ARGB64);
+            buffer.GetTemporaryRT(diffuseTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             buffer.SetRenderTarget(diffuseTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
             //shader should be refered to package
-            var albedoMaterial = new Material(Shader.Find("Hidden/DrawDiffuseTexture"));
+            var diffuseMaterial = new Material(Shader.Find("Hidden/DrawDiffuseTexture"));
             var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
             var drawingSettings = new DrawingSettings(diffuseTagId, sortingSettings);
-            drawingSettings.overrideMaterial = albedoMaterial;
+            drawingSettings.overrideMaterial = diffuseMaterial;
             var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
             context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
             //will not draw transparent for now
@@ -278,8 +278,8 @@ public partial class CameraRender
             buffer.name = "Draw Specular";
             //set camera properties, including view and projection, so set the current rendertarget after that
             context.SetupCameraProperties(camera);
-            buffer.GetTemporaryRT(diffuseTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.ARGB64);
-            buffer.SetRenderTarget(diffuseTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.GetTemporaryRT(specularTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.SetRenderTarget(specularTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
