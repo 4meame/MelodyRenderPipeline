@@ -8,6 +8,7 @@ public class PerObjectMaterialProperties : MonoBehaviour
     static int baseMapID = Shader.PropertyToID("_BaseMap"),
                baseColorID = Shader.PropertyToID("_BaseColor"),
                cufoffID = Shader.PropertyToID("_Cutoff"),
+               occlusionID = Shader.PropertyToID("_Occlusion"),
                maskMapID = Shader.PropertyToID("_MaskMap"),
                metallicID = Shader.PropertyToID("_Metallic"),
                smoothnessID = Shader.PropertyToID("_Smoothness"),
@@ -25,6 +26,7 @@ public class PerObjectMaterialProperties : MonoBehaviour
     Color baseColor = Color.white;
     [SerializeField, Range(0f, 1f)]
     float cutoff = 0.5f,
+          occlusion = 1.0f,
           metallic = 0.0f,
           smoothness = 0.5f,
           fresnel = 1.0f,
@@ -40,6 +42,7 @@ public class PerObjectMaterialProperties : MonoBehaviour
         block.SetTexture(baseMapID, baseMap == null ? Texture2D.whiteTexture : baseMap);
         block.SetColor(baseColorID, baseColor);
         block.SetFloat(cufoffID, cutoff);
+        block.SetFloat(occlusionID, occlusion);
         block.SetTexture(maskMapID, maskMap == null ? Texture2D.whiteTexture : maskMap);
         block.SetFloat(metallicID, metallic);
         block.SetFloat(smoothnessID, smoothness);
