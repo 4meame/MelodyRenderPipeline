@@ -5,11 +5,13 @@
 #pragma kernel GTAO
 #pragma kernel NormalBilateralFilter0
 #pragma kernel NormalBilateralFilter1
-#pragma kernel DepthBilateralFilter0
-#pragma kernel DepthBilateralFilter1
+#pragma kernel AdaptionBilateralUpSample
+#pragma kernel AdaptionBilateralFilter0
+#pragma kernel AdaptionBilateralFilter1
 #pragma kernel DebugAO
 
 RWTexture2D<float3> AmbientOcclusionRT;
+RWTexture2D<float3> UpSampleRT;
 RWTexture2D<float3> Filtered0;
 RWTexture2D<float3> Filtered1;
 Texture2D<float3> RandomTexture;
@@ -427,11 +429,15 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     }
     occlusion = saturate(pow(occlusion / (float)sampleCount, gtaoStrength));
 
-    AmbientOcclusionRT[id.xy] = float3(occlusion, 0, -p.z);
+    AmbientOcclusionRT[id.xy] = float3(occlusion, 0, linear01Depth);
 }
 
 float3 GetSource(float2 screenUV) {
-    return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0);
+    return SAMPLE_TEXTURE2D_LOD(aoResult, sampler_linear_clamp, screenUV, 0).rgb;
+}
+
+float GetDepth(float2 screenUV) {
+    return SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0).r;
 }
 
 float3 GetNormal(float2 screenUV) {
@@ -574,9 +580,39 @@ void ProcessRadius(float2 uv0, float2 deltaUV, float d0, inout float2 totalAORO,
     }
 }
 
+//adaption bilateral blur from battlefield3 of frostbite
+[numthreads(8, 8, 1)]
+void AdaptionBilateralUpSample(uint3 id : SV_DispatchThreadID) {
+    float2 screenUV = id.xy / _CameraBufferSize.zw;
+    float2 samplerSize = filterRadius * _CameraBufferSize.xy;
+    float4 depthTexture = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0);
+    float bufferDepth = depthTexture.r;
+    //Linear01Depth get [0,1] depth, LinearEyeDepth get [near, far] depth
+    float EyeDepth = LinearEyeDepth(bufferDepth, _ZBufferParams);
+    float Eye01Depth = Linear01Depth(bufferDepth, _ZBufferParams);
+    //up sample aoro
+    float2 TopLeft_Color = GetSource(screenUV).rg;
+    float2 TopRight_Color = GetSource(screenUV + (float2(0.0, 1.0) * samplerSize)).rg;
+    float2 BottomLeft_Color = GetSource(screenUV + (float2(1.0, 0.0) * samplerSize)).rg;
+    float2 BottomRight_Color = GetSource(screenUV + (float2(1.0, 1.0) * samplerSize)).rg;
+    //up sample depth
+    float TopLeft_Depth = LinearEyeDepth(GetDepth(screenUV), _ZBufferParams);
+    float TopRight_Depth = LinearEyeDepth(GetDepth(screenUV + (float2(0.0, 1.0) * samplerSize)), _ZBufferParams);
+    float BottomLeft_Depth = LinearEyeDepth(GetDepth(screenUV + (float2(1.0, 0.0) * samplerSize)), _ZBufferParams);
+    float BottomRight_Depth = LinearEyeDepth(GetDepth(screenUV + (float2(1.0, 1.0) * samplerSize)), _ZBufferParams);
+
+    float4 offsetDepths = float4(TopLeft_Depth, TopRight_Depth, BottomLeft_Depth, BottomRight_Depth);
+    float4 weights = saturate(1.0 - abs(offsetDepths - EyeDepth));
+    float2 fractCoord = frac(screenUV * samplerSize);
+    float2 filteredX0 = lerp(TopLeft_Color * weights.x, TopRight_Color * weights.y, fractCoord.x);
+    float2 filteredX1 = lerp(BottomRight_Color * weights.w, BottomLeft_Color * weights.z, fractCoord.x);
+    float2 filtered = lerp(filteredX0, filteredX1, fractCoord.y);
+    UpSampleRT[id.xy] = float3(filtered, Eye01Depth);
+}
+
 //blur with full resolution
 [numthreads(8, 8, 1)]
-void DepthBilateralFilter0(uint3 id : SV_DispatchThreadID) {
+void AdaptionBilateralFilter0(uint3 id : SV_DispatchThreadID) {
     float2 uv = id.xy / _CameraBufferSize.zw;
     float2 deltaUV = filterRadius * _CameraBufferSize.xy;
     float depth;
@@ -591,7 +627,7 @@ void DepthBilateralFilter0(uint3 id : SV_DispatchThreadID) {
 
 //blur with full resolution
 [numthreads(8, 8, 1)]
-void DepthBilateralFilter1(uint3 id : SV_DispatchThreadID) {
+void AdaptionBilateralFilter1(uint3 id : SV_DispatchThreadID) {
     float2 uv = id.xy / _CameraBufferSize.zw;
     float2 deltaUV = filterRadius * _CameraBufferSize.xy;
     float depth;

@@ -111,7 +111,7 @@ public struct CameraBufferSettings {
         }
         public enum FilterType {
             NormalBilateral,
-            DepthBilateral,
+            AdaptionBilateral,
         }
         public enum DebugType {
             Common,
