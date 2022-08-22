@@ -232,7 +232,7 @@ public partial class CameraRender
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
-            //var depthNormalMaterial = CoreUtils.CreateEngineMaterial("Hidden/DrawDepthNormalTexture");
+            //var depthNormalMaterial = CoreUtils.CreateEngineMaterial("Hidden/Internal-DepthNormalsTexture");
             var depthNormalMaterial = new Material(Shader.Find("Hidden/DrawDepthNormalTexture"));
             var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
             var drawingSettings = new DrawingSettings(depthNormalTagId, sortingSettings);
@@ -260,8 +260,7 @@ public partial class CameraRender
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
-            //shader should be refered to package
-            var diffuseMaterial = new Material(Shader.Find("Hidden/DrawDiffuseTexture"));
+            var diffuseMaterial = CoreUtils.CreateEngineMaterial("Hidden/DrawDiffuseTexture");
             var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
             var drawingSettings = new DrawingSettings(diffuseTagId, sortingSettings);
             drawingSettings.overrideMaterial = diffuseMaterial;
@@ -284,7 +283,7 @@ public partial class CameraRender
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
             //shader should be refered to package
-            var specularMaterial = new Material(Shader.Find("Hidden/DrawSpecularTexture"));
+            var specularMaterial = CoreUtils.CreateEngineMaterial("Hidden/DrawSpecularTexture");
             var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
             var drawingSettings = new DrawingSettings(specularTagId, sortingSettings);
             drawingSettings.overrideMaterial = specularMaterial;

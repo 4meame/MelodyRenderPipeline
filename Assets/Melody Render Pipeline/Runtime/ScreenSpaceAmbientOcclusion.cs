@@ -68,16 +68,16 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.SetComputeFloatParam(cs, "magnitude", settings.SSAOParameters.z);
                 buffer.SetComputeFloatParam(cs, "power", settings.SSAOParameters.w);
                 Matrix4x4 projection = camera.projectionMatrix;
-                buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
-                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
+                buffer.SetComputeMatrixParam(cs, "_CameraProjection_SSAO", projection);
+                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection_SSAO", projection.inverse);
                 int kernel_SSAOResolve = cs.FindKernel("SSAO");
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "RandomTexture", settings.randomTexture);
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
                 buffer.DispatchCompute(cs, kernel_SSAOResolve, aoBufferSize.x / 8, aoBufferSize.y / 8, 1);
             } else if (settings.aOType == CameraBufferSettings.SSAO.AOType.HBAO) {
                 Matrix4x4 projection = camera.projectionMatrix;
-                buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
-                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
+                buffer.SetComputeMatrixParam(cs, "_CameraProjection_SSAO", projection);
+                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection_SSAO", projection.inverse);
                 buffer.SetComputeFloatParam(cs, "_CameraNearPlane", camera.nearClipPlane);
                 buffer.SetComputeIntParam(cs, "numDirection", settings.numDirection);
                 buffer.SetComputeIntParam(cs, "maxRadiusPixel", settings.maxRadiusPixel);
@@ -96,8 +96,8 @@ public class ScreenSpaceAmbientOcclusion {
                 float projScale = aoBufferSize.y / (Mathf.Tan(fovRad * 0.5f) * 2) * 0.5f;
                 buffer.SetComputeFloatParam(cs, "_HalfProjScale", projScale);
                 Matrix4x4 projection = camera.projectionMatrix;
-                buffer.SetComputeMatrixParam(cs, "_CameraProjection", projection);
-                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
+                buffer.SetComputeMatrixParam(cs, "_CameraProjection_SSAO", projection);
+                buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection_SSAO", projection.inverse);
                 int kernel_SSAOResolve = cs.FindKernel("GTAO");
                 buffer.SetComputeTextureParam(cs, kernel_SSAOResolve, "AmbientOcclusionRT", ambientOcclusionId);
                 buffer.DispatchCompute(cs, kernel_SSAOResolve, aoBufferSize.x / 8, aoBufferSize.y / 8, 1);

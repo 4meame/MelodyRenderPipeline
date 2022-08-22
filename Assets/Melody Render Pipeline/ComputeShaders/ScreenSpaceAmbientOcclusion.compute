@@ -18,8 +18,8 @@ RWTexture2D<float3> Filtered1;
 Texture2D<float3> RandomTexture;
 Texture2D<float3> aoResult;
 RWTexture2D<float3> debugResult;
-float4x4 _CameraProjection;
-float4x4 _CameraInverseProjection;
+float4x4 _CameraProjection_SSAO;
+float4x4 _CameraInverseProjection_SSAO;
 //shared properties
 int sampleCount;
 int downSample;
@@ -67,7 +67,7 @@ float3 normalFromDepth(float depth, float2 texCoords) {
 float3 UvToViewSpace(float2 uv, float depth) {
     //calculate camera to far plane ray in the screen
     float4 cameraRay = float4(uv * 2.0 - 1.0, 1.0, 1.0);
-    cameraRay = mul(_CameraInverseProjection, cameraRay);
+    cameraRay = mul(_CameraInverseProjection_SSAO, cameraRay);
     cameraRay.xyz = cameraRay.xyz / cameraRay.w;
     //linear depth 0-1
     return cameraRay.xyz * depth;
@@ -149,7 +149,7 @@ void SSAO(uint3 id : SV_DispatchThreadID) {
         //invert positive direction ray
         float3 samplePositionVS = bufferPosition + ray;
         //project sample point into clip space
-        float4 samplePositionCS = mul(_CameraProjection, float4(samplePositionVS, 1));
+        float4 samplePositionCS = mul(_CameraProjection_SSAO, float4(samplePositionVS, 1));
         samplePositionCS.xy /= samplePositionCS.w;
         samplePositionCS.xy *= 0.5;
         samplePositionCS.xy += 0.5;

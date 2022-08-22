@@ -15,8 +15,8 @@ float screenEdgeFade;
 float eyeFadeStart;
 float eyeFadeEnd;
 //custom matrix set from cs.
-float4x4 _CameraInverseProjection;
-float4x4 _CameraProjection;
+float4x4 _CameraInverseProjection_SSR;
+float4x4 _CameraProjection_SSR;
 
 
 //help functions
@@ -46,8 +46,8 @@ inline bool TraceScreenSpaceRay(float3 rayOrigin, float3 rayDirection, float jit
 	float rayLength = ((rayOrigin.z + rayDirection.z * maxDistance) > -_ProjectionParams.y) ? (-_ProjectionParams.y - rayOrigin.z) / rayDirection.z : maxDistance;
 	float3 rayEnd = rayOrigin + rayDirection * rayLength;
 	//project into homogeneous clip space, use the w component to transform into screen space
-	float4 H0 = mul(_CameraProjection, float4(rayOrigin, 1.0));
-	float4 H1 = mul(_CameraProjection, float4(rayEnd, 1.0));
+	float4 H0 = mul(_CameraProjection_SSR, float4(rayOrigin, 1.0));
+	float4 H1 = mul(_CameraProjection_SSR, float4(rayEnd, 1.0));
 	float k0 = 1.0 / H0.w;
 	float k1 = 1.0 / H1.w;
 	//the interpolated homogeneous version of the veiw space points  
@@ -162,7 +162,7 @@ void SSRResolve(uint3 id : SV_DispatchThreadID)
 	float2 screenUV = id.xy / textureSize;
 	//calculate camera to far plane ray in the screen
 	float4 cameraRay = float4(screenUV * 2.0 - 1.0, 1.0, 1.0);
-	cameraRay = mul(_CameraInverseProjection, cameraRay);
+	cameraRay = mul(_CameraInverseProjection_SSR, cameraRay);
 	cameraRay.xyz = cameraRay.xyz / cameraRay.w;
 //------------------------sample common buffers------------------------//
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);

@@ -80,8 +80,8 @@ public class ScreenSpaceReflection {
             Matrix4x4 scrScale = Matrix4x4.Scale(new Vector3(GetRTWidth(), GetRTHeight(), 1.0f));
             Matrix4x4 projection = camera.projectionMatrix;
             Matrix4x4 projMatrix = scrScale * trs * projection;
-            buffer.SetComputeMatrixParam(cs, "_CameraProjection", projMatrix);
-            buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection", projection.inverse);
+            buffer.SetComputeMatrixParam(cs, "_CameraProjection_SSR", projMatrix);
+            buffer.SetComputeMatrixParam(cs, "_CameraInverseProjection_SSR", projection.inverse);
             //texture param
             buffer.SetComputeVectorParam(cs, "textureSize", new Vector2(GetRTWidth(), GetRTHeight()));
             int kernel_SSRResolve = cs.FindKernel("SSRResolve");
