@@ -147,6 +147,7 @@ public class ScreenSpaceAmbientOcclusion {
     public void Debug(int sourceId) {
         if (settings.enabled && settings.debugType == CameraBufferSettings.SSAO.DebugType.AO) {
             int kernel_Debug = cs.FindKernel("DebugAO");
+            buffer.SetComputeTextureParam(cs, kernel_Debug, "Filtered1", filtered1Id);
             buffer.SetComputeTextureParam(cs, kernel_Debug, "debugResult", debugResultId);
             buffer.SetComputeIntParam(cs, "multipleBounce", settings.multipleBounce ? 1 : 0);
             buffer.DispatchCompute(cs, kernel_Debug, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
