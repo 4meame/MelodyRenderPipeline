@@ -55,8 +55,8 @@
             UNITY_SETUP_INSTANCE_ID(v);
             UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
             o.pos = UnityObjectToClipPos(v.vertex);
-            //o.nz.xyz = COMPUTE_VIEW_NORMAL;
-            o.nz.xyz = 0;
+            o.nz.xyz = COMPUTE_VIEW_NORMAL;
+            //o.nz.xyz = 0;
             o.nz.w = COMPUTE_DEPTH_01;
             o.uv = TRANSFORM_TEX(v.texcoord, _BaseMap);
             o.normal = UnityObjectToWorldNormal(v.normal);
@@ -70,6 +70,8 @@
         fixed4 frag(v2f i) : SV_Target{
             float3 normal = UnpackNormalWithScale(tex2D(_NormalMap, i.uv), _NormalScale);
             normal = NormalTangentToWorld(normal, normalize(i.normal), normalize(i.tangent));
+            //view normal
+            normal = mul((float3x3)UNITY_MATRIX_V, normal);
             return EncodeDepthNormal(i.nz.w, normal);
         }
 
@@ -126,8 +128,8 @@
             UNITY_SETUP_INSTANCE_ID(v);
             UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
             o.pos = UnityObjectToClipPos(v.vertex);
-            //o.nz.xyz = COMPUTE_VIEW_NORMAL;
-            o.nz.xyz = 0;
+            o.nz.xyz = COMPUTE_VIEW_NORMAL;
+            //o.nz.xyz = 0;
             o.nz.w = COMPUTE_DEPTH_01;
             o.uv = TRANSFORM_TEX(v.texcoord, _BaseMap);
             o.normal = UnityObjectToWorldNormal(v.normal);
@@ -146,6 +148,8 @@
             clip(texcol.a* _BaseColor.a - _Cutoff);
             float3 normal = UnpackNormalWithScale(tex2D(_NormalMap, i.uv), _NormalScale);
             normal = NormalTangentToWorld(normal, normalize(i.normal), normalize(i.tangent));
+            //view normal
+            normal = mul((float3x3)UNITY_MATRIX_V, normal);
             return EncodeDepthNormal(i.nz.w, normal);
         }
 
