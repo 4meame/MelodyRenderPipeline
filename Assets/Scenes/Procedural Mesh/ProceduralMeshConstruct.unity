@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.3810844, g: 0.5192567, b: 0.66657513, a: 0}
+  m_AmbientSkyColor: {r: 0.37331676, g: 0.51241, b: 0.6608813, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -157,6 +157,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 1
   resolution: 4
+  size: 2
+  showGizmo: 0
 --- !u!23 &745105121
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -294,7 +296,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 5.7e-43, y: NaN, z: 0, w: 0.0000000062949645}
+  m_BoundingSphereOverride: {x: 0, y: NaN, z: NaN, w: 0}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -436,6 +438,7 @@ MonoBehaviour:
     postFXSettings: {fileID: 0}
     allowFXAA: 1
     allowSSPR: 0
+    allowSSAO: 0
     allowSSR: 0
     allowCloud: 0
     allowAtmosFog: 1

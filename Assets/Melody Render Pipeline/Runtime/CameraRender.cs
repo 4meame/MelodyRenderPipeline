@@ -180,9 +180,11 @@ public partial class CameraRender {
         buffer.SetGlobalVector(bufferSizeId, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
         #endregion
         ExecuteBuffer();
+        //I leave these three buffers for comparing change of performance with MRT GBuffers
         DrawDiffuse(useDiffuseTexture);
         DrawSpecular(useSpecularTexture);
         DrawDepthNormal(useDepthNormalTexture);
+        //actully deferred render buffers
         DrawGBuffers(useGBuffers);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
