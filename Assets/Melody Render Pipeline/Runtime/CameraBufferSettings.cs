@@ -78,9 +78,14 @@ public struct CameraBufferSettings {
     public struct SSR {
         public bool enabled;
         public ComputeShader computeShader;
-        [Header("Trace")]
+        public enum SSRType {
+            SSR,
+            StochasticSSR
+        }
+        public SSRType sSRType;
+        [Header("SSR")]
         [Range(1, 8)]
-        public int downsample;
+        public int downSample;
         public float maxDistance;
         [Range(1,300)]
         public int iterations;
@@ -90,13 +95,13 @@ public struct CameraBufferSettings {
         public int pixelStrideSize;
         public float pixelStrideZCuttoff;
         public float thickness;
-        [Header("Fade")]
         [Range(0, 0.999f)]
         public float screenEdgeFade;
         [Range(0, 1f)]
         public float eyeFadeStart;
         [Range(0, 1)]
-        public float eyeFadeEnd; 
+        public float eyeFadeEnd;
+        [Header("StochasticSSR")]
         public bool debug;
     }
     public SSR ssr;

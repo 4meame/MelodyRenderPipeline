@@ -25,10 +25,10 @@ TEXTURE2D(_NormalMap);
 SAMPLER(sampler_NormalMap);
 TEXTURE2D(_DetailNormalMap);
 SAMPLER(sampler_DetailNormalMap);
-TEXTURE2D(_SSR_Blur);
-SAMPLER(sampler_SSR_Blur);
-TEXTURE2D(_SSAO_Blur);
-SAMPLER(sampler_SSAO_Blur);
+TEXTURE2D(_SSR_Filtered);
+SAMPLER(sampler_SSR_Filtered);
+TEXTURE2D(_SSAO_Filtered);
+SAMPLER(sampler_SSAO_Filtered);
 
 
 //Support per-instance material data, replace variable with an array reference WHEN NEEDED
@@ -173,7 +173,7 @@ float4 LitPassFragment(Varyings input) : SV_TARGET {
 #endif
 	GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
 #if defined(_SSAO_ON)
-	float3 ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Blur, sampler_SSAO_Blur, fragment.screenUV).rrr;
+	float3 ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Filtered, sampler_SSAO_Filtered, fragment.screenUV).rrr;
 #if defined(_Multiple_Bounce_AO)
 		float3 albedo = SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, fragment.screenUV, 0);
 		ssaoResult = MultiBounce(ssaoResult.r, albedo);
@@ -191,7 +191,7 @@ float4 LitPassFragment(Varyings input) : SV_TARGET {
 	//get SSR Pass Result
 	float4 ssrResult = 0;
 #if defined(_SSR_ON)
-	ssrResult = SAMPLE_TEXTURE2D(_SSR_Blur, sampler_SSR_Blur, fragment.screenUV);
+	ssrResult = SAMPLE_TEXTURE2D(_SSR_Filtered, sampler_SSR_Filtered, fragment.screenUV);
 	float reflectAmount = (1 - brdf.roughness);
 	//reflectAmount = reflectAmount.r * 0.299 + reflectAmount.g * 0.587 + reflectAmount.b * 0.144;
 	color = lerp(color, ssrResult.rgb, ssrResult.a * reflectAmount);

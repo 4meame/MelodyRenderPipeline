@@ -142,7 +142,7 @@ public class ScreenSpaceAmbientOcclusion {
                 buffer.SetComputeTextureParam(cs, kernel_SSAOFilter1, "Filtered1", filtered1Id);
                 buffer.DispatchCompute(cs, kernel_SSAOFilter1, blurBufferSize.x / 8, blurBufferSize.y / 8, 1);
             }
-            buffer.SetGlobalTexture("_SSAO_Blur", filtered1Id);
+            buffer.SetGlobalTexture("_SSAO_Filtered", filtered1Id);
             buffer.EnableShaderKeyword("_SSAO_ON");
         } else {
             buffer.DisableShaderKeyword("_SSAO_ON");

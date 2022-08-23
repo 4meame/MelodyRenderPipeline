@@ -175,7 +175,7 @@ public partial class CameraRender
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
-        ssr.Setup(context, camera, cullingResults, cameraBufferSettings.ssr, useHDR, useDynamicBatching, useInstancing, useLightsPerObject);
+        ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
