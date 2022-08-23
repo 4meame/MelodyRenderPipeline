@@ -11,6 +11,7 @@ public struct CameraBufferSettings {
 	public bool useDepthNormal;
     public bool useDiffuse;
     public bool useSpecular;
+    public bool useGBuffers;
     public bool usePostGeometryColor;
 	[Range(0.1f, 2f)]
 	public float renderScale;

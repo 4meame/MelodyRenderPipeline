@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public partial class CameraRender
-{
+public partial class CameraRender {
     ScriptableRenderContext context;
     Camera camera;
     const string bufferName = "Render Camera";
-    CommandBuffer buffer = new CommandBuffer
-    {
+    CommandBuffer buffer = new CommandBuffer {
         name = bufferName
     };
     CullingResults cullingResults;
@@ -38,8 +36,9 @@ public partial class CameraRender
     bool useDepthTexture;
     bool useColorTexture;
     bool useDepthNormalTexture;
-    bool useDiffuse;
-    bool useSpecular;
+    bool useDiffuseTexture;
+    bool useSpecularTexture;
+    bool useGBuffers;
     bool useIntermediateBuffer;
     bool usePostGeometryColorTexture;
     bool useDeferredRender;
@@ -69,6 +68,17 @@ public partial class CameraRender
     #region Specular Buffer
     static ShaderTagId specularTagId = new ShaderTagId("Specular");
     static int specularTextureId = Shader.PropertyToID("_CameraSpecularTexture");
+    #endregion
+    //Deferred Render Buffers
+    #region G Buffer
+    static ShaderTagId GBuffersTagId = new ShaderTagId("GBuffer");
+    static int GBuffer0Id = Shader.PropertyToID("_GBuffer0");
+    static int GBuffer1Id = Shader.PropertyToID("_GBuffer1");
+    static int GBuffer2Id = Shader.PropertyToID("_GBuffer2");
+    static int depthBufferId = Shader.PropertyToID("_DepthBuffer");
+    RenderTargetIdentifier[] GBuffersID = new RenderTargetIdentifier[3];
+    RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[3];
+    RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[3];
     #endregion
     static CameraSettings defaultCameraSettings = new CameraSettings();
     //WebGL 2.0 support
@@ -110,8 +120,9 @@ public partial class CameraRender
             useColorTexture = cameraBufferSettings.copyColor && cameraSettings.copyColor;
         }
         useDepthNormalTexture = cameraBufferSettings.useDepthNormal;
-        useDiffuse = cameraBufferSettings.useDiffuse;
-        useSpecular = cameraBufferSettings.useSpecular;
+        useDiffuseTexture = cameraBufferSettings.useDiffuse;
+        useSpecularTexture = cameraBufferSettings.useSpecular;
+        useGBuffers = cameraBufferSettings.useGBuffers;
         usePostGeometryColorTexture = cameraBufferSettings.usePostGeometryColor;
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
 
@@ -169,9 +180,10 @@ public partial class CameraRender
         buffer.SetGlobalVector(bufferSizeId, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
         #endregion
         ExecuteBuffer();
+        DrawDiffuse(useDiffuseTexture);
+        DrawSpecular(useSpecularTexture);
         DrawDepthNormal(useDepthNormalTexture);
-        DrawDiffuse(useDiffuse);
-        DrawSpecular(useSpecular);
+        DrawGBuffers(useGBuffers);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
@@ -233,7 +245,7 @@ public partial class CameraRender
             buffer.BeginSample(SampleName);
             ExecuteBuffer();
             //var depthNormalMaterial = CoreUtils.CreateEngineMaterial("Hidden/Internal-DepthNormalsTexture");
-            var depthNormalMaterial = new Material(Shader.Find("Hidden/DrawDepthNormalTexture"));
+            var depthNormalMaterial = CoreUtils.CreateEngineMaterial("Hidden/DrawDepthNormalTexture");
             var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
             var drawingSettings = new DrawingSettings(depthNormalTagId, sortingSettings);
             drawingSettings.overrideMaterial = depthNormalMaterial;
@@ -255,7 +267,7 @@ public partial class CameraRender
             buffer.name = "Draw Diffuse";
             //set camera properties, including view and projection, so set the current rendertarget after that
             context.SetupCameraProperties(camera);
-            buffer.GetTemporaryRT(diffuseTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.GetTemporaryRT(diffuseTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             buffer.SetRenderTarget(diffuseTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
@@ -277,7 +289,7 @@ public partial class CameraRender
             buffer.name = "Draw Specular";
             //set camera properties, including view and projection, so set the current rendertarget after that
             context.SetupCameraProperties(camera);
-            buffer.GetTemporaryRT(specularTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.GetTemporaryRT(specularTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             buffer.SetRenderTarget(specularTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample(SampleName);
@@ -290,6 +302,47 @@ public partial class CameraRender
             var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
             context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
             //will not draw transparent for now
+            buffer.EndSample(SampleName);
+            ExecuteBuffer();
+        }
+    }
+
+    void DrawGBuffers(bool useGBuffer) {
+        if (useGBuffer) {
+            buffer.name = "Draw GBuffers";
+            //set camera properties, including view and projection, so set the current rendertarget after that
+            context.SetupCameraProperties(camera);
+            //init deferred render GBuffers
+            buffer.GetTemporaryRT(GBuffer0Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
+            buffer.GetTemporaryRT(GBuffer1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
+            buffer.GetTemporaryRT(GBuffer2Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB2101010);
+            buffer.GetTemporaryRT(depthBufferId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
+            //identifies a render texture for a command buffer.
+            GBuffersID[0] = new RenderTargetIdentifier(GBuffer0Id);
+            GBuffersID[1] = new RenderTargetIdentifier(GBuffer1Id);
+            GBuffersID[2] = new RenderTargetIdentifier(GBuffer2Id);
+            for (int i = 0; i < 3; i++) {
+                GBuffersLA[i] = RenderBufferLoadAction.DontCare;
+                GBuffersSA[i] = RenderBufferStoreAction.Store;
+            }
+            RenderTargetBinding renderTargetBinding = new RenderTargetBinding(GBuffersID,
+                GBuffersLA, GBuffersSA,
+                depthBufferId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.SetGlobalTexture("_CameraDiffuseTexture", GBuffersID[0]);
+            buffer.SetGlobalTexture("_CameraSpecularTexture", GBuffersID[1]);
+            buffer.SetGlobalTexture("_CameraDepthNormalTexture", GBuffersID[2]);
+            buffer.SetRenderTarget(GBuffersID[0], GBuffersLA[1], GBuffersSA[1], depthBufferId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.SetRenderTarget(renderTargetBinding);
+            buffer.ClearRenderTarget(true, true, Color.black);
+            buffer.BeginSample(SampleName);
+            ExecuteBuffer();
+            var GBuffersMaterial = CoreUtils.CreateEngineMaterial("Hidden/DrawGBuffers");
+            var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
+            var drawingSettings = new DrawingSettings(GBuffersTagId, sortingSettings);
+            drawingSettings.overrideMaterial = GBuffersMaterial;
+            var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
+            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
             buffer.EndSample(SampleName);
             ExecuteBuffer();
         }
@@ -407,8 +460,10 @@ public partial class CameraRender
                 buffer.ReleaseTemporaryRT(colorTextureId);
             }
         }
-        if (useDepthNormalTexture) {
-            buffer.ReleaseTemporaryRT(depthNormalTextureId);
+        if (true) {
+            //buffer.ReleaseTemporaryRT(diffuseTextureId);
+            //buffer.ReleaseTemporaryRT(specularTextureId);
+            //buffer.ReleaseTemporaryRT(depthNormalTextureId);
         }
         if (usePostGeometryColorTexture) {
             buffer.ReleaseTemporaryRT(postColorTextureId);
@@ -431,7 +486,7 @@ public partial class CameraRender
         string name = buffer.name;
         if (useColorTexture)
         {
-            buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             if (copyTextureSupported) {
                 buffer.CopyTexture(colorAttachmentId, colorTextureId);
             } else {

@@ -146,7 +146,7 @@
         fixed4 frag(v2f i) : SV_Target{
             fixed4 texcol = tex2D(_BaseMap, i.uv) * _BaseColor;
             clip(texcol.a* _BaseColor.a - _Cutoff);
-            float3 normal = UnpackNormalWithScale(tex2D(_NormalMap, i.uv), _NormalScale);
+            fixed3 normal = UnpackNormalWithScale(tex2D(_NormalMap, i.uv), _NormalScale);
             normal = NormalTangentToWorld(normal, normalize(i.normal), normalize(i.tangent));
             //view normal
             normal = mul((float3x3)UNITY_MATRIX_V, normal);

@@ -127,6 +127,19 @@
             #include "ShadowCasterPass.hlsl"
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "GBuffer"
+            Tags { "LightMode" = "GBuffer" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex ShadowCasterPassVertex
+            #pragma fragment ShadowCasterPassFragment
+            #include "ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
     }
 
     CustomEditor "MelodyShaderGUI"
