@@ -473,10 +473,10 @@ public partial class CameraRender {
                 buffer.ReleaseTemporaryRT(colorTextureId);
             }
         }
-        if (true) {
-            //buffer.ReleaseTemporaryRT(diffuseTextureId);
-            //buffer.ReleaseTemporaryRT(specularTextureId);
-            //buffer.ReleaseTemporaryRT(depthNormalTextureId);
+        if (useGBuffers) {
+            buffer.ReleaseTemporaryRT(diffuseTextureId);
+            buffer.ReleaseTemporaryRT(specularTextureId);
+            buffer.ReleaseTemporaryRT(depthNormalTextureId);
         }
         if (usePostGeometryColorTexture) {
             buffer.ReleaseTemporaryRT(postColorTextureId);
