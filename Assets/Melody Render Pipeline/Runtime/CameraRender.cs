@@ -180,6 +180,7 @@ public partial class CameraRender {
         buffer.SetGlobalVector(bufferSizeId, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
         #endregion
         ExecuteBuffer();
+        SetupDeferred();
         //I leave these three buffers for comparing change of performance with MRT GBuffers
         DrawDiffuse(useDiffuseTexture);
         DrawSpecular(useSpecularTexture);
@@ -196,7 +197,7 @@ public partial class CameraRender {
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
         atmosphere.UpdateAll();
-        Setup();
+        SetupForward();
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();
         ssao.Render();
@@ -334,6 +335,7 @@ public partial class CameraRender {
             buffer.SetGlobalTexture("_CameraDiffuseTexture", GBuffersID[0]);
             buffer.SetGlobalTexture("_CameraSpecularTexture", GBuffersID[1]);
             buffer.SetGlobalTexture("_CameraDepthNormalTexture", GBuffersID[2]);
+            buffer.SetGlobalTexture("_CameraDepthTexture", depthBufferId);
             buffer.SetRenderTarget(GBuffersID[0], GBuffersLA[1], GBuffersSA[1], depthBufferId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.SetRenderTarget(renderTargetBinding);
             buffer.ClearRenderTarget(true, true, Color.black);
@@ -398,12 +400,12 @@ public partial class CameraRender {
         }
     }
 
-    void Setup() {
+    void SetupForward() {
         context.SetupCameraProperties(camera);
         CameraClearFlags flags = camera.clearFlags;
         //Init before potentially getting the attachments
         //NOTE : because render scale also needs intermediate buffer, it will take a bit of extra work when not using post fx.
-        useIntermediateBuffer = useColorTexture || useDepthTexture || postFXStack.IsActive || useScaledRendering || cloud.IsActive;
+        useIntermediateBuffer = useColorTexture || useDepthTexture || postFXStack.IsActive || useScaledRendering;
 
         //before clearing the render target, store the temp render texture for post fx
         if (useIntermediateBuffer) {
@@ -424,9 +426,18 @@ public partial class CameraRender {
 
         buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         buffer.BeginSample(SampleName);
-        //Init set up a "missing" depth texture
+        //Init set up a "missing" depth and color texture
         buffer.SetGlobalTexture(depthTextureId, missingTexture);
+        buffer.SetGlobalTexture(colorTextureId, missingTexture);
         ExecuteBuffer();
+    }
+
+    void SetupDeferred() {
+        //Init set up "missing" GBuffers texture
+        buffer.SetGlobalTexture("_CameraDiffuseTexture", missingTexture);
+        buffer.SetGlobalTexture("_CameraSpecularTexture", missingTexture);
+        buffer.SetGlobalTexture("_CameraDepthNormalTexture", missingTexture);
+        buffer.SetGlobalTexture("_CameraDepthTexture", missingTexture);
     }
 
     void Submit() {
