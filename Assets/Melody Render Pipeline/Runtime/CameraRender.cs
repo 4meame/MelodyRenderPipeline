@@ -316,9 +316,9 @@ public partial class CameraRender {
             //set camera properties, including view and projection, so set the current rendertarget after that
             context.SetupCameraProperties(camera);
             //init deferred render GBuffers
-            buffer.GetTemporaryRT(GBuffer0Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
-            buffer.GetTemporaryRT(GBuffer1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
-            buffer.GetTemporaryRT(GBuffer2Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB2101010);
+            buffer.GetTemporaryRT(GBuffer0Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.GetTemporaryRT(GBuffer1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.GetTemporaryRT(GBuffer2Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             buffer.GetTemporaryRT(depthBufferId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
             //identifies a render texture for a command buffer.
             GBuffersID[0] = new RenderTargetIdentifier(GBuffer0Id);
