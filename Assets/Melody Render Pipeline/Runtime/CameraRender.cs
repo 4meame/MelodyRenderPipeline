@@ -80,6 +80,9 @@ public partial class CameraRender {
     RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[3];
     RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[3];
     #endregion
+    #region Motion Vector Buffer
+    static int motionVectorTextureId = Shader.PropertyToID("_CameraMotionVectorTexture");
+    #endregion
     static CameraSettings defaultCameraSettings = new CameraSettings();
     //WebGL 2.0 support
     static bool copyTextureSupported = false;
@@ -110,7 +113,6 @@ public partial class CameraRender {
         if (!Cull(shadowSettings.maxDistance)) {
             return;
         }
-
         if (camera.cameraType == CameraType.Reflection)
         {
             useDepthTexture = cameraBufferSettings.copyDepthReflections;
