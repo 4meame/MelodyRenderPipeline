@@ -157,8 +157,11 @@ public struct CameraBufferSettings {
         public float hbaoStrength;
         [Header("GTAO")]
         public Vector4 fadeParams;
+        [Range(1, 8)]
         public int numSlice;
+        [Range(-2, 2)]
         public float thickness;
+        [Range(0, 9)]
         public float gtaoStrength;
         public bool multipleBounce;
 
