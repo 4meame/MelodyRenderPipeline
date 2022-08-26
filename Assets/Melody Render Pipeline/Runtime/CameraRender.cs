@@ -42,7 +42,6 @@ public partial class CameraRender {
     bool useGBuffers;
     bool useIntermediateBuffer;
     bool usePostGeometryColorTexture;
-    bool useDeferredRender;
 
     #region Utility Params
     static int timeSinceLevelLoad = Shader.PropertyToID("_Time");
@@ -160,7 +159,6 @@ public partial class CameraRender {
         #region SSR
         cameraBufferSettings.ssr.enabled = cameraBufferSettings.ssr.enabled && cameraSettings.allowSSR;
         #endregion
-        useDeferredRender = cameraBufferSettings.ssao.enabled || cameraBufferSettings.ssr.enabled;
 
         //render shadows before setting up regular camera
         buffer.BeginSample(SampleName);
@@ -382,25 +380,23 @@ public partial class CameraRender {
     }
 
     void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
-        if (useDeferredRender) {
-            //draw Deferred Object
-            var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
-            PerObjectData deferredLightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
-            var deferredDrawingSettings = new DrawingSettings(deferredShaderTagId, deferredSortingSettings) {
-                enableDynamicBatching = useDynamicBatching,
-                enableInstancing = useInstancing,
-                perObjectData = PerObjectData.Lightmaps |
-                PerObjectData.LightProbe |
-                PerObjectData.LightProbeProxyVolume |
-                PerObjectData.ShadowMask |
-                PerObjectData.OcclusionProbe |
-                PerObjectData.OcclusionProbeProxyVolume |
-                PerObjectData.ReflectionProbes |
-                deferredLightsPerObjectFlags
-            };
-            var deferredFilteringSettings = new FilteringSettings(RenderQueueRange.all);
-            context.DrawRenderers(cullingResults, ref deferredDrawingSettings, ref deferredFilteringSettings);
-        }
+        //draw Deferred Object
+        var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
+        PerObjectData deferredLightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
+        var deferredDrawingSettings = new DrawingSettings(deferredShaderTagId, deferredSortingSettings) {
+            enableDynamicBatching = useDynamicBatching,
+            enableInstancing = useInstancing,
+            perObjectData = PerObjectData.Lightmaps |
+            PerObjectData.LightProbe |
+            PerObjectData.LightProbeProxyVolume |
+            PerObjectData.ShadowMask |
+            PerObjectData.OcclusionProbe |
+            PerObjectData.OcclusionProbeProxyVolume |
+            PerObjectData.ReflectionProbes |
+            deferredLightsPerObjectFlags
+        };
+        var deferredFilteringSettings = new FilteringSettings(RenderQueueRange.all);
+        context.DrawRenderers(cullingResults, ref deferredDrawingSettings, ref deferredFilteringSettings);
     }
 
     void Setup() {
