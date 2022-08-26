@@ -139,8 +139,8 @@
     {       
         Pass
         {
-            Name "MelodyLit"
-            Tags { "LightMode" = "MelodyLit" }
+            Name "MelodyForward"
+            Tags { "LightMode" = "MelodyForward" }
 
 			Cull[_CullMode]
             Blend [_SrcBlend][_DstBlend], One OneMinusSrcAlpha
@@ -204,8 +204,8 @@
 
         Pass
         {
-            Name "DepthNormal"
-            Tags { "LightMode" = "DepthNormal" }
+            Name "GBuffer"
+            Tags { "LightMode" = "GBuffer" }
 
             HLSLPROGRAM
             #pragma target 3.5

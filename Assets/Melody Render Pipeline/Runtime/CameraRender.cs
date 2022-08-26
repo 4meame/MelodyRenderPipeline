@@ -12,7 +12,8 @@ public partial class CameraRender {
     };
     CullingResults cullingResults;
     static ShaderTagId unlitShaderTagId = new ShaderTagId("MelodyUnlit"),
-                       litShaderTagId = new ShaderTagId("MelodyLit");
+                       forwardShaderTagId = new ShaderTagId("MelodyForward"),
+                       deferredShaderTagId = new ShaderTagId("MelodyDeferred");
 
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
@@ -80,6 +81,7 @@ public partial class CameraRender {
     RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[3];
     RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[3];
     #endregion
+    //render with GBuffers
     #region Motion Vector Buffer
     static int motionVectorTextureId = Shader.PropertyToID("_CameraMotionVectorTexture");
     #endregion
@@ -182,7 +184,7 @@ public partial class CameraRender {
         buffer.SetGlobalVector(bufferSizeId, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
         #endregion
         ExecuteBuffer();
-        SetupDeferred();
+        SetupGlobalTexture();
         //I leave these three buffers for comparing change of performance with MRT GBuffers
         DrawDiffuse(useDiffuseTexture);
         DrawSpecular(useSpecularTexture);
@@ -199,7 +201,7 @@ public partial class CameraRender {
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
         atmosphere.UpdateAll();
-        SetupForward();
+        Setup();
         DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         sspr.Render();
         ssao.Render();
@@ -364,7 +366,7 @@ public partial class CameraRender {
                                                                   PerObjectData.ReflectionProbes | lightsPerObjectFlags };
 
         //set draw settings pass, index : 0, pass : ChickenUnlit; index : 1, pass: ChickenLit
-        drawingSettings.SetShaderPassName(1, litShaderTagId);
+        drawingSettings.SetShaderPassName(1, forwardShaderTagId);
         var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
 
@@ -384,8 +386,7 @@ public partial class CameraRender {
             //draw Deferred Object
             var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
             PerObjectData deferredLightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
-            ShaderTagId DeferredTagId = new ShaderTagId("ScreenSpaceDeferred");
-            var deferredDrawingSettings = new DrawingSettings(DeferredTagId, deferredSortingSettings) {
+            var deferredDrawingSettings = new DrawingSettings(deferredShaderTagId, deferredSortingSettings) {
                 enableDynamicBatching = useDynamicBatching,
                 enableInstancing = useInstancing,
                 perObjectData = PerObjectData.Lightmaps |
@@ -402,7 +403,7 @@ public partial class CameraRender {
         }
     }
 
-    void SetupForward() {
+    void Setup() {
         context.SetupCameraProperties(camera);
         CameraClearFlags flags = camera.clearFlags;
         //Init before potentially getting the attachments
@@ -428,18 +429,19 @@ public partial class CameraRender {
 
         buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         buffer.BeginSample(SampleName);
-        //Init set up a "missing" depth and color texture
-        buffer.SetGlobalTexture(depthTextureId, missingTexture);
-        buffer.SetGlobalTexture(colorTextureId, missingTexture);
         ExecuteBuffer();
     }
 
-    void SetupDeferred() {
+    void SetupGlobalTexture() {
         //Init set up "missing" GBuffers texture
         buffer.SetGlobalTexture("_CameraDiffuseTexture", missingTexture);
         buffer.SetGlobalTexture("_CameraSpecularTexture", missingTexture);
         buffer.SetGlobalTexture("_CameraDepthNormalTexture", missingTexture);
+        //Init set up "missing" depth and color texture
         buffer.SetGlobalTexture("_CameraDepthTexture", missingTexture);
+        buffer.SetGlobalTexture("_CameraColorTexture", missingTexture);
+        //Init set up "missing" motion vector texture
+        buffer.SetGlobalTexture("_CameraMotionVectorTexture", missingTexture);
     }
 
     void Submit() {

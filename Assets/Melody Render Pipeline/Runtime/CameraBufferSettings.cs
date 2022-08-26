@@ -6,18 +6,21 @@ using System;
 [Serializable]
 public struct CameraBufferSettings {
 	public bool allowHDR;
-	public bool copyDepth, copyDepthReflections;
-	public bool copyColor, copyColorReflections;
-	public bool useDepthNormal;
+    [Range(0.1f, 2f)]
+    public float renderScale;
+    public enum RescalingMode { Linear, Point, Bicubic }
+    public RescalingMode rescalingMode;
+    [Header("Forward")]
+    public bool copyDepth;
+    public bool copyDepthReflections;
+    public bool copyColor;
+    public bool copyColorReflections;
+    [Header("Deferred")]
+    public bool useDepthNormal;
     public bool useDiffuse;
     public bool useSpecular;
     public bool useGBuffers;
     public bool usePostGeometryColor;
-	[Range(0.1f, 2f)]
-	public float renderScale;
-	public enum RescalingMode { Linear, Point, Bicubic }
-	public RescalingMode rescalingMode;
-
 	[Serializable]
 	public struct FXAA {
 		public bool enabled;

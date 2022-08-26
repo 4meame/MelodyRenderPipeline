@@ -1,4 +1,4 @@
-﻿Shader "Melody RP/Standard/Lit"
+﻿Shader "Melody RP/Standard/ForwardLit"
 {
     Properties
     {
@@ -33,8 +33,8 @@
     {       
         Pass
         {
-            Name "MelodyLit"
-            Tags { "LightMode" = "MelodyLit" }
+            Name "MelodyForward"
+            Tags { "LightMode" = "MelodyForward" }
 
             Blend [_SrcBlend][_DstBlend], One OneMinusSrcAlpha
             ZWrite [_ZWrite]
@@ -89,57 +89,6 @@
             ENDHLSL
         }
 
-        Pass
-        {
-            Name "DepthNormal"
-            Tags { "LightMode" = "DepthNormal" }
-
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "Diffuse"
-            Tags { "LightMode" = "Diffuse" }
-
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "Specular"
-            Tags { "LightMode" = "Specular" }
-
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "GBuffer"
-            Tags { "LightMode" = "GBuffer" }
-
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
     }
 
     CustomEditor "MelodyShaderGUI"
