@@ -89,6 +89,19 @@
             ENDHLSL
         }
 
+        Pass
+        {
+            Name "DepthNormal"
+            Tags { "LightMode" = "DepthNormal" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex ToonLitPassVertex
+            #pragma fragment ToonLitShadowAlphaClipTest
+            #define _COMPLEX_TOON
+            #include "ToonLitPass.hlsl"
+            ENDHLSL
+        }
     }
 
     CustomEditor "MelodyShaderGUI"

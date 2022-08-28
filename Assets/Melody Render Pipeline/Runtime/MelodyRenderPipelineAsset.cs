@@ -16,7 +16,8 @@ public class MelodyRenderPipelineAsset : RenderPipelineAsset {
     [SerializeField]
     PostFXSettings postFXSettings = default;
     [SerializeField]
-    CameraBufferSettings cameraBufferSettings = new CameraBufferSettings { allowHDR = true, renderScale = 1.0f, useDepthNormal = false, useDiffuse = false, useSpecular = false, useGBuffers = true,
+    CameraBufferSettings cameraBufferSettings = new CameraBufferSettings { allowHDR = true, renderScale = 1.0f, renderingPath = CameraBufferSettings.RenderingPath.Forward,
+        useDepthNormal = false, useDiffuse = false, useSpecular = false,
         fxaa = new CameraBufferSettings.FXAA { fixedThreshold = 0.0833f, relativeThreshold = 0.166f, subpixelBlending = 0.75f },
         ssr = new CameraBufferSettings.SSR { sSRType = CameraBufferSettings.SSR.SSRType.SSR, downSample = 1 },
         ssao = new CameraBufferSettings.SSAO { aOType = CameraBufferSettings.SSAO.AOType.GTAO, downSample = 1 }

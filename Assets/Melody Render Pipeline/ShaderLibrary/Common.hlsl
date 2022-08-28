@@ -15,10 +15,6 @@
 float4 _Time;
 float _CurrentCameraFOV;
 
-//Utility Matrix
-float4x4 _ClipToViewMatrix;
-float4x4 _InvViewProjMatrix;
-
 //The occlusion data can get instanced automatically, UnityInstancing only does this when SHADOWS_SHADOWMASK is defined
 #if defined(_SHADOW_MASK_ALWAYS) || defined(_SHADOW_MASK_DISTANCE)
 	#define SHADOWS_SHADOWMASK
@@ -76,6 +72,31 @@ float3 DecodeViewNormalStereo(float4 enc4) {
 	n.xy = g * nn.xy;
 	n.z = g - 1;
 	return n;
+}
+
+inline float2 EncodeFloatRG(float v) {
+	float2 kEncodeMul = float2(1.0, 255.0);
+	float kEncodeBit = 1.0 / 255.0;
+	float2 enc = kEncodeMul * v;
+	enc = frac(enc);
+	enc.x -= enc.y * kEncodeBit;
+	return enc;
+}
+
+inline float2 EncodeViewNormalStereo(float3 n) {
+	float kScale = 1.7777;
+	float2 enc;
+	enc = n.xy / (n.z + 1);
+	enc /= kScale;
+	enc = enc * 0.5 + 0.5;
+	return enc;
+}
+
+inline float4 EncodeDepthNormal(float depth, float3 normal) {
+	float4 enc;
+	enc.xy = EncodeViewNormalStereo(normal);
+	enc.zw = EncodeFloatRG(depth);
+	return enc;
 }
 
 //Fragment data

@@ -25,11 +25,6 @@ TEXTURE2D(_NormalMap);
 SAMPLER(sampler_NormalMap);
 TEXTURE2D(_DetailNormalMap);
 SAMPLER(sampler_DetailNormalMap);
-TEXTURE2D(_SSR_Filtered);
-SAMPLER(sampler_SSR_Filtered);
-TEXTURE2D(_SSAO_Filtered);
-SAMPLER(sampler_SSAO_Filtered);
-
 
 //Support per-instance material data, replace variable with an array reference WHEN NEEDED
 UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
@@ -94,7 +89,12 @@ Varyings LitPassVertex(Attributes input) {
 	return output;
 }
 
-float4 LitPassFragment(Varyings input) : SV_TARGET {
+void LitPassFragment(Varyings input,
+					out float4 GT0 : SV_TARGET0,
+					out float4 GT1 : SV_TARGET1,
+					out float4 GT2 : SV_TARGET2,
+					out float4 GT3 : SV_TARGET3,
+					out float2 GT4 : SV_TARGET4) {
 	UNITY_SETUP_INSTANCE_ID(input);
 //Init fragment data
 	Fragment fragment;
@@ -172,15 +172,6 @@ float4 LitPassFragment(Varyings input) : SV_TARGET {
 	BRDF brdf = GetBRDF(surface);
 #endif
 	GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
-#if defined(_SSAO_ON)
-	float3 ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Filtered, sampler_SSAO_Filtered, fragment.screenUV).rrr;
-#if defined(_Multiple_Bounce_AO)
-		//float3 bounceSource = SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, fragment.screenUV, 0);
-		float3 bounceSource = gi.diffuse;
-		ssaoResult = MultiBounce(ssaoResult.r, bounceSource);
-#endif
-	gi.diffuse *= ssaoResult;
-#endif
 
 	float3 color = GetLighting(surface, brdf, gi);
 //emission color
@@ -189,16 +180,16 @@ float4 LitPassFragment(Varyings input) : SV_TARGET {
 	float3 emission = emissionMap.rgb * emissionColor.rgb;
 	color += emission;
 
-	//get SSR Pass Result
-	float4 ssrResult = 0;
-#if defined(_SSR_ON)
-	ssrResult = SAMPLE_TEXTURE2D(_SSR_Filtered, sampler_SSR_Filtered, fragment.screenUV);
-	float reflectAmount = (1 - brdf.roughness);
-	//reflectAmount = reflectAmount.r * 0.299 + reflectAmount.g * 0.587 + reflectAmount.b * 0.144;
-	color = lerp(color, ssrResult.rgb, ssrResult.a * reflectAmount);
-#endif
-
 	//objects that write depth should always produce an alpha of 1
-	return float4(color, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ZWrite) ? 1.0 : surface.alpha);
+	GT0 = float4(color, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ZWrite) ? 1.0 : surface.alpha);
+	//diffuse and occlusion
+	GT1 = float4(brdf.diffuse, surface.occlusion);
+	//specular and smoothness
+	GT2 = float4(brdf.specular, surface.smoothness);
+	//depth and normal
+	float3 normalVS = mul((float3x3)UNITY_MATRIX_V, surface.normal);
+	GT3 = EncodeDepthNormal(1, normalVS);
+	//motion
+	GT4 = 0;
 }
 #endif

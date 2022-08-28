@@ -45,7 +45,7 @@ public class ScreenSpaceAmbientOcclusion {
         buffer.GetTemporaryRT(debugResultId, descriptor);
     }
 
-    public void Render() {
+    public void Render(int sourceId, Material material, int pass) {
         buffer.BeginSample("SSAO Resolve");
         if (settings.enabled) {
             Configure();
@@ -144,6 +144,8 @@ public class ScreenSpaceAmbientOcclusion {
             }
             buffer.SetGlobalTexture("_SSAO_Filtered", filtered1Id);
             buffer.EnableShaderKeyword("_SSAO_ON");
+            buffer.SetRenderTarget(sourceId);
+            buffer.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         } else {
             buffer.DisableShaderKeyword("_SSAO_ON");
         }

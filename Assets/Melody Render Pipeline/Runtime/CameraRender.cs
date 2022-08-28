@@ -47,10 +47,6 @@ public partial class CameraRender {
     static int timeSinceLevelLoad = Shader.PropertyToID("_Time");
     static int cameraFOVId = Shader.PropertyToID("_CurrentCameraFOV");
     #endregion
-    #region Utility Matrix
-    static int cilpToViewMatrix = Shader.PropertyToID("_ClipToViewMatrix");
-    static int invViewProjMatrix = Shader.PropertyToID("_InvViewProjMatrix");
-    #endregion
     #region Render Scale
     bool useScaledRendering;
     Vector2Int bufferSize;
@@ -71,14 +67,14 @@ public partial class CameraRender {
     #endregion
     //Deferred Render Buffers
     #region G Buffer
+    const int GBufferLength = 5;
     static ShaderTagId GBuffersTagId = new ShaderTagId("GBuffer");
-    static int GBuffer0Id = Shader.PropertyToID("_GBuffer0");
     static int GBuffer1Id = Shader.PropertyToID("_GBuffer1");
     static int GBuffer2Id = Shader.PropertyToID("_GBuffer2");
-    static int depthBufferId = Shader.PropertyToID("_DepthBuffer");
-    RenderTargetIdentifier[] GBuffersID = new RenderTargetIdentifier[3];
-    RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[3];
-    RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[3];
+    static int GBuffer3Id = Shader.PropertyToID("_GBuffer3");
+    RenderTargetIdentifier[] GBuffersID = new RenderTargetIdentifier[GBufferLength];
+    RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[GBufferLength];
+    RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[GBufferLength];
     #endregion
     //render with GBuffers
     #region Motion Vector Buffer
@@ -122,10 +118,10 @@ public partial class CameraRender {
             useDepthTexture = cameraBufferSettings.copyDepth && cameraSettings.copyDepth;
             useColorTexture = cameraBufferSettings.copyColor && cameraSettings.copyColor;
         }
-        useDepthNormalTexture = cameraBufferSettings.useDepthNormal;
-        useDiffuseTexture = cameraBufferSettings.useDiffuse;
-        useSpecularTexture = cameraBufferSettings.useSpecular;
-        useGBuffers = cameraBufferSettings.useGBuffers;
+        useDepthNormalTexture = cameraBufferSettings.useDepthNormal && cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Forward;
+        useDiffuseTexture = cameraBufferSettings.useDiffuse && cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Forward;
+        useSpecularTexture = cameraBufferSettings.useSpecular && cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Forward;
+        useGBuffers = cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Deferred;
         usePostGeometryColorTexture = cameraBufferSettings.usePostGeometryColor;
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
 
@@ -168,16 +164,6 @@ public partial class CameraRender {
         float cameraFOV = camera.fieldOfView;
         buffer.SetGlobalFloat(cameraFOVId, cameraFOV);
         #endregion
-        #region Utility Matrix
-        //project matrix is different from GL and DX, use this to uniform it
-        Matrix4x4 projMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
-        Matrix4x4 viewMatrix = camera.worldToCameraMatrix;
-        Matrix4x4 viewProjMatrix = projMatrix * viewMatrix;
-        Matrix4x4 invViewProj = viewProjMatrix.inverse;
-        buffer.SetGlobalMatrix(invViewProjMatrix, invViewProj);
-        Matrix4x4 clipToView = GL.GetGPUProjectionMatrix(camera.projectionMatrix, true).inverse;
-        buffer.SetGlobalMatrix(cilpToViewMatrix, clipToView);
-        #endregion
         #region Render Scale
         buffer.SetGlobalVector(bufferSizeId, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
         #endregion
@@ -187,8 +173,6 @@ public partial class CameraRender {
         DrawDiffuse(useDiffuseTexture);
         DrawSpecular(useSpecularTexture);
         DrawDepthNormal(useDepthNormalTexture);
-        //actully deferred render buffers
-        DrawGBuffers(useGBuffers);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
@@ -199,12 +183,16 @@ public partial class CameraRender {
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
         atmosphere.UpdateAll();
-        Setup();
-        DrawVisibleGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+        if (!useGBuffers) {
+            SetupForward();
+            DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+        } else {
+            SetupDeferred();
+            DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+        }
         sspr.Render();
-        ssao.Render();
-        ssr.Render();
-        DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+        ssr.Render(colorAttachmentId, material, (int)Pass.CombineSSR);
+        ssao.Render(colorAttachmentId, material, (int)Pass.CombineSSAO);
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
         }
@@ -312,56 +300,22 @@ public partial class CameraRender {
         }
     }
 
-    void DrawGBuffers(bool useGBuffer) {
-        if (useGBuffer) {
-            buffer.name = "Draw GBuffers";
-            //set camera properties, including view and projection, so set the current rendertarget after that
-            context.SetupCameraProperties(camera);
-            //init deferred render GBuffers
-            buffer.GetTemporaryRT(GBuffer0Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            buffer.GetTemporaryRT(GBuffer1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            buffer.GetTemporaryRT(GBuffer2Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            buffer.GetTemporaryRT(depthBufferId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
-            //identifies a render texture for a command buffer.
-            GBuffersID[0] = new RenderTargetIdentifier(GBuffer0Id);
-            GBuffersID[1] = new RenderTargetIdentifier(GBuffer1Id);
-            GBuffersID[2] = new RenderTargetIdentifier(GBuffer2Id);
-            for (int i = 0; i < 3; i++) {
-                GBuffersLA[i] = RenderBufferLoadAction.DontCare;
-                GBuffersSA[i] = RenderBufferStoreAction.Store;
-            }
-            RenderTargetBinding renderTargetBinding = new RenderTargetBinding(GBuffersID,
-                GBuffersLA, GBuffersSA,
-                depthBufferId,
-                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            buffer.SetGlobalTexture("_CameraDiffuseTexture", GBuffersID[0]);
-            buffer.SetGlobalTexture("_CameraSpecularTexture", GBuffersID[1]);
-            buffer.SetGlobalTexture("_CameraDepthNormalTexture", GBuffersID[2]);
-            buffer.SetGlobalTexture("_CameraDepthTexture", depthBufferId);
-            buffer.SetRenderTarget(GBuffersID[0], GBuffersLA[1], GBuffersSA[1], depthBufferId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            buffer.SetRenderTarget(renderTargetBinding);
-            buffer.ClearRenderTarget(true, true, Color.black);
-            buffer.BeginSample(SampleName);
-            ExecuteBuffer();
-            var GBuffersMaterial = CoreUtils.CreateEngineMaterial("Hidden/DrawGBuffers");
-            var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
-            var drawingSettings = new DrawingSettings(GBuffersTagId, sortingSettings);
-            drawingSettings.overrideMaterial = GBuffersMaterial;
-            var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
-            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
-            buffer.EndSample(SampleName);
-            ExecuteBuffer();
-        }
-    }
-
-    void DrawVisibleGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
+    void DrawForwardGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
         //per object light will miss some lighting but sometimes it is not neccessary to calculate all light for one fragment
         PerObjectData lightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
         var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
-        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings) { enableDynamicBatching = useDynamicBatching, enableInstancing = useInstancing,
-            perObjectData = PerObjectData.Lightmaps | PerObjectData.LightProbe | PerObjectData.LightProbeProxyVolume |
-                                                                  PerObjectData.ShadowMask | PerObjectData.OcclusionProbe | PerObjectData.OcclusionProbeProxyVolume |
-                                                                  PerObjectData.ReflectionProbes | lightsPerObjectFlags };
+        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings) { 
+            enableDynamicBatching = useDynamicBatching, 
+            enableInstancing = useInstancing,
+            perObjectData = PerObjectData.Lightmaps | 
+            PerObjectData.LightProbe | 
+            PerObjectData.LightProbeProxyVolume |
+            PerObjectData.ShadowMask | 
+            PerObjectData.OcclusionProbe | 
+            PerObjectData.OcclusionProbeProxyVolume |
+            PerObjectData.ReflectionProbes | 
+            lightsPerObjectFlags 
+        };
 
         //set draw settings pass, index : 0, pass : ChickenUnlit; index : 1, pass: ChickenLit
         drawingSettings.SetShaderPassName(1, forwardShaderTagId);
@@ -381,9 +335,9 @@ public partial class CameraRender {
 
     void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
         //draw Deferred Object
-        var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
         PerObjectData deferredLightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
-        var deferredDrawingSettings = new DrawingSettings(deferredShaderTagId, deferredSortingSettings) {
+        var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
+        var deferredDrawingSettings = new DrawingSettings(unlitShaderTagId, deferredSortingSettings) {
             enableDynamicBatching = useDynamicBatching,
             enableInstancing = useInstancing,
             perObjectData = PerObjectData.Lightmaps |
@@ -393,13 +347,26 @@ public partial class CameraRender {
             PerObjectData.OcclusionProbe |
             PerObjectData.OcclusionProbeProxyVolume |
             PerObjectData.ReflectionProbes |
+            PerObjectData.MotionVectors |
             deferredLightsPerObjectFlags
         };
-        var deferredFilteringSettings = new FilteringSettings(RenderQueueRange.all);
+        //set draw settings pass, index : 0, pass : ChickenUnlit; index : 1, pass: ChickenLit
+        deferredDrawingSettings.SetShaderPassName(1, deferredShaderTagId);
+        var deferredFilteringSettings = new FilteringSettings(RenderQueueRange.opaque);
+        context.DrawRenderers(cullingResults, ref deferredDrawingSettings, ref deferredFilteringSettings);
+
+        context.DrawSkybox(camera);
+        if (useColorTexture || useDepthTexture) {
+            CopyAttachments();
+        }
+
+        deferredSortingSettings.criteria = SortingCriteria.CommonTransparent;
+        deferredDrawingSettings.sortingSettings = deferredSortingSettings;
+        deferredFilteringSettings.renderQueueRange = RenderQueueRange.transparent;
         context.DrawRenderers(cullingResults, ref deferredDrawingSettings, ref deferredFilteringSettings);
     }
 
-    void Setup() {
+    void SetupForward() {
         context.SetupCameraProperties(camera);
         CameraClearFlags flags = camera.clearFlags;
         //Init before potentially getting the attachments
@@ -424,6 +391,52 @@ public partial class CameraRender {
         }
 
         buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
+        buffer.BeginSample(SampleName);
+        ExecuteBuffer();
+    }
+
+    void SetupDeferred() {
+        context.SetupCameraProperties(camera);
+        CameraClearFlags flags = camera.clearFlags;
+        camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
+        useIntermediateBuffer = true;
+        //always clear depth and color to be guaranteed to cover previous data, unless a sky box is used
+        if (flags > CameraClearFlags.Color) {
+            flags = CameraClearFlags.Color;
+        }
+        //init deferred render GBuffers
+        buffer.GetTemporaryRT(colorAttachmentId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(GBuffer1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(GBuffer2Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(GBuffer3Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(motionVectorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.RGFloat);
+        buffer.GetTemporaryRT(depthAttachmentId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
+        //identifies a render texture for a command buffer.
+        GBuffersID[0] = new RenderTargetIdentifier(colorAttachmentId);
+        GBuffersID[1] = new RenderTargetIdentifier(GBuffer1Id);
+        GBuffersID[2] = new RenderTargetIdentifier(GBuffer2Id);
+        GBuffersID[3] = new RenderTargetIdentifier(GBuffer3Id);
+        GBuffersID[4] = new RenderTargetIdentifier(motionVectorTextureId);
+        for (int i = 0; i < GBufferLength; i++) {
+            GBuffersLA[i] = RenderBufferLoadAction.DontCare;
+            GBuffersSA[i] = RenderBufferStoreAction.Store;
+        }
+        RenderTargetBinding renderTargetBinding = new RenderTargetBinding(GBuffersID,
+            GBuffersLA, GBuffersSA,
+            depthAttachmentId,
+            RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+        buffer.SetGlobalTexture("_CameraDiffuseTexture", GBuffersID[1]);
+        buffer.SetGlobalTexture("_CameraSpecularTexture", GBuffersID[2]);
+        buffer.SetGlobalTexture("_CameraDepthNormalTexture", GBuffersID[3]);
+        buffer.SetGlobalTexture("_CameraMotionVectorTexture", motionVectorTextureId);
+        Matrix4x4 projMatrix = camera.nonJitteredProjectionMatrix;
+        Matrix4x4 viewMatrix = camera.worldToCameraMatrix;
+        Matrix4x4 viewProjMatrix = projMatrix * viewMatrix;
+        buffer.SetGlobalMatrix("_NoJitterVP", viewProjMatrix);
+        buffer.SetGlobalMatrix("_LastVP", camera.previousViewProjectionMatrix);
+        buffer.SetRenderTarget(renderTargetBinding);
+        buffer.ClearRenderTarget(true, true, Color.clear);
+        //buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
     }
@@ -465,7 +478,6 @@ public partial class CameraRender {
         if (useIntermediateBuffer) {
             buffer.ReleaseTemporaryRT(colorAttachmentId);
             buffer.ReleaseTemporaryRT(depthAttachmentId);
-
             if (useDepthTexture) {
                 buffer.ReleaseTemporaryRT(depthTextureId);
             }
@@ -473,10 +485,20 @@ public partial class CameraRender {
                 buffer.ReleaseTemporaryRT(colorTextureId);
             }
         }
-        if (useGBuffers) {
-            buffer.ReleaseTemporaryRT(diffuseTextureId);
-            buffer.ReleaseTemporaryRT(specularTextureId);
+        if (useDepthNormalTexture) {
             buffer.ReleaseTemporaryRT(depthNormalTextureId);
+        }
+        if (useDiffuseTexture) {
+            buffer.ReleaseTemporaryRT(diffuseTextureId);
+        }
+        if (useSpecularTexture) {
+            buffer.ReleaseTemporaryRT(specularTextureId);
+        }
+        if (useGBuffers) {
+            buffer.ReleaseTemporaryRT(GBuffer1Id);
+            buffer.ReleaseTemporaryRT(GBuffer2Id);
+            buffer.ReleaseTemporaryRT(GBuffer3Id);
+            buffer.ReleaseTemporaryRT(motionVectorTextureId);
         }
         if (usePostGeometryColorTexture) {
             buffer.ReleaseTemporaryRT(postColorTextureId);
@@ -491,33 +513,33 @@ public partial class CameraRender {
     void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, bool isDepth = false) {
         buffer.SetGlobalTexture(sourceTextureId, from);
         buffer.SetRenderTarget(to, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-        buffer.DrawProcedural(Matrix4x4.identity, material, isDepth ? 1 : 0, MeshTopology.Triangles, 3);
+        buffer.DrawProcedural(Matrix4x4.identity, material, isDepth ? (int)Pass.CopyDepth : (int)Pass.Copy, MeshTopology.Triangles, 3);
     }
 
     //Copy buffer attachment
     void CopyAttachments() {
         string name = buffer.name;
-        if (useColorTexture)
-        {
-            buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            if (copyTextureSupported) {
-                buffer.CopyTexture(colorAttachmentId, colorTextureId);
-            } else {
-                buffer.name = "Copy Color";
-                Draw(colorAttachmentId, colorTextureId);
-                ExecuteBuffer();
-            }
+        if (useColorTexture) {
+                buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+                if (copyTextureSupported) {
+                    buffer.CopyTexture(colorAttachmentId, colorTextureId);
+                } else {
+                    buffer.name = "Copy Color";
+                    Draw(colorAttachmentId, colorTextureId);
+                    ExecuteBuffer();
+                }
         }
         if (useDepthTexture) {
-            buffer.GetTemporaryRT(depthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
-            if (copyTextureSupported) {
-                buffer.CopyTexture(depthAttachmentId, depthTextureId);
-            } else {
-                buffer.name = "Copy Depth";
-                Draw(depthAttachmentId, depthTextureId, true);
-                ExecuteBuffer();
-            }
 
+                buffer.GetTemporaryRT(depthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
+                if (copyTextureSupported)
+                {
+                    buffer.CopyTexture(depthAttachmentId, depthTextureId);
+                } else {
+                    buffer.name = "Copy Depth";
+                    Draw(depthAttachmentId, depthTextureId, true);
+                    ExecuteBuffer();
+                }
         }
         if (!copyTextureSupported) {
             //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
@@ -538,7 +560,7 @@ public partial class CameraRender {
         //SetRenderTarget will reset the viewport to cover the entire target
         buffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget, finalBlendMode.destination == BlendMode.Zero ? RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
         buffer.SetViewport(camera.pixelRect);
-        buffer.DrawProcedural(Matrix4x4.identity, material, 0, MeshTopology.Triangles, 3);
+        buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Copy, MeshTopology.Triangles, 3);
         //set blend mode back to one zero to not affect other actions
         buffer.SetGlobalFloat(srcBlendId, 1f);
         buffer.SetGlobalFloat(dstBlendId, 0f);
@@ -546,6 +568,12 @@ public partial class CameraRender {
 
     #region Camera Render Material and Missing Texture
     Material material;
+    enum Pass {
+        Copy,
+        CopyDepth,
+        CombineSSR,
+        CombineSSAO
+    }
     //make sure that invalid samples will produce consistent resutlts
     Texture2D missingTexture;
     public CameraRender(Shader shader) {

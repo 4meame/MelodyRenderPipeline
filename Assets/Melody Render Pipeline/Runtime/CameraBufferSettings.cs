@@ -10,17 +10,17 @@ public struct CameraBufferSettings {
     public float renderScale;
     public enum RescalingMode { Linear, Point, Bicubic }
     public RescalingMode rescalingMode;
-    [Header("Forward")]
+    public enum RenderingPath { Forward, Deferred }
+    public RenderingPath renderingPath;
     public bool copyDepth;
     public bool copyDepthReflections;
     public bool copyColor;
     public bool copyColorReflections;
-    [Header("Deferred")]
+    public bool usePostGeometryColor;
+    [Header("Invalid on deferred")]
     public bool useDepthNormal;
     public bool useDiffuse;
     public bool useSpecular;
-    public bool useGBuffers;
-    public bool usePostGeometryColor;
 	[Serializable]
 	public struct FXAA {
 		public bool enabled;

@@ -204,8 +204,8 @@
 
         Pass
         {
-            Name "GBuffer"
-            Tags { "LightMode" = "GBuffer" }
+            Name "DepthNormal"
+            Tags { "LightMode" = "DepthNormal" }
 
             HLSLPROGRAM
             #pragma target 3.5

@@ -1,6 +1,7 @@
 ﻿#ifndef MELODY_OUTLINE_PASS_INCLUDED
 #define MELODY_OUTLINE_PASS_INCLUDED
 
+float4x4 _ClipToViewMatrix;
 float4 _OutlineColor;
 float4 _OutlineParams;
 float4 _ThresholdParams;
