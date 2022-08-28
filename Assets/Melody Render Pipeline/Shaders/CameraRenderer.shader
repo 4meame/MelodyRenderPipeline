@@ -57,6 +57,7 @@
 
             HLSLPROGRAM
             #pragma target 3.5
+            #pragma multi_compile _ _Multiple_Bounce_AO
             #pragma vertex DefaultPassVertex
             #pragma fragment CombineSSAOPassFragment
             ENDHLSL

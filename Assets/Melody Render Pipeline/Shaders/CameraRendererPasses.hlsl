@@ -49,6 +49,14 @@ float4 CombineSSRPassFragment(Varyings input) : SV_TARGET{
 }
 
 float4 CombineSSAOPassFragment(Varyings input) : SV_TARGET{
-	return SAMPLE_TEXTURE2D_LOD(_SourceTexture, sampler_linear_clamp, input.screenUV, 0);
+	float4 source = SAMPLE_TEXTURE2D_LOD(_CameraColorTexture, sampler_linear_clamp, input.screenUV, 0);
+	float4 diffuse = SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, input.screenUV, 0);
+	float3 ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Filtered, sampler_linear_clamp, input.screenUV).rrr;
+#if defined(_Multiple_Bounce_AO)
+	float3 bounceSource = diffuse.rgb;
+	ssaoResult = MultiBounce(ssaoResult.r, bounceSource);
+#endif
+	source.rgb *= ssaoResult;
+	return source;
 }
 #endif

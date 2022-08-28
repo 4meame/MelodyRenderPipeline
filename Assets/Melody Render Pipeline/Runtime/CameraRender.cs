@@ -151,9 +151,11 @@ public partial class CameraRender {
         #endregion
         #region SSAO
         cameraBufferSettings.ssao.enabled = cameraBufferSettings.ssao.enabled && cameraSettings.allowSSAO;
+        var renderSSAO = cameraBufferSettings.ssao.enabled;
         #endregion
         #region SSR
         cameraBufferSettings.ssr.enabled = cameraBufferSettings.ssr.enabled && cameraSettings.allowSSR;
+        var renderSSR = cameraBufferSettings.ssr.enabled;
         #endregion
 
         //render shadows before setting up regular camera
@@ -175,8 +177,9 @@ public partial class CameraRender {
         DrawDepthNormal(useDepthNormalTexture);
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
-        sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR);
+        //SSPR Objects
+        sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
@@ -188,11 +191,28 @@ public partial class CameraRender {
             DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         } else {
             SetupDeferred();
+            //draw GBuffers here
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
+        //draw SSPR renders
         sspr.Render();
-        ssr.Render(colorAttachmentId, material, (int)Pass.CombineSSR);
-        ssao.Render(colorAttachmentId, material, (int)Pass.CombineSSAO);
+        //use screen-space post fx to render indirect illumination
+        if (renderSSR) {
+            ssr.Render();
+            buffer.name = "Combine SSR";
+            Draw(colorAttachmentId, colorTextureId);
+            buffer.SetRenderTarget(colorAttachmentId);
+            buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.CombineSSR, MeshTopology.Triangles, 3);
+            ExecuteBuffer();
+        }
+        if (renderSSAO) {
+            ssao.Render();
+            buffer.name = "Combine SSAO";
+            Draw(colorAttachmentId, colorTextureId);
+            buffer.SetRenderTarget(colorAttachmentId);
+            buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.CombineSSAO, MeshTopology.Triangles, 3);
+            ExecuteBuffer();
+        }
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
         }

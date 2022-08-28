@@ -42,7 +42,7 @@ public class ScreenSpaceReflection {
         ExecuteBuffer();
     }
 
-    public void Render(int sourceId, Material material, int pass) {
+    public void Render() {
         buffer.BeginSample("SSR Resolve");
         if (settings.enabled) {
             Configure();
@@ -78,8 +78,6 @@ public class ScreenSpaceReflection {
                 buffer.DispatchCompute(cs, kernel_SSRBlur, ssrBufferSize.x / 8, ssrBufferSize.y / 8, 1);
             }
             buffer.SetGlobalTexture("_SSR_Filtered", ssrBlurId);
-            buffer.SetRenderTarget(sourceId);
-            buffer.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         } else {
             
         }
