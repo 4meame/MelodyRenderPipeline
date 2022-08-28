@@ -96,10 +96,35 @@
 
             HLSLPROGRAM
             #pragma target 3.5
-            #pragma vertex ToonLitPassVertex
-            #pragma fragment ToonLitShadowAlphaClipTest
-            #define _COMPLEX_TOON
-            #include "ToonLitPass.hlsl"
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+            #include "MetaPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Diffuse"
+            Tags { "LightMode" = "Diffuse" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+            #include "MetaPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Specular"
+            Tags { "LightMode" = "Specular" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+            #include "MetaPass.hlsl"
             ENDHLSL
         }
     }
