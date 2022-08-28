@@ -167,6 +167,7 @@
 
 			float4x4 _InvProj;
 			float4x4 _InvRot;
+			TEXTURE2D(_BackGroundTexture);
 
 			//screen uv can present camera direction
 			float3 UVToCameraRay(float2 uv) {
@@ -223,7 +224,7 @@
 				float4 extinction;
 				float4 inscattering = IntergrateInscattering(rayStart, rayDirection, rayLength, planetCenter, _DistanceScale, lightDirection, lightSamples, extinction);
 #endif
-				float4 background = SAMPLE_TEXTURE2D(_PostCameraColorTexture, sampler_linear_clamp, screenUV);
+				float4 background = SAMPLE_TEXTURE2D(_BackGroundTexture, sampler_linear_clamp, screenUV);
 				if (linearDepth01 > 0.99999) {
 					inscattering = 0;
 					extinction = 1;

@@ -30,7 +30,6 @@ public partial class CameraRender {
                depthAttachmentId = Shader.PropertyToID("_CameraDepthAttachment"),
                depthTextureId = Shader.PropertyToID("_CameraDepthTexture"),
                colorTextureId = Shader.PropertyToID("_CameraColorTexture"),
-               postColorTextureId = Shader.PropertyToID("_PostCameraColorTexture"),
                sourceTextureId = Shader.PropertyToID("_SourceTexture");
 
     bool useHDR;
@@ -41,7 +40,6 @@ public partial class CameraRender {
     bool useSpecularTexture;
     bool useGBuffers;
     bool useIntermediateBuffer;
-    bool usePostGeometryColorTexture;
 
     #region Utility Params
     static int timeSinceLevelLoad = Shader.PropertyToID("_Time");
@@ -122,7 +120,6 @@ public partial class CameraRender {
         useDiffuseTexture = cameraBufferSettings.useDiffuse && cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Forward;
         useSpecularTexture = cameraBufferSettings.useSpecular && cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Forward;
         useGBuffers = cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Deferred;
-        usePostGeometryColorTexture = cameraBufferSettings.usePostGeometryColor;
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
 
         #region Render Scale
@@ -216,19 +213,12 @@ public partial class CameraRender {
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
         }
-        #region Fix post-Geometry rendering probelms
-        if (cameraBufferSettings.usePostGeometryColor) {
-            buffer.GetTemporaryRT(postColorTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            if (copyTextureSupported) {
-                buffer.CopyTexture(colorAttachmentId, postColorTextureId);
-            } else {
-                buffer.name = "Copy Post-Geometry Color";
-                Draw(colorAttachmentId, postColorTextureId);
-                ExecuteBuffer();
-            }
-        }
-        #endregion
         if (atmosScatter) {
+            var backGroundTextureId = Shader.PropertyToID("_BackGroundTexture");
+            buffer.GetTemporaryRT(backGroundTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.name = "Copy BackGround";
+            Draw(colorAttachmentId, backGroundTextureId);
+            ExecuteBuffer();
             atmosphere.RenderFog(colorAttachmentId);
         }
         DrawUnsupportedShaders();
@@ -519,9 +509,6 @@ public partial class CameraRender {
             buffer.ReleaseTemporaryRT(GBuffer2Id);
             buffer.ReleaseTemporaryRT(GBuffer3Id);
             buffer.ReleaseTemporaryRT(motionVectorTextureId);
-        }
-        if (usePostGeometryColorTexture) {
-            buffer.ReleaseTemporaryRT(postColorTextureId);
         }
         sspr.CleanUp();
         ssao.CleanUp();

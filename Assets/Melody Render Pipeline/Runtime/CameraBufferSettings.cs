@@ -16,7 +16,6 @@ public struct CameraBufferSettings {
     public bool copyDepthReflections;
     public bool copyColor;
     public bool copyColorReflections;
-    public bool usePostGeometryColor;
     [Header("Invalid on deferred")]
     public bool useDepthNormal;
     public bool useDiffuse;
