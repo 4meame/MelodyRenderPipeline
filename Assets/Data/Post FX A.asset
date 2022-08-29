@@ -41,14 +41,17 @@ MonoBehaviour:
     red: {x: 1, y: 0, z: 0}
     green: {x: 0, y: 1, z: 0}
     blue: {x: 0, y: 0, z: 1}
-  shadowMidtonesHighlights:
+  shadowMidtonesHighlight:
     shadows: {r: 1, g: 1, b: 1, a: 1}
     midtones: {r: 1, g: 1, b: 1, a: 1}
     highlights: {r: 1, g: 1, b: 1, a: 1}
     shadowsStart: 0
-    shadowsEnd: 0
-    highlightsStart: 0
-    highlightsEnd: 0
+    shadowsEnd: 0.3
+    highlightsStart: 0.55
+    highlightsEnd: 1
+  posterize:
+    colorRamp: 256
+    rampGamma: 0.3
   toneMapping:
     mode: 3
   outlineSetting:

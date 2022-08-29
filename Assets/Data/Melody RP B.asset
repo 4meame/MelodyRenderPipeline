@@ -36,14 +36,17 @@ MonoBehaviour:
   postFXSettings: {fileID: 11400000, guid: ceba552ee508b8244ba6a81cbcfd905c, type: 2}
   cameraBufferSettings:
     allowHDR: 1
+    renderScale: 1
+    rescalingMode: 2
     copyDepth: 1
     copyDepthReflections: 0
     copyColor: 1
     copyColorReflections: 0
-    useDepthNormal: 1
+    useDepthNormal: 0
+    useDiffuse: 0
+    useSpecular: 0
+    useGBuffers: 1
     usePostGeometryColor: 1
-    renderScale: 1
-    rescalingMode: 2
     fxaa:
       enabled: 1
       fixedThreshold: 0.0359
@@ -64,34 +67,42 @@ MonoBehaviour:
     ssr:
       enabled: 1
       computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
-      downsample: 1
+      sSRType: 0
+      downSample: 1
       maxDistance: 25
-      iterations: 200
+      iterations: 128
       binarySearchIterations: 6
-      pixelStrideSize: 1
-      pixelStrideZCuttoff: 2.62
+      pixelStrideSize: 4
+      pixelStrideZCuttoff: 8.03
       thickness: 1.23
       screenEdgeFade: 0.918
       eyeFadeStart: 0.024
       eyeFadeEnd: 1
       debug: 0
     ssao:
-      type: 2
+      aOType: 3
+      filterType: 0
+      debugType: 0
       enabled: 1
       computeShader: {fileID: 7200000, guid: 292fa2e92df0b4640a68ab2c61571f6e, type: 3}
       randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
-      downSample: 1
-      sampleCount: 16
-      aoRadius: 2
+      downSample: 2
+      sampleCount: 2
+      aoRadius: 3.7
       filterRadius: 3
       filterFactor: 0.973
+      kernelSize: 8
       pureDepthAOParameters: {x: 0.001, y: 1, z: 0.96, w: 0.15}
       SSAOParameters: {x: 0.001, y: 0.1, z: 0.22, w: 11.55}
-      numDirections: 16
-      maxRadiusPixels: 50
+      numDirection: 12
+      maxRadiusPixel: 20
       tanBias: 0.014
       hbaoStrength: 1.2
-      debug: 1
+      fadeParams: {x: 0, y: 0, z: 0, w: 0}
+      numSlice: 4
+      thickness: 0.87
+      gtaoStrength: 1.1
+      multipleBounce: 0
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}

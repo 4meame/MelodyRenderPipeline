@@ -15,14 +15,14 @@ MonoBehaviour:
   shader: {fileID: 4800000, guid: 94b6d1a1245ff2142b12e2b3962e91b9, type: 3}
   bloom:
     maxIterations: 5
-    downscaleLimit: 10
+    downscaleLimit: 2
     bicubicUpsampling: 1
     threshold: 1.51
     thresholdKnee: 0.102
     fadeFireflies: 1
     mode: 0
-    intensity: 1
-    scatter: 0.497
+    intensity: 0
+    scatter: 0.542
     ignoreRenderScale: 1
   colorAdjustment:
     postExposure: -0.07
@@ -35,31 +35,34 @@ MonoBehaviour:
     Tint: 0
   splitToning:
     shadows: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    highlights: {r: 0.745, g: 0.8203409, b: 1, a: 1}
+    highlights: {r: 0.74509805, g: 0.8936393, b: 1, a: 1}
     balance: -2.6
   channelMixer:
     red: {x: 1, y: 0, z: 0}
     green: {x: 0, y: 1, z: 0}
     blue: {x: 0, y: 0, z: 1}
-  shadowMidtonesHighlights:
+  shadowMidtonesHighlight:
     shadows: {r: 1, g: 1, b: 1, a: 1}
     midtones: {r: 1, g: 1, b: 1, a: 1}
     highlights: {r: 1, g: 1, b: 1, a: 1}
     shadowsStart: 0
-    shadowsEnd: 0
-    highlightsStart: 0
-    highlightsEnd: 0
+    shadowsEnd: 0.3
+    highlightsStart: 0.55
+    highlightsEnd: 1
+  posterize:
+    colorRamp: 255
+    rampGamma: 0.3
   toneMapping:
     mode: 3
   outlineSetting:
     enable: 0
     color: {r: 0, g: 0, b: 0, a: 1}
     outlineScale: 2
-    ColorThreshold: 0
-    depthThreshold: 0
-    normalThreshold: 0
-    depthNormalThreshold: 0
-    depthNormalThresholdScale: 0
+    ColorThreshold: 1
+    depthThreshold: 0.65
+    normalThreshold: 0.662
+    depthNormalThreshold: 0.457
+    depthNormalThresholdScale: 15.22
   lightShaftsSetting:
     mode: 1
     enable: 1

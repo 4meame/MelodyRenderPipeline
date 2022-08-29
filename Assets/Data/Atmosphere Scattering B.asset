@@ -26,11 +26,13 @@ MonoBehaviour:
   incomingLight: {r: 3.9533494, g: 3.9533494, b: 3.9533494, a: 4}
   sunIntensity: 0.3
   lightSamples: 64
-  distanceScale: 20
+  distanceScale: 2
   rayleighInscatterScale: 2.2
   rayleighExtinctionScale: 0.94
   mieInscatterScale: 1.16
   mieExtinctionScale: 1
+  directIntensity: 1
+  ambientIntensity: 1
   particleDensityLUTSize: 1024
   sunColorLUTSize: 256
   ambientLUTSize: 128

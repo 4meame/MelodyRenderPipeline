@@ -20,7 +20,7 @@ MonoBehaviour:
   fixedWidth: 1280
   fixedHeight: 720
   downsample: 2
-  coverageOffsetX: 0.306
+  coverageOffsetX: 0.509
   coverageOffsetY: 0
   horizonCoverageStart: 0
   horizonCoverageEnd: 0.968
@@ -130,7 +130,7 @@ MonoBehaviour:
   backwardScatteringG: -0.409
   darkOutlineScalar: 1
   speed: 0
-  coverageOffsetPerFrame: {x: 0.002, y: 0.0014}
+  coverageOffsetPerFrame: {x: 0.04, y: 0.0014}
   baseOffsetPerFrame: {x: 0.0001, y: -0.018, z: -0.003}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
   earthCenter: {x: 0, y: -6371000, z: 0}
