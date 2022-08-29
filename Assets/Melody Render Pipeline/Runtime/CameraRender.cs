@@ -42,7 +42,6 @@ public partial class CameraRender {
     bool useIntermediateBuffer;
 
     #region Utility Params
-    static int timeSinceLevelLoad = Shader.PropertyToID("_Time");
     static int cameraFOVId = Shader.PropertyToID("_CurrentCameraFOV");
     #endregion
     #region Render Scale
@@ -158,8 +157,6 @@ public partial class CameraRender {
         //render shadows before setting up regular camera
         buffer.BeginSample(SampleName);
         #region Utility Params
-        float time = Time.timeSinceLevelLoad;
-        buffer.SetGlobalVector(timeSinceLevelLoad, new Vector4(time / 20.0f, time, time * time, time * time * time));
         float cameraFOV = camera.fieldOfView;
         buffer.SetGlobalFloat(cameraFOVId, cameraFOV);
         #endregion
