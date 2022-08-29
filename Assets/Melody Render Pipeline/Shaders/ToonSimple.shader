@@ -127,14 +127,14 @@
 
         Pass
         {
-            Name "GBuffer"
-            Tags { "LightMode" = "GBuffer" }
+            Name "DepthNormal"
+            Tags { "LightMode" = "DepthNormal" }
 
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex ToonLitPassVertex
             #pragma fragment ToonLitShadowAlphaClipTest
-			#define _SIMPLE_TOON
+            #define _COMPLEX_TOON
             #include "ToonLitPass.hlsl"
             ENDHLSL
         }

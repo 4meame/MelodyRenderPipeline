@@ -38,15 +38,14 @@ MonoBehaviour:
     allowHDR: 1
     renderScale: 1
     rescalingMode: 2
+    renderingPath: 1
     copyDepth: 1
     copyDepthReflections: 0
     copyColor: 1
     copyColorReflections: 0
-    useDepthNormal: 0
-    useDiffuse: 0
-    useSpecular: 0
-    useGBuffers: 1
-    usePostGeometryColor: 1
+    useDepthNormal: 1
+    useDiffuse: 1
+    useSpecular: 1
     fxaa:
       enabled: 1
       fixedThreshold: 0.0359
@@ -88,9 +87,9 @@ MonoBehaviour:
       randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
       downSample: 2
       sampleCount: 2
-      aoRadius: 3.1
+      aoRadius: 1.3
       filterRadius: 3
-      filterFactor: 0.413
+      filterFactor: 0.784
       kernelSize: 12
       pureDepthAOParameters: {x: 0.001, y: 1, z: 1.5, w: 0.13}
       SSAOParameters: {x: 0.001, y: 0.13, z: 1.92, w: 6.33}
@@ -101,8 +100,8 @@ MonoBehaviour:
       fadeParams: {x: 0, y: 0, z: 0, w: 0}
       numSlice: 4
       thickness: 1.06
-      gtaoStrength: 1.33
-      multipleBounce: 1
+      gtaoStrength: 1.22
+      multipleBounce: 0
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}

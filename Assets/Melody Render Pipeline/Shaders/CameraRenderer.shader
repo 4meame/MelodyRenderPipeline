@@ -37,5 +37,30 @@
             #pragma fragment CopyDepthPassFragment
             ENDHLSL
         }
+
+
+        Pass
+        {
+            Name "CombineSSR"
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CombineSSRPassFragment
+            ENDHLSL
+        }
+
+
+        Pass
+        {
+            Name "CombineSSAO"
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma multi_compile _ _Multiple_Bounce_AO
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CombineSSAOPassFragment
+            ENDHLSL
+        }
     }
 }

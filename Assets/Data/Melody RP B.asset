@@ -38,15 +38,14 @@ MonoBehaviour:
     allowHDR: 1
     renderScale: 1
     rescalingMode: 2
+    renderingPath: 1
     copyDepth: 1
     copyDepthReflections: 0
     copyColor: 1
     copyColorReflections: 0
-    useDepthNormal: 0
-    useDiffuse: 0
-    useSpecular: 0
-    useGBuffers: 1
-    usePostGeometryColor: 1
+    useDepthNormal: 1
+    useDiffuse: 1
+    useSpecular: 1
     fxaa:
       enabled: 1
       fixedThreshold: 0.0359
@@ -88,7 +87,7 @@ MonoBehaviour:
       randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
       downSample: 2
       sampleCount: 2
-      aoRadius: 3.7
+      aoRadius: 2.5
       filterRadius: 3
       filterFactor: 0.973
       kernelSize: 8

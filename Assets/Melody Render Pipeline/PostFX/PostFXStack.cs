@@ -446,6 +446,8 @@ public class PostFXStack {
 
     void DoOutline(int from) {
         buffer.BeginSample("Outline");
+        Matrix4x4 clipToView = camera.projectionMatrix.inverse;
+        buffer.SetGlobalMatrix("_ClipToViewMatrix", clipToView);
         buffer.SetGlobalColor(OutlineColor, settings.OutlineSetting.color);
         buffer.SetGlobalVector(OutlineParams, new Vector4(settings.OutlineSetting.outlineScale, 0, 0, 0));
         buffer.SetGlobalVector(ThresholdParams, new Vector4(settings.OutlineSetting.depthThreshold, settings.OutlineSetting.normalThreshold, settings.OutlineSetting.depthNormalThreshold, settings.OutlineSetting.ColorThreshold));
