@@ -371,11 +371,6 @@ public partial class CameraRender {
         if (useColorTexture || useDepthTexture) {
             CopyAttachments();
         }
-
-        deferredSortingSettings.criteria = SortingCriteria.CommonTransparent;
-        deferredDrawingSettings.sortingSettings = deferredSortingSettings;
-        deferredFilteringSettings.renderQueueRange = RenderQueueRange.transparent;
-        context.DrawRenderers(cullingResults, ref deferredDrawingSettings, ref deferredFilteringSettings);
     }
 
     void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
