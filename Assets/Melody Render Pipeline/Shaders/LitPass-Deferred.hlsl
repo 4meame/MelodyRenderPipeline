@@ -211,7 +211,5 @@ void LitPassFragment(Varyings input,
 	//depth and normal
 	float3 normalVS = mul((float3x3)UNITY_MATRIX_V, surface.normal);
 	GT3 = EncodeDepthNormal(1, normalVS);
-	//motion
-	GT4 = 0;
 }
 #endif

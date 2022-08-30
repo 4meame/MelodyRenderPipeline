@@ -48,6 +48,12 @@ public struct CameraBufferSettings {
 	public FXAA fxaa;
 
     [Serializable]
+    public struct TAA {
+        public bool enabled;
+    }
+    public TAA taa;
+
+    [Serializable]
     public struct SSPR {
         public enum TextureSize {
             _256 = 256,

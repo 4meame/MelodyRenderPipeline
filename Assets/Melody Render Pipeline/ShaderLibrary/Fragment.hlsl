@@ -6,6 +6,7 @@ TEXTURE2D(_CameraColorTexture);
 TEXTURE2D(_CameraDepthNormalTexture);
 TEXTURE2D(_CameraDiffuseTexture);
 TEXTURE2D(_CameraSpecularTexture);
+TEXTURE2D(_CameraMotionVectorTexture);
 
 float4 _CameraBufferSize;
 

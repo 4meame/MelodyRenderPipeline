@@ -19,8 +19,9 @@ public partial class CameraRender {
     AtmosphereScattering atmosphere = new AtmosphereScattering();
     VolumetricCloud cloud = new VolumetricCloud();
     ScreenSpaceAmbientOcclusion ssao = new ScreenSpaceAmbientOcclusion();
-    SSPlanarReflection sspr = new SSPlanarReflection();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
+    MotionVectorRender motionVector = new MotionVectorRender();
+    SSPlanarReflection sspr = new SSPlanarReflection();
     PostFXStack postFXStack = new PostFXStack();
     //intermediate frame buffer for the camera, to provide a source texture for the FX stack
     //static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
@@ -64,7 +65,7 @@ public partial class CameraRender {
     #endregion
     //Deferred Render Buffers
     #region G Buffer
-    const int GBufferLength = 5;
+    const int GBufferLength = 4;
     static ShaderTagId GBuffersTagId = new ShaderTagId("GBuffer");
     static int GBuffer1Id = Shader.PropertyToID("_GBuffer1");
     static int GBuffer2Id = Shader.PropertyToID("_GBuffer2");
@@ -72,10 +73,6 @@ public partial class CameraRender {
     RenderTargetIdentifier[] GBuffersID = new RenderTargetIdentifier[GBufferLength];
     RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[GBufferLength];
     RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[GBufferLength];
-    #endregion
-    //render with GBuffers
-    #region Motion Vector Buffer
-    static int motionVectorTextureId = Shader.PropertyToID("_CameraMotionVectorTexture");
     #endregion
     static CameraSettings defaultCameraSettings = new CameraSettings();
     //WebGL 2.0 support
@@ -122,8 +119,7 @@ public partial class CameraRender {
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
 
         #region Render Scale
-        if (useScaledRendering)
-        {
+        if (useScaledRendering) {
             //clamp scale in 0.1-2 range
             renderScale = Mathf.Clamp(renderScale, renderScaleMin, renderScaleMax);
             bufferSize.x = (int)(camera.pixelWidth * renderScale);
@@ -174,7 +170,9 @@ public partial class CameraRender {
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR);
-        //SSPR Objects
+        //motion vector objects
+        motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
+        //sspr Objects
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
@@ -186,6 +184,7 @@ public partial class CameraRender {
         if (!useGBuffers) {
             SetupForward();
             DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+            motionVector.Render();
             //for forward path we use screen-space post fx to render indirect illumination
             if (renderSSR) {
                 ssr.Render();
@@ -207,6 +206,7 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
+            motionVector.Render();
             ssr.Render();
             ssao.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
@@ -239,6 +239,8 @@ public partial class CameraRender {
         DrawGizmosAfterFX();
         CleanUp();
         Submit();
+
+        motionVector.Refresh();
     }
 
     void DrawDepthNormal(bool useDepthNormalTexture) {
@@ -361,7 +363,6 @@ public partial class CameraRender {
             PerObjectData.OcclusionProbe |
             PerObjectData.OcclusionProbeProxyVolume |
             PerObjectData.ReflectionProbes |
-            PerObjectData.MotionVectors |
             deferredLightsPerObjectFlags
         };
         var deferredFilteringSettings = new FilteringSettings(RenderQueueRange.opaque);
@@ -406,9 +407,6 @@ public partial class CameraRender {
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
 
         context.DrawSkybox(camera);
-        if (useColorTexture || useDepthTexture) {
-            CopyAttachments();
-        }
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
@@ -449,21 +447,18 @@ public partial class CameraRender {
 
     void SetupDeferred() {
         context.SetupCameraProperties(camera);
-        camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
         useIntermediateBuffer = true;
         //init deferred render GBuffers
         buffer.GetTemporaryRT(colorAttachmentId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         buffer.GetTemporaryRT(GBuffer1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         buffer.GetTemporaryRT(GBuffer2Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         buffer.GetTemporaryRT(GBuffer3Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-        buffer.GetTemporaryRT(motionVectorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.RGFloat);
         buffer.GetTemporaryRT(depthAttachmentId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
         //identifies a render texture for a command buffer.
         GBuffersID[0] = new RenderTargetIdentifier(colorAttachmentId);
         GBuffersID[1] = new RenderTargetIdentifier(GBuffer1Id);
         GBuffersID[2] = new RenderTargetIdentifier(GBuffer2Id);
         GBuffersID[3] = new RenderTargetIdentifier(GBuffer3Id);
-        GBuffersID[4] = new RenderTargetIdentifier(motionVectorTextureId);
         for (int i = 0; i < GBufferLength; i++) {
             GBuffersLA[i] = RenderBufferLoadAction.DontCare;
             GBuffersSA[i] = RenderBufferStoreAction.Store;
@@ -475,12 +470,6 @@ public partial class CameraRender {
         buffer.SetGlobalTexture("_CameraDiffuseTexture", GBuffersID[1]);
         buffer.SetGlobalTexture("_CameraSpecularTexture", GBuffersID[2]);
         buffer.SetGlobalTexture("_CameraDepthNormalTexture", GBuffersID[3]);
-        buffer.SetGlobalTexture("_CameraMotionVectorTexture", motionVectorTextureId);
-        Matrix4x4 projMatrix = camera.nonJitteredProjectionMatrix;
-        Matrix4x4 viewMatrix = camera.worldToCameraMatrix;
-        Matrix4x4 viewProjMatrix = projMatrix * viewMatrix;
-        buffer.SetGlobalMatrix("_NoJitterVP", viewProjMatrix);
-        buffer.SetGlobalMatrix("_LastVP", camera.previousViewProjectionMatrix);
         buffer.SetRenderTarget(renderTargetBinding);
         buffer.ClearRenderTarget(true, true, Color.clear);
         //buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
@@ -549,8 +538,8 @@ public partial class CameraRender {
             buffer.ReleaseTemporaryRT(GBuffer1Id);
             buffer.ReleaseTemporaryRT(GBuffer2Id);
             buffer.ReleaseTemporaryRT(GBuffer3Id);
-            buffer.ReleaseTemporaryRT(motionVectorTextureId);
         }
+        motionVector.CleanUp();
         sspr.CleanUp();
         ssao.CleanUp();
         ssr.CleanUp();

@@ -127,6 +127,19 @@
             #include "MetaPass.hlsl"
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "Motion"
+            Tags { "LightMode" = "Motion" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+            #include "MetaPass.hlsl"
+            ENDHLSL
+        }
     }
 
     CustomEditor "MelodyShaderGUI"

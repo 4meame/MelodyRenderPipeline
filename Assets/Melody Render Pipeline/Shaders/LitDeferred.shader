@@ -94,45 +94,6 @@
 
         Pass
         {
-            Name "DepthNormal"
-            Tags { "LightMode" = "DepthNormal" }
-
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "Diffuse"
-            Tags { "LightMode" = "Diffuse" }
-
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "Specular"
-            Tags { "LightMode" = "Specular" }
-
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
-
-        Pass
-        {
             Name "GBuffer"
             Tags { "LightMode" = "GBuffer" }
 
@@ -141,6 +102,19 @@
             #pragma vertex ShadowCasterPassVertex
             #pragma fragment ShadowCasterPassFragment
             #include "ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Motion"
+            Tags { "LightMode" = "Motion" }
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+            #include "MetaPass.hlsl"
             ENDHLSL
         }
     }
