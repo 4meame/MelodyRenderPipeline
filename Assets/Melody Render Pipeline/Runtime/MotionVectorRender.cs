@@ -32,7 +32,7 @@ public class MotionVectorRender {
         motionVectorMaterial = new Material(Shader.Find("Hidden/Melody RP/DrawMotionVector"));
     }
 
-    public void Render() {
+    public void Render(int sourceId) {
         if (taa.enabled) {
             context.SetupCameraProperties(camera);
             camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
@@ -70,6 +70,8 @@ public class MotionVectorRender {
             ExecuteBuffer();
 
             buffer.SetGlobalTexture("_CameraMotionVectorTexture", motionVectorTextureId);
+            //set render target back
+            buffer.SetRenderTarget(sourceId);
             ExecuteBuffer();
         }
     }
