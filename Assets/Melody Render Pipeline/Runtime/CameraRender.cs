@@ -376,11 +376,6 @@ public partial class CameraRender {
     void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
         buffer.name = "Draw DeferredGeometry";
         context.SetupCameraProperties(camera);
-        CameraClearFlags flags = camera.clearFlags;
-        //always clear depth and color to be guaranteed to cover previous data, unless a sky box is used
-        if (flags > CameraClearFlags.Color) {
-            flags = CameraClearFlags.Color;
-        }
         //NOTE : order makes sense
         buffer.SetRenderTarget(colorAttachmentId,
             RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
