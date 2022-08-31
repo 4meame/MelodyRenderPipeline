@@ -4,10 +4,13 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 
-struct Varyings {
-	float4 positionCS : SV_POSITION;
-	float2 screenUV : VAR_SCREEN_UV;
-};
+#define SAMPLE_DEPTH_OFFSET(x,y,z,a) (x.Sample(y,z,a).r )
+#define SAMPLE_TEXTURE2D_OFFSET(x,y,z,a) (x.Sample(y,z,a))
+#if defined(UNITY_REVERSED_Z)
+    #define COMPARE_DEPTH(a, b) step(b, a)
+#else
+    #define COMPARE_DEPTH(a, b) step(a, b)
+#endif
 
 TEXTURE2D(_PostFXSource);
 SAMPLER(sampler_PostFXSource);
@@ -220,6 +223,10 @@ float3 ApplyColorGradingLUT(float3 color) {
 		TEXTURE2D_ARGS(_ColorGradingLUT, sampler_ColorGradingLUT), saturate(_ColorGradingLUTInLogC ? LinearToLogC(color) : color), _ColorGradingLUTParams.xyz);
 }
 
+struct Varyings {
+	float4 positionCS : SV_POSITION;
+	float2 screenUV : VAR_SCREEN_UV;
+};
 
 //vertexID is the clockwise index of a triangle : 0,1,2
 Varyings DefaultPassVertex(uint vertexID : SV_VertexID) {
