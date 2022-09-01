@@ -21,6 +21,7 @@ public partial class CameraRender {
     ScreenSpaceAmbientOcclusion ssao = new ScreenSpaceAmbientOcclusion();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
     MotionVectorRender motionVector = new MotionVectorRender();
+    TemporalAntialiasing taa = new TemporalAntialiasing();
     SSPlanarReflection sspr = new SSPlanarReflection();
     PostFXStack postFXStack = new PostFXStack();
     //intermediate frame buffer for the camera, to provide a source texture for the FX stack
@@ -66,7 +67,6 @@ public partial class CameraRender {
     //Deferred Render Buffers
     #region G Buffer
     const int GBufferLength = 4;
-    static ShaderTagId GBuffersTagId = new ShaderTagId("GBuffer");
     static int GBuffer1Id = Shader.PropertyToID("_GBuffer1");
     static int GBuffer2Id = Shader.PropertyToID("_GBuffer2");
     static int GBuffer3Id = Shader.PropertyToID("_GBuffer3");
@@ -74,6 +74,7 @@ public partial class CameraRender {
     RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[GBufferLength];
     RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[GBufferLength];
     #endregion
+    static int motionVectorTextureId = Shader.PropertyToID("_CameraMotionVectorTexture");
     static CameraSettings defaultCameraSettings = new CameraSettings();
     //WebGL 2.0 support
     static bool copyTextureSupported = false;
@@ -176,6 +177,7 @@ public partial class CameraRender {
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
+        taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
@@ -184,7 +186,7 @@ public partial class CameraRender {
         if (!useGBuffers) {
             SetupForward();
             DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
-            motionVector.Render(colorAttachmentId);
+            motionVector.Render(colorAttachmentId, motionVectorTextureId);
             //for forward path we use screen-space post fx to render indirect illumination
             if (renderSSR) {
                 ssr.Render();
@@ -206,7 +208,7 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
-            motionVector.Render(colorAttachmentId);
+            motionVector.Render(colorAttachmentId, motionVectorTextureId);
             ssr.Render();
             ssao.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
@@ -229,6 +231,7 @@ public partial class CameraRender {
         ssao.Debug(colorAttachmentId);
         ssr.Debug(colorAttachmentId);
         DrawGizmosBeforeFX();
+        taa.Render(colorAttachmentId);
         if (postFXStack.IsActive) {
             postFXStack.Render(colorAttachmentId);
         } else if (useIntermediateBuffer) {
@@ -237,6 +240,7 @@ public partial class CameraRender {
             ExecuteBuffer();
         }
         DrawGizmosAfterFX();
+        taa.CopyLastFrameRT(depthTextureId, motionVectorTextureId, copyTextureSupported);
         CleanUp();
         Submit();
 
@@ -539,7 +543,7 @@ public partial class CameraRender {
             buffer.ReleaseTemporaryRT(GBuffer2Id);
             buffer.ReleaseTemporaryRT(GBuffer3Id);
         }
-        motionVector.CleanUp();
+        motionVector.CleanUp(motionVectorTextureId);
         sspr.CleanUp();
         ssao.CleanUp();
         ssr.CleanUp();

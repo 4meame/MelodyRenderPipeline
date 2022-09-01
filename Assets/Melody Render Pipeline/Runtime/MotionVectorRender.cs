@@ -21,8 +21,6 @@ public class MotionVectorRender {
     private Matrix4x4 previousVP;
     static Mesh fullscreenMesh = null;
 
-    static int motionVectorTextureId = Shader.PropertyToID("_CameraMotionVectorTexture");
-
     public void Setup(ScriptableRenderContext context, Camera camera, CullingResults cullingResults, Vector2Int bufferSize, CameraBufferSettings.TAA taa) {
         this.context = context;
         this.camera = camera;
@@ -32,7 +30,7 @@ public class MotionVectorRender {
         motionVectorMaterial = new Material(Shader.Find("Hidden/Melody RP/DrawMotionVector"));
     }
 
-    public void Render(int sourceId) {
+    public void Render(int sourceId, int motionVectorTextureId) {
         if (taa.enabled) {
             context.SetupCameraProperties(camera);
             camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
@@ -76,8 +74,8 @@ public class MotionVectorRender {
         }
     }
 
-    public void CleanUp() {
-        buffer.ReleaseTemporaryRT(motionVectorTextureId);
+    public void CleanUp(int destinationId) {
+        buffer.ReleaseTemporaryRT(destinationId);
     }
 
     public void Refresh() {

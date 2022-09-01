@@ -5,6 +5,7 @@ TEXTURE2D(_SourceTex);
 TEXTURE2D(_HistoryTex);
 TEXTURE2D(_LastFrameDepthTexture);
 TEXTURE2D(_LastFrameMotionVectorTexture);
+TEXTURE2D(_TempTexture);
 
 static const int2 _OffsetArray[8] = {
 	int2(-1, -1),
@@ -106,6 +107,10 @@ float2 ReprojectedMotionVectorUV(float2 uv, out float outDepth) {
 	return uv + result.xy * k;
 }
 
+float2 Linear01Depth(float2 z) {
+	return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);
+}
+
 float4 TemporalAntialiasingResolve(Varyings input) : SV_TARGET{
 	float2 screenUV = (input.screenUV - _Jitter);
 	float2 screenSize = _CameraBufferSize.zw;
@@ -175,15 +180,46 @@ float4 TemporalAntialiasingResolve(Varyings input) : SV_TARGET{
 	float lastFrameDepth = SAMPLE_TEXTURE2D(_LastFrameDepthTexture, sampler_point_clamp, prevDepthUV).r;
 	float2 lastFrameMV = SAMPLE_TEXTURE2D(_LastFrameMotionVectorTexture, sampler_point_clamp, prevDepthUV).xy;
 	float lastFrameMVLength = dot(lastFrameMV, lastFrameMV);
+	[unroll]
+	for (int i = 0; i < 8; i++) {
+		float2 currentMV = SAMPLE_TEXTURE2D(_LastFrameMotionVectorTexture, sampler_point_clamp, prevDepthUV + _OffsetArray[i]).xy;
+		float currentMVLength = dot(currentMV, currentMV);
+		lastFrameMVLength = max(currentMVLength, lastFrameMVLength);
+	}
+	float lastVelocityWeight = saturate(sqrt(lastFrameMVLength) * _TemporalClipBounding.z);
 	float4 worldPos = mul(_InvNonJitterVP, float4(input.screenUV, depth, 1));
 	float4 lastWorldPos = mul(_InvLastVP, float4(prevDepthUV, lastFrameDepth, 1));
 	worldPos /= worldPos.w; 
 	lastWorldPos /= lastWorldPos.w;
 	worldPos -= lastWorldPos;
 	//calculate adaptive blend factors
-	
+	float depthAdaptiveForce = 1 - saturate((dot(worldPos.xyz, worldPos.xyz) - 0.02) * 10);
 	float4 previousColor = SAMPLE_TEXTURE2D(_HistoryTex, sampler_linear_clamp, previousUV);
-	return 1;
+	//whether current luminance is brighter than last
+	float luminDiff = depthAdaptiveForce - previousColor.w;
+	float tWeight = lerp(0.7, 0.9, saturate(tanh(luminDiff * 2) * 0.5 + 0.5));
+	depthAdaptiveForce = lerp(depthAdaptiveForce, previousColor.w, tWeight);
+	depthAdaptiveForce = lerp(depthAdaptiveForce, 1, velocityWeight);
+	depthAdaptiveForce = lerp(depthAdaptiveForce, 1, lastVelocityWeight);
+	float2 depth01 = Linear01Depth(float2(lastFrameDepth, depth));
+	float finalDepthAdaptive = lerp(depthAdaptiveForce, 1, (depth01.x > 0.9999) || (depth01.y > 0.9999));
+	previousColor.xyz = lerp(previousColor.xyz, YCoCgToRGB3(ClipToAABB(RGBToYCoCg3(previousColor.xyz), minColor.xyz, maxColor.xyz)), finalDepthAdaptive);
+	//history blend
+	float historyWeight = lerp(_FinalBlendParams.x, _FinalBlendParams.y, velocityWeight);
+	currentColor.xyz = Tonemap(currentColor.xyz);
+	previousColor.xyz = Tonemap(previousColor.xyz);
+	float4 temporalColor = lerp(currentColor, previousColor, historyWeight);
+	temporalColor.xyz = TonemapInvert(temporalColor.xyz);
+	temporalColor.w = depthAdaptiveForce;
+	return max(0, temporalColor);
+}
+
+float4 CopyMotionVectorFragment(Varyings input) : SV_TARGET {
+	return SAMPLE_TEXTURE2D_LOD(_TempTexture, sampler_point_clamp, input.screenUV, 0);
+}
+
+float CopyDepthFragment(Varyings input) : SV_DEPTH {
+	return SAMPLE_DEPTH_TEXTURE_LOD(_TempTexture, sampler_point_clamp, input.screenUV, 0);
 }
 
 #endif

@@ -9,6 +9,7 @@
         HLSLINCLUDE
         #include "../ShaderLibrary/Common.hlsl"
         #include "PostFXStackPasses.hlsl"
+        #include "TemporalAntialiasingPass.hlsl"
         ENDHLSL
 
         Pass
@@ -20,7 +21,32 @@
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
             #pragma fragment TemporalAntialiasingResolve
-            #include "TemporalAntialiasingPass.hlsl"
+            ENDHLSL
+        }
+
+
+        Pass
+        {
+            Name "Copy Depth"
+
+            ColorMask 0
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CopyDepthFragment
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Copy Motion Vector"
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CopyMotionVectorFragment
             ENDHLSL
         }
     }

@@ -50,6 +50,18 @@ public struct CameraBufferSettings {
     [Serializable]
     public struct TAA {
         public bool enabled;
+        [Range(0.0f, 1.0f)]
+        public float jitterScale;
+        [Range(0.0f, 3.0f)]
+        public float sharpness;
+        [Range(0.0f, 0.99f)]
+        public float staticBlending;
+        [Range(0.0f, 0.99f)]
+        public float motionBlending;
+        [Range(0.05f, 6.0f)]
+        public float staticAABBScale;
+        [Range(0.05f, 6.0f)]
+        public float motionAABBScale;
     }
     public TAA taa;
 
