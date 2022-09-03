@@ -47,11 +47,11 @@ float3 YCoCgToRGB3(float3 YCoCg) {
 }
 
 float4 RGBToYCoCg4(float4 RGB) {
-	return float4(RGBToYCoCg(RGB.xyz), RGB.w);
+	return float4(RGBToYCoCg3(RGB.xyz), RGB.w);
 }
 
 float4 YCoCgToRGB4(float4 YCoCg) {
-	return float4(YCoCgToRGB(YCoCg.xyz), YCoCg.w);
+	return float4(YCoCgToRGB3(YCoCg.xyz), YCoCg.w);
 }
 
 #define TONE_BOUND 0.5
@@ -122,7 +122,7 @@ float4 TemporalAntialiasingResolve(Varyings input) : SV_TARGET{
 	float2 previousUV = input.screenUV - velocity;
 	float4 middleCenter = SAMPLE_TEXTURE2D(_SourceTex, sampler_point_clamp, screenUV);
 	if (previousUV.x > 1 || previousUV.y > 1 || previousUV.x < 0 || previousUV.y < 0) {
-		return middleCenter;
+		return float4(middleCenter.xyz, 1);
 	}
 	//get color surrounding the center
 	float4 topLeft = SAMPLE_TEXTURE2D_OFFSET(_SourceTex, sampler_point_clamp, screenUV, int2(-1, -1));
@@ -203,7 +203,7 @@ float4 TemporalAntialiasingResolve(Varyings input) : SV_TARGET{
 	depthAdaptiveForce = lerp(depthAdaptiveForce, 1, lastVelocityWeight);
 	float2 depth01 = Linear01Depth(float2(lastFrameDepth, depth));
 	float finalDepthAdaptive = lerp(depthAdaptiveForce, 1, (depth01.x > 0.9999) || (depth01.y > 0.9999));
-	previousColor.xyz = lerp(previousColor.xyz, YCoCgToRGB3(ClipToAABB(RGBToYCoCg3(previousColor.xyz), minColor.xyz, maxColor.xyz)), finalDepthAdaptive);
+	previousColor.xyz = lerp(previousColor.xyz, YCoCgToRGB3(ClipToAABB(RGBToYCoCg3(previousColor.xyz), minColor.xyz, maxColor.xyz)), 1);
 	//history blend
 	float historyWeight = lerp(_FinalBlendParams.x, _FinalBlendParams.y, velocityWeight);
 	currentColor.xyz = Tonemap(currentColor.xyz);

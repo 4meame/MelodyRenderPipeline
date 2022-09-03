@@ -177,7 +177,7 @@ public partial class CameraRender {
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
-        taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa);
+        taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, useHDR, copyTextureSupported);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
@@ -240,7 +240,9 @@ public partial class CameraRender {
             ExecuteBuffer();
         }
         DrawGizmosAfterFX();
-        taa.CopyLastFrameRT(depthTextureId, motionVectorTextureId, copyTextureSupported);
+        if (cameraBufferSettings.taa.enabled) {
+            taa.CopyLastFrameRT(depthTextureId, motionVectorTextureId);
+        }
         CleanUp();
         Submit();
 
@@ -543,6 +545,7 @@ public partial class CameraRender {
             buffer.ReleaseTemporaryRT(GBuffer2Id);
             buffer.ReleaseTemporaryRT(GBuffer3Id);
         }
+        taa.CleanUp();
         motionVector.CleanUp(motionVectorTextureId);
         sspr.CleanUp();
         ssao.CleanUp();
@@ -573,8 +576,7 @@ public partial class CameraRender {
         if (useDepthTexture) {
 
                 buffer.GetTemporaryRT(depthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
-                if (copyTextureSupported)
-                {
+                if (copyTextureSupported) {
                     buffer.CopyTexture(depthAttachmentId, depthTextureId);
                 } else {
                     buffer.name = "Copy Depth";
