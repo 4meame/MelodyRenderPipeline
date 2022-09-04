@@ -33,6 +33,9 @@ public class TemporalAntialiasing : MonoBehaviour {
 
     int tempTextureId = Shader.PropertyToID("_TempTexture");
     int colorTextureId = Shader.PropertyToID("_CameraColorTexture");
+    //for reprojection
+    private Matrix4x4 nonJitteredVP;
+    private Matrix4x4 previousVP;
     public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.TAA taa, bool useHDR, bool copyTextureSupported) {
         this.context = context;
         this.camera = camera;
@@ -68,6 +71,10 @@ public class TemporalAntialiasing : MonoBehaviour {
             //TAA Start
             int indexRead = indexWrite;
             indexWrite = (++indexWrite) % 2;
+            buffer.SetGlobalVector("_LastJitter", jitter);
+            camera.ResetProjectionMatrix();
+            ConfigureJitteredProjectionMatrix(camera, ref jitter);
+            buffer.SetGlobalVector("_Jitter", jitter);
             const float kMotionAmplification_Blending = 100f * 60f;
             const float kMotionAmplification_Bounding = 100f * 30f;
             buffer.SetGlobalFloat("_Sharpness", taa.sharpness);
@@ -76,8 +83,9 @@ public class TemporalAntialiasing : MonoBehaviour {
             buffer.SetGlobalTexture("_LastFrameDepthTexture", historyDepth);
             buffer.SetGlobalTexture("_LastFrameMotionVectorTexture", historyMV);
             buffer.SetGlobalTexture("_HistoryTex", temporalBuffer[indexRead]);
-            buffer.SetGlobalMatrix("_InvNonJitterVP", camera.nonJitteredProjectionMatrix.inverse);
-            buffer.SetGlobalMatrix("_InvLastVP", camera.previousViewProjectionMatrix.inverse);
+            Matrix4x4 nonJitteredVP = camera.nonJitteredProjectionMatrix * camera.worldToCameraMatrix;
+            buffer.SetGlobalMatrix("_InvNonJitterVP", nonJitteredVP.inverse);
+            buffer.SetGlobalMatrix("_InvLastVP", previousVP.inverse);
             buffer.BeginSample("Antialiasing Resolve");
 
 
@@ -97,6 +105,10 @@ public class TemporalAntialiasing : MonoBehaviour {
 
     void EndFrame() {
 
+    }
+
+    public void Refresh() {
+        previousVP = nonJitteredVP;
     }
 
     void CreateHistoryTexture() {
@@ -229,6 +241,14 @@ public class TemporalAntialiasing : MonoBehaviour {
         camera.projectionMatrix = GetJitteredProjectionMatrix(camera, ref jitter);
         camera.useJitteredProjectionMatrixForTransparentRendering = false;
     }
+
+    public void PreRenderFrame(Camera camera) {
+        buffer.SetGlobalVector("_LastJitter", jitter);
+        camera.ResetProjectionMatrix();
+        ConfigureJitteredProjectionMatrix(camera, ref jitter);
+        buffer.SetGlobalVector("_Jitter", jitter);
+    }
+
 
     public static class HaltonSeq {
         public static float Get(int index, int radix) {

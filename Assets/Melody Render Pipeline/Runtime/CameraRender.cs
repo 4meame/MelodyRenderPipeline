@@ -173,11 +173,11 @@ public partial class CameraRender {
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
+        taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, useHDR, copyTextureSupported);
         //sspr Objects
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
-        taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, useHDR, copyTextureSupported);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
@@ -247,6 +247,7 @@ public partial class CameraRender {
         Submit();
 
         motionVector.Refresh();
+        taa.Refresh();
     }
 
     void DrawDepthNormal(bool useDepthNormalTexture) {
