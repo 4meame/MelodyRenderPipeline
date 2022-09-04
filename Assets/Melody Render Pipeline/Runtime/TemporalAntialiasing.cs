@@ -48,8 +48,9 @@ public class TemporalAntialiasing : MonoBehaviour {
 
     public void Render(int sourceId) {
         if (taa.enabled) {       
-            if(camera.cameraType == CameraType.Preview)
+            if(camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
                 return;
+            }
             buffer.name = "Temporal Antialiasing";
             buffer.BeginSample("Copy Current Frame");
             buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
@@ -83,7 +84,7 @@ public class TemporalAntialiasing : MonoBehaviour {
             buffer.SetGlobalTexture("_LastFrameDepthTexture", historyDepth);
             buffer.SetGlobalTexture("_LastFrameMotionVectorTexture", historyMV);
             buffer.SetGlobalTexture("_HistoryTex", temporalBuffer[indexRead]);
-            Matrix4x4 nonJitteredVP = camera.nonJitteredProjectionMatrix * camera.worldToCameraMatrix;
+            nonJitteredVP = camera.nonJitteredProjectionMatrix * camera.worldToCameraMatrix;
             buffer.SetGlobalMatrix("_InvNonJitterVP", nonJitteredVP.inverse);
             buffer.SetGlobalMatrix("_InvLastVP", previousVP.inverse);
             buffer.BeginSample("Antialiasing Resolve");
