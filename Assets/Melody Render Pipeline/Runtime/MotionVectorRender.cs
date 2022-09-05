@@ -79,8 +79,10 @@ public class MotionVectorRender {
     }
 
     public void Refresh() {
-        //for camera motion vector
-        previousVP = nonJitteredVP;
+        if (taa.motionVectorEnabled) {
+            //for camera motion vector
+            previousVP = nonJitteredVP;
+        }
     }
 
     void ExecuteBuffer() {

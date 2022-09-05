@@ -56,7 +56,6 @@ public struct CameraBufferSettings {
         }
         public Mode mode;
         public bool motionVectorEnabled;
-        public bool motionBlurEnabled;
         [Header("Adaptive AA")]
         [Range(0.0f, 1.0f)]
         public float jitterScale;

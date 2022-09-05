@@ -107,7 +107,10 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void Refresh() {
-        previousVP = nonJitteredVP;
+        if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {
+            //for camera motion vector
+            previousVP = nonJitteredVP;
+        }
     }
 
     void CreateHistoryTexture() {
