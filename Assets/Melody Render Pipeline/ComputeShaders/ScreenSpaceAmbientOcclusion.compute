@@ -473,18 +473,28 @@ float CompareNormal(float3 normal0, float3 normal1) {
     return smoothstep(filterFactor, 1.0, dot(normal0, normal1));
 }
 
+float2 GetValidUV(float2 uv, float2 delta) {
+    float2 deltaUV = uv + delta;
+    if (deltaUV.x > 1 || deltaUV.y > 1 || deltaUV.x < 0 || deltaUV.y < 0) {
+        return uv;
+    }
+    else {
+        return deltaUV;
+    }
+}
+
 //blur with full resolution
 [numthreads(8, 8, 1)]
 void NormalBilateralFilter0(uint3 id : SV_DispatchThreadID) {
     float2 delta = filterRadius * _CameraBufferSize.xy;
     //[0,_CameraBufferSize-1] -> screen [0,1] uv
     float2 uv = id.xy / _CameraBufferSize.zw;
-    float2 uv0a = uv - delta;
-    float2 uv0b = uv + delta;
-    float2 uv1a = uv - 2.0 * delta;
-    float2 uv1b = uv + 2.0 * delta;
-    float2 uv2a = uv - 3.0 * delta;
-    float2 uv2b = uv + 3.0 * delta;
+    float2 uv0a = GetValidUV(uv, - delta);
+    float2 uv0b = GetValidUV(uv, + delta);
+    float2 uv1a = GetValidUV(uv, - 2.0 * delta);
+    float2 uv1b = GetValidUV(uv, + 2.0 * delta);
+    float2 uv2a = GetValidUV(uv, - 3.0 * delta);
+    float2 uv2b = GetValidUV(uv, + 3.0 * delta);
     //get normal
     float3 normal = GetNormal(uv);
     float3 normal0a = GetNormal(uv0a);
