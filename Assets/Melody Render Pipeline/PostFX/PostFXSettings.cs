@@ -159,6 +159,16 @@ public class PostFXSettings : ScriptableObject {
         public Color bloomTintAndThreshold;
     }
 
+    [System.Serializable]
+    public struct MotionBlurSettings {
+        [Range(0, 360)]
+        public float shutterAngle;
+        [Range(0, 16)]
+        public int sampleCount;
+        [Range(0, 1)]
+        public float frameBlending;
+    }
+
     [SerializeField]
     BloomSettings bloom = default;
     [SerializeField]
@@ -186,6 +196,8 @@ public class PostFXSettings : ScriptableObject {
     OutlineSettings outlineSetting = new OutlineSettings { enable = false, color = Color.black, outlineScale = 1 };
     [SerializeField]
     LightShaftsSettings lightShaftsSetting = default;
+    [SerializeField]
+    MotionBlurSettings motionBlurSetting = new MotionBlurSettings { shutterAngle = 270, sampleCount = 8, frameBlending = 0.5f };
     public BloomSettings Bloom => bloom;
     public ColorAdjustmentSettings ColorAdjustment => colorAdjustment;
     public WhiteBalanceSettings WhiteBalance => whiteBalance;
@@ -196,4 +208,5 @@ public class PostFXSettings : ScriptableObject {
     public ToneMappingSettings ToneMapping => toneMapping;
     public OutlineSettings OutlineSetting => outlineSetting;
     public LightShaftsSettings LightShaftsSetting => lightShaftsSetting;
+    public MotionBlurSettings motionBlurSettings => motionBlurSetting;
 }

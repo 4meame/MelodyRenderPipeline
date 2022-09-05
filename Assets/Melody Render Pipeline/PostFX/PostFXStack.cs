@@ -113,6 +113,9 @@ public class PostFXStack {
     int lightShaftsExposure = Shader.PropertyToID("_ShaftsExposure");
     int bloomTintAndThreshold = Shader.PropertyToID("_BloomTintAndThreshold");
     #endregion
+    #region Motion Blur
+
+    #endregion
     public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.RescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
         this.camera = camera;
@@ -501,4 +504,6 @@ public class PostFXStack {
         }
         buffer.EndSample("Light Shafts");
     }
+
+
 }
