@@ -240,14 +240,15 @@ public partial class CameraRender {
             ExecuteBuffer();
         }
         DrawGizmosAfterFX();
-        if (cameraBufferSettings.taa.enabled) {
-            taa.CopyLastFrameRT(depthTextureId, motionVectorTextureId);
-        }
+        //get this frame depth and motion for the next frame
+        taa.CopyLastFrameRT(depthTextureId, motionVectorTextureId);
         CleanUp();
         Submit();
 
         motionVector.Refresh();
         taa.Refresh();
+        //make the projection reflect normal camera's parameters.
+        camera.ResetProjectionMatrix();
     }
 
     void DrawDepthNormal(bool useDepthNormalTexture) {

@@ -6,7 +6,7 @@ using Unity.Collections;
 
 public class TemporalAntialiasing : MonoBehaviour {
     enum Pass {
-        Resolve,
+        AdaptiveTAA,
         CopyDepth,
         CopyMotionVector
     }
@@ -32,7 +32,7 @@ public class TemporalAntialiasing : MonoBehaviour {
     const int k_SampleCount = 8;
 
     int tempTextureId = Shader.PropertyToID("_TempTexture");
-    int colorTextureId = Shader.PropertyToID("_CameraColorTexture");
+    int colorTextureId = Shader.PropertyToID("_CurrentColorTexture");
     //for reprojection
     private Matrix4x4 nonJitteredVP;
     private Matrix4x4 previousVP;
@@ -47,7 +47,7 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void Render(int sourceId) {
-        if (taa.enabled) {       
+        if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {       
             if(camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
                 return;
             }
@@ -62,10 +62,11 @@ public class TemporalAntialiasing : MonoBehaviour {
             }
             buffer.EndSample("Copy Current Frame");
             ExecuteBuffer();
-
+            //create history buffer RT in begin frame
             BeginFrame();
             UpdateTextureSize(historyDepth);
             UpdateTextureSize(historyMV);
+            //create ping-pong buffer
             EnsureArray(ref temporalBuffer, 2);
             EnsureRenderTarget(ref temporalBuffer[0], bufferSize.x, bufferSize.y, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default, FilterMode.Bilinear, 0);
             EnsureRenderTarget(ref temporalBuffer[1], bufferSize.x, bufferSize.y, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default, FilterMode.Bilinear, 1);
@@ -88,12 +89,10 @@ public class TemporalAntialiasing : MonoBehaviour {
             buffer.SetGlobalMatrix("_InvNonJitterVP", nonJitteredVP.inverse);
             buffer.SetGlobalMatrix("_InvLastVP", previousVP.inverse);
             buffer.BeginSample("Antialiasing Resolve");
-
-
+            //render loop in ping-pong buffer
             buffer.SetGlobalTexture("_SourceTex", colorTextureId);
-            buffer.Blit(colorTextureId, temporalBuffer[indexWrite], taaMaterial, (int)Pass.Resolve);
+            buffer.Blit(colorTextureId, temporalBuffer[indexWrite], taaMaterial, (int)Pass.AdaptiveTAA);
             buffer.Blit(temporalBuffer[indexWrite], sourceId);
-
             EndFrame();
             buffer.EndSample("Antialiasing Resolve");
             ExecuteBuffer();
@@ -105,7 +104,6 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     void EndFrame() {
-
     }
 
     public void Refresh() {
@@ -135,19 +133,21 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void CopyLastFrameRT(int lastDepth, int lastMV) {
-        if (copyTextureSupported) {
-            buffer.CopyTexture(lastDepth, historyDepth);
-        } else {
-            buffer.name = "Copy Depth";
-            Draw(lastDepth, historyDepth, true);
-            ExecuteBuffer();
-        }
-        if (copyTextureSupported) {
-            buffer.CopyTexture(lastMV, historyMV);
-        } else {
-            buffer.name = "Copy Motion Vector";
-            Draw(lastMV, historyMV);
-            ExecuteBuffer();
+        if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {
+            if (copyTextureSupported) {
+                buffer.CopyTexture(lastDepth, historyDepth);
+            } else {
+                buffer.name = "Copy Depth";
+                Draw(lastDepth, historyDepth, true);
+                ExecuteBuffer();
+            }
+            if (copyTextureSupported) {
+                buffer.CopyTexture(lastMV, historyMV);
+            } else {
+                buffer.name = "Copy Motion Vector";
+                Draw(lastMV, historyMV);
+                ExecuteBuffer();
+            }
         }
     }
 
@@ -243,14 +243,6 @@ public class TemporalAntialiasing : MonoBehaviour {
         camera.useJitteredProjectionMatrixForTransparentRendering = false;
     }
 
-    public void PreRenderFrame(Camera camera) {
-        buffer.SetGlobalVector("_LastJitter", jitter);
-        camera.ResetProjectionMatrix();
-        ConfigureJitteredProjectionMatrix(camera, ref jitter);
-        buffer.SetGlobalVector("_Jitter", jitter);
-    }
-
-
     public static class HaltonSeq {
         public static float Get(int index, int radix) {
             float result = 0f;
@@ -266,6 +258,8 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     private void OnDisable() {
-        Shader.SetGlobalVector("_Jitter", Vector4.zero);
+        if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {
+            Shader.SetGlobalVector("_Jitter", Vector4.zero);
+        }
     }
 }

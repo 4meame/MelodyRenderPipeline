@@ -14,13 +14,13 @@
 
         Pass
         {
-            Name "TemporalAntialiasing"
+            Name "Adaptive TemporalAntialiasing"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment TemporalAntialiasingResolve
+            #pragma fragment AdaptiveTemporalAntialiasing
             ENDHLSL
         }
 

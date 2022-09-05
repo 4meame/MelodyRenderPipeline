@@ -31,7 +31,7 @@ public class MotionVectorRender {
     }
 
     public void Render(int sourceId, int motionVectorTextureId) {
-        if (taa.enabled) {
+        if (taa.motionVectorEnabled) {
             context.SetupCameraProperties(camera);
             camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
             var sortingSettings = new SortingSettings(camera);

@@ -111,7 +111,7 @@ float2 Linear01Depth(float2 z) {
 	return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);
 }
 
-float4 TemporalAntialiasingResolve(Varyings input) : SV_TARGET{
+float4 AdaptiveTemporalAntialiasing(Varyings input) : SV_TARGET{
 	float2 screenUV = (input.screenUV - _Jitter);
 	float2 screenSize = _CameraBufferSize.zw;
 	float depth;

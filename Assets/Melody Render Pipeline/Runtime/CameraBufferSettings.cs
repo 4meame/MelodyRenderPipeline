@@ -49,7 +49,15 @@ public struct CameraBufferSettings {
 
     [Serializable]
     public struct TAA {
-        public bool enabled;
+        public enum Mode {
+            None,
+            Common,
+            Adaptive
+        }
+        public Mode mode;
+        public bool motionVectorEnabled;
+        public bool motionBlurEnabled;
+        [Header("Adaptive AA")]
         [Range(0.0f, 1.0f)]
         public float jitterScale;
         [Range(0.0f, 3.0f)]
