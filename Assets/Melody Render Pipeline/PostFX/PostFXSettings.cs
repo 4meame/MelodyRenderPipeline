@@ -161,6 +161,7 @@ public class PostFXSettings : ScriptableObject {
 
     [System.Serializable]
     public struct MotionBlurSettings {
+        public bool enable;
         [Range(0, 360)]
         public float shutterAngle;
         [Range(0, 16)]

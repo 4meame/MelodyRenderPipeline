@@ -114,7 +114,9 @@ public class PostFXStack {
     int bloomTintAndThreshold = Shader.PropertyToID("_BloomTintAndThreshold");
     #endregion
     #region Motion Blur
-
+    ReconstructionFilter reconstructionFilter;
+    FrameBlendingFilter frameBlendingFilter;
+    int motionResultId = Shader.PropertyToID("_MotionResult");
     #endregion
     public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.RescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
@@ -130,6 +132,14 @@ public class PostFXStack {
         this.rescalingMode = bicubicRescaling;
         this.fxaa = fxaa;
         this.keepAlpha = keepAlhpa;
+        if (settings.motionBlurSettings.enable) {
+            if(reconstructionFilter == null) {
+                reconstructionFilter = new ReconstructionFilter(buffer);
+            }
+            if (frameBlendingFilter == null) {
+                frameBlendingFilter = new FrameBlendingFilter(buffer);
+            }
+        }
     }
 
     public void Render(int sourceId) {
@@ -188,6 +198,13 @@ public class PostFXStack {
     }
 
     bool DoBloom(int sourceId) {
+        #region Motion Blur
+        if (settings.motionBlurSettings.enable) {
+            DoMotionBlur(sourceId);
+            //updating current result to source
+            sourceId = motionResultId;
+        }
+        #endregion
         #region Light Shafts
         if (settings.LightShaftsSetting.enable) {
             DoLightShafts(sourceId);
@@ -505,5 +522,31 @@ public class PostFXStack {
         buffer.EndSample("Light Shafts");
     }
 
-
+    void DoMotionBlur(int from) {
+        RenderTextureFormat format = useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+        //prepare source and destination
+        var source = RenderTexture.GetTemporary(bufferSize.x, bufferSize.y, 0, format);
+        buffer.Blit(from, source);
+        var destination = RenderTexture.GetTemporary(bufferSize.x, bufferSize.y, 0, format);
+        buffer.Blit(null, destination);
+        if (settings.motionBlurSettings.shutterAngle > 0 && settings.motionBlurSettings.frameBlending > 0) {
+            //reconstruction and frame blending
+            var temp = RenderTexture.GetTemporary(bufferSize.x, bufferSize.y, 0, format);
+            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, source, temp);
+            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, temp, destination);
+            frameBlendingFilter.PushFrame(temp);
+            RenderTexture.ReleaseTemporary(temp);
+        } else if (settings.motionBlurSettings.shutterAngle > 0) {
+            //reconstruction only
+            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, source, destination);
+        } else if (settings.motionBlurSettings.frameBlending > 0) {
+            //frame blending only
+            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, source, destination);
+           frameBlendingFilter.PushFrame(source);
+        } else {
+            //nothing to do!
+        }
+        buffer.GetTemporaryRT(motionResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, format);
+        Draw(destination, motionResultId, (int)Pass.Copy);
+    }
 }
