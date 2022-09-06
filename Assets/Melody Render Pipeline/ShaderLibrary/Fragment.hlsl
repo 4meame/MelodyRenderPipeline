@@ -2,11 +2,14 @@
 #define MELODY_FRAGMENT_INCLUDED
 
 TEXTURE2D(_CameraDepthTexture);
+float4 _CameraDepthTexture_TexelSize;
 TEXTURE2D(_CameraColorTexture);
+float4 _CameraColorTexture_TexelSize;
+TEXTURE2D(_CameraMotionVectorTexture);
+float4 _CameraMotionVectorTexture_TexelSize;
 TEXTURE2D(_CameraDepthNormalTexture);
 TEXTURE2D(_CameraDiffuseTexture);
 TEXTURE2D(_CameraSpecularTexture);
-TEXTURE2D(_CameraMotionVectorTexture);
 
 float4 _CameraBufferSize;
 
