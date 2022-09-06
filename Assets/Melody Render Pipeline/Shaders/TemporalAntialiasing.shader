@@ -41,12 +41,12 @@
 
         Pass
         {
-            Name "Copy Motion Vector"
+            Name "Copy"
 
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment CopyMotionVectorFragment
+            #pragma fragment CopyFragment
             ENDHLSL
         }
     }

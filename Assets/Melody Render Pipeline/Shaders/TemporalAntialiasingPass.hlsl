@@ -214,12 +214,12 @@ float4 AdaptiveTemporalAntialiasing(Varyings input) : SV_TARGET{
 	return max(0, temporalColor);
 }
 
-float4 CopyMotionVectorFragment(Varyings input) : SV_TARGET {
-	return SAMPLE_TEXTURE2D_LOD(_TempTexture, sampler_point_clamp, input.screenUV, 0);
-}
-
 float CopyDepthFragment(Varyings input) : SV_DEPTH {
 	return SAMPLE_DEPTH_TEXTURE_LOD(_TempTexture, sampler_point_clamp, input.screenUV, 0);
+}
+
+float4 CopyFragment(Varyings input) : SV_TARGET{
+	return SAMPLE_TEXTURE2D_LOD(_TempTexture, sampler_point_clamp, input.screenUV, 0);
 }
 
 #endif

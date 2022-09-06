@@ -8,7 +8,7 @@ public class TemporalAntialiasing : MonoBehaviour {
     enum Pass {
         AdaptiveTAA,
         CopyDepth,
-        CopyMotionVector
+        Copy
     }
     const string bufferName = "Temporal Anti-aliasing";
     CommandBuffer buffer = new CommandBuffer {
@@ -157,7 +157,7 @@ public class TemporalAntialiasing : MonoBehaviour {
     void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, bool isDepth = false) {
         buffer.SetGlobalTexture(tempTextureId, from);
         buffer.SetRenderTarget(to, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-        buffer.DrawProcedural(Matrix4x4.identity, taaMaterial, isDepth ? (int)Pass.CopyDepth : (int)Pass.CopyMotionVector, MeshTopology.Triangles, 3);
+        buffer.DrawProcedural(Matrix4x4.identity, taaMaterial, isDepth ? (int)Pass.CopyDepth : (int)Pass.Copy, MeshTopology.Triangles, 3);
     }
 
     void ExecuteBuffer() {
