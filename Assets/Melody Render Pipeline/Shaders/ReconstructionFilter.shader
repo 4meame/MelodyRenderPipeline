@@ -20,7 +20,7 @@
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "Velocity setup"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
@@ -32,61 +32,61 @@
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "TileMax filter with normalization"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment VelocitySetup
+            #pragma fragment TileMax1
             ENDHLSL
         }
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "TileMax filter"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment VelocitySetup
+            #pragma fragment TileMax2
             ENDHLSL
         }
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "TileMax filter virable"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment VelocitySetup
+            #pragma fragment TileMaxV
             ENDHLSL
         }
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "NeighborMax filter"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment VelocitySetup
+            #pragma fragment NeighborMax
             ENDHLSL
         }
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "Reconstruction"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment VelocitySetup
+            #pragma fragment Reconstruction
             ENDHLSL
         }
     }

@@ -13,6 +13,7 @@ public class FrameBlendingFilter {
     Material material;
     Frame[] frameList;
     int lastFrameCount;
+    int sourceId = Shader.PropertyToID("_MotionBlurSource");
 
     public FrameBlendingFilter(CommandBuffer buffer) {
         this.buffer = buffer;
@@ -29,7 +30,7 @@ public class FrameBlendingFilter {
         frameList = null;
     }
 
-    public void PushFrame(RenderTexture source) {
+    public void PushFrame(RenderTargetIdentifier source, int width, int height) {
         //push only when actual update (do nothing while pausing)
         var frameCount = Time.frameCount;
         if (frameCount == lastFrameCount) { 
@@ -37,11 +38,11 @@ public class FrameBlendingFilter {
         }
         //update the frame record.
         var index = frameCount % frameList.Length;
-        frameList[index].MakeRecord(buffer, source, material);
+        frameList[index].MakeRecord(buffer, source, width, height, material);
         lastFrameCount = frameCount;
     }
 
-    public void BlendFrames(float strength, RenderTexture source, RenderTexture destination) {
+    public void BlendFrames(float strength, RenderTargetIdentifier source, RenderTargetIdentifier destination) {
         var t = Time.time;
 
         var f1 = GetFrameRelative(-1);
@@ -64,7 +65,7 @@ public class FrameBlendingFilter {
         material.SetFloat("_History3Weight", f3.CalculateWeight(strength, t));
         material.SetFloat("_History4Weight", f4.CalculateWeight(strength, t));
 
-        buffer.Blit(source, destination, material, (int)Pass.Blending);
+        Draw(source, destination, Pass.Blending);
     }
 
     struct Frame {
@@ -92,10 +93,10 @@ public class FrameBlendingFilter {
             chromaTexture = null;
         }
 
-        public void MakeRecord(CommandBuffer buffer, RenderTexture source, Material material) {
+        public void MakeRecord(CommandBuffer buffer, RenderTargetIdentifier source, int width, int height, Material material) {
             Release();
-            lumaTexture = RenderTexture.GetTemporary(source.width, source.height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
-            chromaTexture = RenderTexture.GetTemporary(source.width, source.height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
+            lumaTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
+            chromaTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
             lumaTexture.filterMode = FilterMode.Point;
             chromaTexture.filterMode = FilterMode.Point;
             if (identifier == null) {
@@ -103,8 +104,10 @@ public class FrameBlendingFilter {
             }
             identifier[0] = lumaTexture.colorBuffer;
             identifier[1] = chromaTexture.colorBuffer;
+
+            buffer.SetGlobalTexture("_MotionBlurSource", source);
             buffer.SetRenderTarget(identifier, lumaTexture.depthBuffer);
-            buffer.Blit(null, source, material, (int)Pass.Compress);
+            buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Compress, MeshTopology.Triangles, 3);
             time = Time.time;
         }
     }
@@ -113,5 +116,12 @@ public class FrameBlendingFilter {
     Frame GetFrameRelative(int offset) {
         var index = (Time.frameCount + frameList.Length + offset) % frameList.Length;
         return frameList[index];
+    }
+
+    void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, Pass pass) {
+        buffer.SetGlobalTexture(sourceId, from);
+        //SetRenderTarget will reset the viewport to cover the entire target
+        buffer.SetRenderTarget(to, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+        buffer.DrawProcedural(Matrix4x4.identity, material, (int)pass, MeshTopology.Triangles, 3);
     }
 }

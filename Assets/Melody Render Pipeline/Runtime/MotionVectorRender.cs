@@ -67,8 +67,8 @@ public class MotionVectorRender {
             buffer.EndSample("Draw Camera Motion");
             ExecuteBuffer();
 
-            buffer.SetGlobalTexture("_CameraMotionVectorTexture", motionVectorTextureId);
             //set render target back
+            buffer.SetGlobalTexture("_CameraMotionVectorTexture", motionVectorTextureId);
             buffer.SetRenderTarget(sourceId);
             ExecuteBuffer();
         }

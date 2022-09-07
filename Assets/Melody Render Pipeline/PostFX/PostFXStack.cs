@@ -523,30 +523,27 @@ public class PostFXStack {
     }
 
     void DoMotionBlur(int from) {
+        buffer.BeginSample("Motion Blur");
         RenderTextureFormat format = useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
-        //prepare source and destination
-        var source = RenderTexture.GetTemporary(bufferSize.x, bufferSize.y, 0, format);
-        buffer.Blit(from, source);
-        var destination = RenderTexture.GetTemporary(bufferSize.x, bufferSize.y, 0, format);
-        buffer.Blit(null, destination);
+        buffer.GetTemporaryRT(motionResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, format);
         if (settings.motionBlurSettings.shutterAngle > 0 && settings.motionBlurSettings.frameBlending > 0) {
             //reconstruction and frame blending
-            var temp = RenderTexture.GetTemporary(bufferSize.x, bufferSize.y, 0, format);
-            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, source, temp);
-            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, temp, destination);
-            frameBlendingFilter.PushFrame(temp);
-            RenderTexture.ReleaseTemporary(temp);
+            var tempId = Shader.PropertyToID("tempBuffer");
+            buffer.GetTemporaryRT(tempId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, format);
+            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, from, tempId, bufferSize.x, bufferSize.y);
+            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, tempId, motionResultId);
+            frameBlendingFilter.PushFrame(tempId, bufferSize.x, bufferSize.y);
+            buffer.ReleaseTemporaryRT(tempId);
         } else if (settings.motionBlurSettings.shutterAngle > 0) {
             //reconstruction only
-            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, source, destination);
+            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, from, motionResultId, bufferSize.x, bufferSize.y);
         } else if (settings.motionBlurSettings.frameBlending > 0) {
             //frame blending only
-            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, source, destination);
-           frameBlendingFilter.PushFrame(source);
+            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, from, motionResultId);
+            frameBlendingFilter.PushFrame(from, bufferSize.x, bufferSize.y);
         } else {
             //nothing to do!
         }
-        buffer.GetTemporaryRT(motionResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, format);
-        Draw(destination, motionResultId, (int)Pass.Copy);
+        buffer.EndSample("Motion Blur");
     }
 }
