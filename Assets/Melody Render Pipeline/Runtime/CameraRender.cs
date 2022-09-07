@@ -186,7 +186,7 @@ public partial class CameraRender {
         if (!useGBuffers) {
             SetupForward();
             DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
-            motionVector.Render(colorAttachmentId, motionVectorTextureId);
+            motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             //for forward path we use screen-space post fx to render indirect illumination
             if (renderSSR) {
                 ssr.Render();
@@ -208,7 +208,7 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
-            motionVector.Render(colorAttachmentId, motionVectorTextureId);
+            motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssr.Render();
             ssao.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);

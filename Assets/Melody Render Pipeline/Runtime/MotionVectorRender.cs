@@ -32,7 +32,7 @@ public class MotionVectorRender {
         motionVectorMaterial = new Material(Shader.Find("Hidden/Melody RP/DrawMotionVector"));
     }
 
-    public void Render(int sourceId, int motionVectorTextureId) {
+    public void Render(int sourceId, int motionVectorTextureId, int depthAttachmentId) {
         if (taa.motionVectorEnabled) {
             context.SetupCameraProperties(camera);
             camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
@@ -53,7 +53,7 @@ public class MotionVectorRender {
             buffer.SetGlobalMatrix("_PrevViewProjMatrix", previousVP);
             buffer.SetGlobalMatrix("_NonJitteredViewProjMatrix", nonJitteredVP);
             buffer.GetTemporaryRT(motionVectorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.RGFloat);
-            buffer.SetRenderTarget(motionVectorTextureId);
+            buffer.SetRenderTarget(motionVectorTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, depthAttachmentId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.ClearRenderTarget(true, true, Color.black);
             buffer.BeginSample("Draw Objects Motion");
             ExecuteBuffer();

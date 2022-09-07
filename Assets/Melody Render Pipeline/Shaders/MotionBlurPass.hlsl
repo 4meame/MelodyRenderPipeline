@@ -74,6 +74,14 @@ Multitex MultiTexPassVertex(uint vertexID : SV_VertexID) {
     return output;
 }
 
+//linearize depth value sampled from the camera depth texture.
+float LinearizeDepth(float z) {
+    float isOrtho = unity_OrthoParams.w;
+    float isPers = 1 - unity_OrthoParams.w;
+    z *= _ZBufferParams.x;
+    return (1 - isOrtho * z) / (isPers * z + _ZBufferParams.y);
+}
+
 //returns the largest vector of v1 and v2.
 float2 VMax(float2 v1, float2 v2) {
     return dot(v1, v1) < dot(v2, v2) ? v2 : v1;
@@ -88,7 +96,7 @@ float4 VelocitySetup(Imag input) : SV_Target{
     //clamp the vector with the maximum blur radius.
     v /= max(1, length(v) * _RcpMaxBlurRadius);
     //sample the depth of the pixel.
-    float d = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, input.screenUV), _ZBufferParams);
+    float d = LinearizeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, input.screenUV));
     //pack into 10/10/10/2 format.
     return float4((v * _RcpMaxBlurRadius + 1) / 2, d, 0);
 }
@@ -192,6 +200,8 @@ float4 Reconstruction(Multitex input) : SV_Target {
     float l_v_max = length(v_max);
     float rcp_l_v_max = 1 / l_v_max;
     //earlt exit if neightborMax is too small
+    float4 a = SAMPLE_TEXTURE2D(_CameraMotionVectorTexture, sampler_point_clamp, input.screenUV0) * 30;
+    return a;
     if (l_v_max < 2) {
         return c_p;
     }
