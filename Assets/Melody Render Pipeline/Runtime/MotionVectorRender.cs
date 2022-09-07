@@ -16,9 +16,11 @@ public class MotionVectorRender {
     Vector2Int bufferSize;
     CameraBufferSettings.TAA taa;
     Material motionVectorMaterial;
-    //For camera motion vector
+
     private Matrix4x4 nonJitteredVP;
     private Matrix4x4 previousVP;
+    private Matrix4x4 camNonJitteredVP;
+    private Matrix4x4 camPreviousVP;
     static Mesh fullscreenMesh = null;
 
     public void Setup(ScriptableRenderContext context, Camera camera, CullingResults cullingResults, Vector2Int bufferSize, CameraBufferSettings.TAA taa) {
@@ -43,6 +45,13 @@ public class MotionVectorRender {
             FilteringSettings filterSettings = new FilteringSettings(RenderQueueRange.all) {
                 excludeMotionVectorObjects = false
             };
+            //from hdrp
+            var proj = camera.projectionMatrix;
+            var view = camera.worldToCameraMatrix;
+            var gpuNonJitteredProj = GL.GetGPUProjectionMatrix(proj, true);
+            nonJitteredVP = gpuNonJitteredProj * view;
+            buffer.SetGlobalMatrix("_PrevViewProjMatrix", previousVP);
+            buffer.SetGlobalMatrix("_NonJitteredViewProjMatrix", nonJitteredVP);
             buffer.GetTemporaryRT(motionVectorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.RGFloat);
             buffer.SetRenderTarget(motionVectorTextureId);
             buffer.ClearRenderTarget(true, true, Color.black);
@@ -57,9 +66,9 @@ public class MotionVectorRender {
 
             //camera motion vector
             buffer.BeginSample("Draw Camera Motion");
-            nonJitteredVP = camera.nonJitteredProjectionMatrix * camera.worldToCameraMatrix;
-            buffer.SetGlobalMatrix("_CamPrevViewProjMatrix", previousVP);
-            buffer.SetGlobalMatrix("_CamNonJitteredViewProjMatrix", nonJitteredVP);
+            camNonJitteredVP = camera.nonJitteredProjectionMatrix * camera.worldToCameraMatrix;
+            buffer.SetGlobalMatrix("_CamPrevViewProjMatrix", camPreviousVP);
+            buffer.SetGlobalMatrix("_CamNonJitteredViewProjMatrix", camNonJitteredVP);
             buffer.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
             //draw full screen quad to make Camera motion
             buffer.DrawMesh(FullscreenMesh, Matrix4x4.identity, motionVectorMaterial, 0, 1, null);
@@ -80,8 +89,8 @@ public class MotionVectorRender {
 
     public void Refresh() {
         if (taa.motionVectorEnabled) {
-            //for camera motion vector
             previousVP = nonJitteredVP;
+            camPreviousVP = camNonJitteredVP;
         }
     }
 
