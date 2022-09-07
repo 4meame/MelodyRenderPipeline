@@ -85,7 +85,7 @@
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
-            #pragma vertex DefaultPassVertex
+            #pragma vertex MultiTexPassVertex
             #pragma fragment Reconstruction
             ENDHLSL
         }
