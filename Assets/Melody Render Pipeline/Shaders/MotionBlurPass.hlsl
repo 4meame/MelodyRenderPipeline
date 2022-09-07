@@ -200,8 +200,6 @@ float4 Reconstruction(Multitex input) : SV_Target {
     float l_v_max = length(v_max);
     float rcp_l_v_max = 1 / l_v_max;
     //earlt exit if neightborMax is too small
-    float4 a = SAMPLE_TEXTURE2D(_CameraMotionVectorTexture, sampler_point_clamp, input.screenUV0) * 30;
-    return a;
     if (l_v_max < 2) {
         return c_p;
     }
