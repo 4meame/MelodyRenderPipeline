@@ -56,7 +56,7 @@ public struct CameraBufferSettings {
         }
         public Mode mode;
         public bool motionVectorEnabled;
-        [Header("Adaptive AA")]
+        [Header("Adaptive TAA")]
         [Range(0.0f, 1.0f)]
         public float jitterScale;
         [Range(0.0f, 3.0f)]
@@ -69,6 +69,9 @@ public struct CameraBufferSettings {
         public float staticAABBScale;
         [Range(0.05f, 6.0f)]
         public float motionAABBScale;
+        [Header("Common TAA")]
+        [Range(0.0f, 1.0f)]
+        public float feedBack;
     }
     public TAA taa;
 
