@@ -217,13 +217,14 @@ float4 Reconstruction(Multitex input) : SV_Target {
     float l_v_bg = max(l_v_p, 1);
     //color accumlation
     float4 acc = 0;
+    [loop]
     while(t > dt / 4) {
         //sampling direction(switch per 2 samples)
         float2 v_s = Interval(count, 4) ? v_alt : v_max;
         //sampling position(inverted per every sample)
         float t_s = (Interval(count, 2) ? -t : t) + t_offs;
         //distance to sample position
-        float l_t = l_v_max + abs(t_s);
+        float l_t = l_v_max * abs(t_s);
         //uv for sample position
         float2 uv0 = input.screenUV0 + v_s * t_s * _MotionBlurSource_TexelSize.xy;
         float2 uv1 = input.screenUV1 + v_s * t_s * _VelocityTex_TexelSize.xy;
@@ -231,7 +232,7 @@ float4 Reconstruction(Multitex input) : SV_Target {
         float3 c = SAMPLE_TEXTURE2D_LOD(_MotionBlurSource, sampler_linear_clamp, uv0, 0);
         //velocity/depth sample
         float3 vd = SampleVelocity(uv1);
-        //background/Foreground separation
+        //background/Foreground separation mask
         float fg = saturate((vd_p.z - vd.z) * 20 * rcp_d_p);
         //length of the velocity vector
         float l_v = lerp(l_v_bg, length(vd.xy), fg);
@@ -246,7 +247,6 @@ float4 Reconstruction(Multitex input) : SV_Target {
         t = Interval(count, 2) ? t - dt : t;
         count += 1;
     }
-    //add the center sample.
     acc += float4(c_p.rgb, 1) * (1.2 / (l_v_bg * sc * 2));
     return float4(acc.rgb / acc.a, c_p.a);
 }

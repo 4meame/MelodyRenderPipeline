@@ -164,7 +164,7 @@ public class PostFXSettings : ScriptableObject {
         public bool enable;
         [Range(0, 360)]
         public float shutterAngle;
-        [Range(0, 16)]
+        [Range(0, 64)]
         public int sampleCount;
         [Range(0, 1)]
         public float frameBlending;
