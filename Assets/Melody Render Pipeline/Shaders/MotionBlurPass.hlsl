@@ -274,7 +274,7 @@ CompressorOutput FrameCompress(Imag input) {
     //screen width
     float sw = _CameraBufferSize.z;
     //pixel width
-    float pw = _CameraBufferSize.z - 1;
+    float pw = _CameraBufferSize.x - 1;
     //rgb to YCbCr convertion matrix
     const half3 kY = half3(0.299, 0.587, 0.114);
     const half3 kCB = half3(-0.168736, -0.331264, 0.5);
