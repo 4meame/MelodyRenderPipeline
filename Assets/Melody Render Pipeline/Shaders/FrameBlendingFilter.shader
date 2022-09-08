@@ -3,8 +3,14 @@
     Properties
     {
         [HideInInspector] _MainTex("", 2D) = ""{}
-        [HideInInspector]_VelocityTex("", 2D) = ""{}
-        [HideInInspector]_NeighborMaxTex("", 2D) = ""{}
+        [HideInInspector]_History1LumaTex("", 2D) = ""{}
+        [HideInInspector]_History2LumaTex("", 2D) = ""{}
+        [HideInInspector]_History3LumaTex("", 2D) = ""{}
+        [HideInInspector]_History4LumaTex("", 2D) = ""{}
+        [HideInInspector]_History1ChromaTex("", 2D) = ""{}
+        [HideInInspector]_History2ChromaTex("", 2D) = ""{}
+        [HideInInspector]_History3ChromaTex("", 2D) = ""{}
+        [HideInInspector]_History4ChromaTex("", 2D) = ""{}
     }
 
     SubShader
@@ -20,25 +26,25 @@
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "Frame compress"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment VelocitySetup
+            #pragma fragment FrameCompress
             ENDHLSL
         }
 
         Pass
         {
-            Name "Velocity Setup"
+            Name "Frame blending"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
-            #pragma vertex DefaultPassVertex
-            #pragma fragment VelocitySetup
+            #pragma vertex MultiTexPassVertex
+            #pragma fragment FrameBlending
             ENDHLSL
         }
     }
