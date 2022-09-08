@@ -251,7 +251,7 @@ float4 Reconstruction(Multitex input) : SV_Target {
         //sample weight
         //(Distance test) * (Spreading out by motion) * (Triangular window)
         float w = saturate(l_v - l_t) / l_v * (1.2 - t);
-        //color accumlate
+        //color accumlate, w can be adjusted customlize
         acc += float4(c, 1) * w;
         //update the background velocity.
         l_v_bg = max(l_v_bg, l_v);
