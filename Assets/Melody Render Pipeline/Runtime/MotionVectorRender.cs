@@ -54,7 +54,7 @@ public class MotionVectorRender {
             buffer.SetGlobalMatrix("_NonJitteredViewProjMatrix", nonJitteredVP);
             buffer.GetTemporaryRT(motionVectorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, RenderTextureFormat.RGFloat);
             buffer.SetRenderTarget(motionVectorTextureId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, depthAttachmentId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            buffer.ClearRenderTarget(true, true, Color.black);
+            buffer.ClearRenderTarget(true, true, Color.clear);
             buffer.BeginSample("Draw Objects Motion");
             ExecuteBuffer();
             //opaque motion objects

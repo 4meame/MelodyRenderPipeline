@@ -7,8 +7,6 @@
         HLSLINCLUDE
         #include "../ShaderLibrary/Common.hlsl"
 
-        float4x4 _CamNonJitteredViewProjMatrix;
-        float4x4 _CamPrevViewProjMatrix;
         bool _HasLastPositionData;
 
         struct MotionVertexInput {
@@ -77,8 +75,8 @@
             float3 vPos = ray * depth;
             float4 worldPos = mul(unity_CameraToWorld, float4(vPos, 1.0));
 
-            float4 prevClipPos = mul(_CamPrevViewProjMatrix, worldPos);
-            float4 curClipPos = mul(_CamNonJitteredViewProjMatrix, worldPos);
+            float4 prevClipPos = mul(_PrevViewProjMatrix, worldPos);
+            float4 curClipPos = mul(_NonJitteredViewProjMatrix, worldPos);
             float2 prevHPos = prevClipPos.xy / prevClipPos.w;
             float2 curHPos = curClipPos.xy / curClipPos.w;
             //v is the viewport position at this pixel in the range 0 to 1.
