@@ -158,7 +158,7 @@ public partial class CameraRender {
         buffer.SetGlobalFloat(cameraFOVId, cameraFOV);
         #endregion
         #region Render Scale
-        buffer.SetGlobalVector(bufferSizeId, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
+        buffer.SetGlobalVector(bufferSizeId, new Vector4(1f / bufferSize.x + 1f, 1f / bufferSize.y + 1f, bufferSize.x, bufferSize.y));
         #endregion
         ExecuteBuffer();
         SetupGlobalTexture();

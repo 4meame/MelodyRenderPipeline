@@ -181,7 +181,7 @@ bool Interval(half phase, half interval) {
 
 //interleaved gradient function from Jimenez 2014 http://goo.gl/eomGso
 float GradientNoise(float2 uv) {
-    uv = floor((uv + _Time.y) * _ScreenParams.xy);
+    uv = floor((uv + _Time.y) * _CameraBufferSize.zw);
     float f = dot(float2(0.06711056f, 0.00583715f), uv);
     return frac(52.9829189f * frac(f));
 }
@@ -272,9 +272,9 @@ struct CompressorOutput {
 // Frame compression fragment shader
 CompressorOutput FrameCompress(Imag input) {
     //screen width
-    float sw = _ScreenParams.x;
+    float sw = _CameraBufferSize.z;
     //pixel width
-    float pw = _ScreenParams.z - 1;
+    float pw = _CameraBufferSize.z - 1;
     //rgb to YCbCr convertion matrix
     const half3 kY = half3(0.299, 0.587, 0.114);
     const half3 kCB = half3(-0.168736, -0.331264, 0.5);
