@@ -132,14 +132,6 @@ public class PostFXStack {
         this.rescalingMode = bicubicRescaling;
         this.fxaa = fxaa;
         this.keepAlpha = keepAlhpa;
-        if (settings.motionBlurSettings.enable) {
-            if(reconstructionFilter == null) {
-                reconstructionFilter = new ReconstructionFilter(buffer);
-            }
-            if (frameBlendingFilter == null) {
-                frameBlendingFilter = new FrameBlendingFilter(buffer);
-            }
-        }
     }
 
     public void Render(int sourceId) {
@@ -523,6 +515,12 @@ public class PostFXStack {
     }
 
     void DoMotionBlur(int from) {
+        if (reconstructionFilter == null) {
+            reconstructionFilter = new ReconstructionFilter(buffer);
+        }
+        if (frameBlendingFilter == null) {
+            frameBlendingFilter = new FrameBlendingFilter(buffer);
+        }
         buffer.BeginSample("Motion Blur");
         RenderTextureFormat format = useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
         buffer.GetTemporaryRT(motionResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, format);
