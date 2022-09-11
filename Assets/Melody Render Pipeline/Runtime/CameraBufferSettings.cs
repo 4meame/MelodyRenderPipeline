@@ -113,6 +113,18 @@ public struct CameraBufferSettings {
             SSR,
             StochasticSSR
         }
+        public enum DebugMode {
+            Combine,
+            Reflection
+        };
+        public enum TraceMethod {
+            HiZTrace = 0,
+            LinearTrace = 1
+        };
+        public enum RenderSize {
+            Full = 1,
+            Half = 2
+        };
         public SSRType sSRType;
         [Header("SSR")]
         [Range(1, 8)]
@@ -133,7 +145,40 @@ public struct CameraBufferSettings {
         [Range(0, 1)]
         public float eyeFadeEnd;
         [Header("StochasticSSR")]
-        public bool debug;
+        public TraceMethod traceMethod;
+        public RenderSize rayCastSize;
+        [Range(1, 4)]
+        public int rayNums;
+        [Range(0, 1)]
+        public float BRDFBias;
+        [Range(0.05f, 5f)]
+        public float THK;
+        [Range(0, 1)]
+        public float screenFade;
+        [Range(32, 512)]
+        public int Hiz_RaySteps;
+        [Range(4, 10)]
+        public int Hiz_MaxLevel;
+        [Range(0, 2)]
+        public int Hiz_StartLevel;
+        [Range(0, 2)]
+        public int Hiz_StopLevel;
+        public bool Linear_TraceBehind;
+        public bool Linear_TowardRay;
+        [Range(64, 512)]
+        public int Linear_RaySteps;
+        [Range(5, 20)]
+        public int Linear_StepSize;
+        public Texture2D BlueNoise;
+        public Texture2D PreintegratedGF;
+        [Range(1, 9)]
+        public int SpatioSampler;
+        [Range(0, 0.99f)]
+        public float TemporalWeight;
+        [Range(1, 6f)]
+        public float TemporalScale;
+        public bool deNoise;
+        public DebugMode debugMode;
     }
     public SSR ssr;
 

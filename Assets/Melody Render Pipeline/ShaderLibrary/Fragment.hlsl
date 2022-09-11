@@ -8,7 +8,9 @@ float4 _CameraColorTexture_TexelSize;
 TEXTURE2D(_CameraMotionVectorTexture);
 float4 _CameraMotionVectorTexture_TexelSize;
 TEXTURE2D(_CameraDepthNormalTexture);
+//rgb : diffuse, a : occlusion
 TEXTURE2D(_CameraDiffuseTexture);
+//rgb : specular, a : smoothness
 TEXTURE2D(_CameraSpecularTexture);
 
 float4 _CameraBufferSize;

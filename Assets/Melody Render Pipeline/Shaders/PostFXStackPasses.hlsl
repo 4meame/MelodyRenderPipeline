@@ -4,14 +4,6 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 
-#define SAMPLE_DEPTH_OFFSET(x,y,z,a) (x.Sample(y,z,a).r )
-#define SAMPLE_TEXTURE2D_OFFSET(x,y,z,a) (x.Sample(y,z,a))
-#if defined(UNITY_REVERSED_Z)
-    #define COMPARE_DEPTH(a, b) step(b, a)
-#else
-    #define COMPARE_DEPTH(a, b) step(a, b)
-#endif
-
 TEXTURE2D(_PostFXSource);
 SAMPLER(sampler_PostFXSource);
 TEXTURE2D(_PostFXSource2);

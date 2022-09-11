@@ -210,6 +210,15 @@ SAMPLER(sampler_point_clamp);
 SAMPLER(sampler_point_repeat);
 #include "Fragment.hlsl"
 
+#define SAMPLE_DEPTH_OFFSET(x,y,z,a) (x.Sample(y,z,a).r )
+#define SAMPLE_TEXTURE2D_OFFSET(x,y,z,a) (x.Sample(y,z,a))
+
+#if defined(UNITY_REVERSED_Z)
+#define COMPARE_DEPTH(a, b) step(b, a)
+#else
+#define COMPARE_DEPTH(a, b) step(a, b)
+#endif
+
 //lod transition function
 void ClipLOD(Fragment fragment, float fade) {
 #if defined(LOD_FADE_CROSSFADE)

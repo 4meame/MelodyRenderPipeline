@@ -14,22 +14,60 @@ public class ScreenSpaceReflection {
     CameraBufferSettings.SSR settings;
     ComputeShader cs;
     bool useHDR;
-
-    Vector2Int ssrBufferSize;
+    Vector2 bufferSize;
+    //normal ssr
+    Vector2 ssrBufferSize;
     int ssrResultId = Shader.PropertyToID("_SSR_Result");
     int ssrBlurId = Shader.PropertyToID("_SSR_Blur");
+    //stochastic ssr
+    enum Pass {
+        
+    }
+    int m_SampleIndex = 0;
+    const int k_SampleCount = 64;
+    Material material;
+    Vector2 cameraBufferSize;
+    Vector2 randomSampler = Vector2.one;
+    Matrix4x4 SSR_ProjectionMatrix;
+    Matrix4x4 SSR_ViewProjectionMatrix;
+    Matrix4x4 SSR_Prev_ViewProjectionMatrix;
+    Matrix4x4 SSR_WorldToCameraMatrix;
+    Matrix4x4 SSR_CameraToWorldMatrix;
+    RenderTexture[] SSR_TraceMask_RT = new RenderTexture[2];
+    RenderTargetIdentifier[] SSR_TraceMask_ID = new RenderTargetIdentifier[2];
+    RenderTexture SSR_HierarchicalDepth_RT;
+    RenderTexture SSR_HierarchicalDepth_BackUp_RT;
+    RenderTexture SSR_SceneColor_RT;
+    RenderTexture SSR_CombineScene_RT;
+    RenderTexture SSR_Spatial_RT;
+    RenderTexture SSR_TemporalPrev_RT;
+    RenderTexture SSR_TemporalCurr_RT;
+    static int SSR_Noise_ID = Shader.PropertyToID("_SSR_Noise");
+    static int SSR_PreintegratedGF_ID = Shader.PropertyToID("_SSR_PreintegratedGF");
+    static int SSR_HierarchicalDepth_ID = Shader.PropertyToID("_SSR_HierarchicalDepth_RT");
+    static int SSR_SceneColor_ID = Shader.PropertyToID("_SSR_SceneColor_RT");
+    static int SSR_CombineScene_ID = Shader.PropertyToID("_SSR_CombienReflection_RT");
+    static int SSR_Trace_ID = Shader.PropertyToID("_SSR_RayCastRT");
+    static int SSR_Mask_ID = Shader.PropertyToID("_SSR_RayMask_RT");
+    static int SSR_Spatial_ID = Shader.PropertyToID("_SSR_Spatial_RT");
+    static int SSR_TemporalPrev_ID = Shader.PropertyToID("_SSR_TemporalPrev_RT");
+    static int SSR_TemporalCurr_ID = Shader.PropertyToID("_SSR_TemporalCurr_RT");
 
     public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.SSR settings, bool useHDR) {
         this.context = context;
         this.camera = camera;
         this.settings = settings;
-        this.ssrBufferSize = bufferSize / settings.downSample;
+        this.bufferSize = bufferSize;
         this.cs = settings.computeShader;
         this.useHDR = useHDR;
+        if(material == null) {
+            material = new Material(Shader.Find("Hidden/Melody RP/StochasticSSR"));
+        }
     }
 
     void Configure() {
-        RenderTextureDescriptor descriptor = new RenderTextureDescriptor(ssrBufferSize.x, ssrBufferSize.y, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default, 0, 0);
+        ssrBufferSize = bufferSize / settings.downSample;
+        RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)ssrBufferSize.x, (int)ssrBufferSize.y, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default, 0, 0);
         descriptor.sRGB = false;
         descriptor.enableRandomWrite = true;
         buffer.GetTemporaryRT(ssrResultId, descriptor);
@@ -45,8 +83,8 @@ public class ScreenSpaceReflection {
     public void Render() {
         buffer.BeginSample("SSR Resolve");
         if (settings.enabled) {
-            Configure();
             if (settings.sSRType == CameraBufferSettings.SSR.SSRType.SSR) {
+                Configure();
                 //ray trace params
                 buffer.SetComputeFloatParam(cs, "maxDistance", settings.maxDistance);
                 buffer.SetComputeFloatParam(cs, "iterations", settings.iterations);
@@ -69,16 +107,24 @@ public class ScreenSpaceReflection {
                 buffer.SetComputeVectorParam(cs, "textureSize", new Vector2(ssrBufferSize.x, ssrBufferSize.y));
                 int kernel_SSRResolve = cs.FindKernel("SSRResolve");
                 buffer.SetComputeTextureParam(cs, kernel_SSRResolve, "ScreenSpaceReflectionRT", ssrResultId);
-                buffer.DispatchCompute(cs, kernel_SSRResolve, ssrBufferSize.x / 8, ssrBufferSize.y / 8, 1);
+                buffer.DispatchCompute(cs, kernel_SSRResolve, (int)ssrBufferSize.x / 8, (int)ssrBufferSize.y / 8, 1);
                 //SSR Blur Pass
                 int kernel_SSRBlur = cs.FindKernel("SSRBlur");
                 buffer.SetComputeFloatParam(cs, "blurOffset", settings.downSample);
                 buffer.SetComputeTextureParam(cs, kernel_SSRBlur, "ScreenSpaceReflectionRT", ssrResultId);
                 buffer.SetComputeTextureParam(cs, kernel_SSRBlur, "BlurRT", ssrBlurId);
-                buffer.DispatchCompute(cs, kernel_SSRBlur, ssrBufferSize.x / 8, ssrBufferSize.y / 8, 1);
+                buffer.DispatchCompute(cs, kernel_SSRBlur, (int)ssrBufferSize.x / 8, (int)ssrBufferSize.y / 8, 1);
+                buffer.SetGlobalTexture("_SSR_Filtered", ssrBlurId);
+                buffer.EnableShaderKeyword("_SSR_ON");
             }
-            buffer.SetGlobalTexture("_SSR_Filtered", ssrBlurId);
-            buffer.EnableShaderKeyword("_SSR_ON");
+            if(settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
+                if(settings.traceMethod == CameraBufferSettings.SSR.TraceMethod.HiZTrace)
+                {
+
+                } else {
+
+                }
+            }
         } else {
             buffer.DisableShaderKeyword("_SSR_ON");
         }
@@ -87,7 +133,7 @@ public class ScreenSpaceReflection {
     }
 
     public void Debug(int sourceId) {
-        if (settings.enabled && settings.debug) {
+        if (settings.enabled && settings.debugMode == CameraBufferSettings.SSR.DebugMode.Reflection) {
             buffer.Blit(ssrResultId, sourceId);
             ExecuteBuffer();
         }
@@ -96,5 +142,145 @@ public class ScreenSpaceReflection {
     void ExecuteBuffer() {
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();
+    }
+
+    float GetHaltonValue(int index, int radix) {
+        float result = 0f;
+        float fraction = 1f / radix;
+        while (index > 0) {
+            result += (index % radix) * fraction;
+            index /= radix;
+            fraction /= radix;
+        }
+        return result;
+    }
+
+    Vector2 GenerateRandomOffset() {
+        var offset = new Vector2(GetHaltonValue(m_SampleIndex & 1023, 2), GetHaltonValue(m_SampleIndex & 1023, 3));
+        if (m_SampleIndex++ >= k_SampleCount)
+            m_SampleIndex = 0;
+        return offset;
+    }
+
+    void UpdateUniformVariable() {
+        material.SetTexture("_SSR_PreintegratedGF", settings.PreintegratedGF);
+        material.SetTexture("_SSR_Noise", settings.BlueNoise);
+        material.SetVector("_SSR_ScreenSize", cameraBufferSize);
+        material.SetVector("_SSR_RayCastSize", cameraBufferSize / (int)settings.rayCastSize);
+        material.SetVector("_SSR_NoiseSize", new Vector2(1024, 1024));
+        material.SetFloat("_SSR_BRDFBias", settings.BRDFBias);
+        material.SetFloat("_SSR_ScreenFade", settings.screenFade);
+        material.SetFloat("_SSR_Thickness", settings.THK);
+        material.SetInt("_SSR_RayStepSize", settings.Linear_StepSize);
+        material.SetInt("_SSR_TraceDistance", 512);
+        material.SetInt("_SSR_NumSteps_Linear", settings.Linear_RaySteps);
+        material.SetInt("_SSR_NumSteps_HiZ", settings.Hiz_RaySteps);
+        material.SetInt("_SSR_NumRays", settings.rayNums);
+        material.SetInt("_SSR_BackwardsRay", settings.Linear_TowardRay ? 1 : 0);
+        material.SetInt("_SSR_CullBack", settings.Linear_TowardRay ? 1 : 0);
+        material.SetInt("_SSR_TraceBehind", settings.Linear_TraceBehind ? 1 : 0);
+        material.SetInt("_SSR_HiZ_MaxLevel", settings.Hiz_MaxLevel);
+        material.SetInt("_SSR_HiZ_StartLevel", settings.Hiz_StartLevel);
+        material.SetInt("_SSR_HiZ_StopLevel", settings.Hiz_StopLevel);
+        if (settings.deNoise) {
+            material.SetInt("_SSR_NumResolver", settings.SpatioSampler);
+            material.SetFloat("_SSR_TemporalScale", settings.TemporalScale);
+            material.SetFloat("_SSR_TemporalWeight", settings.TemporalWeight);
+        }
+        else {
+            material.SetInt("_SSR_NumResolver", 1);
+            material.SetFloat("_SSR_TemporalScale", 0);
+            material.SetFloat("_SSR_TemporalWeight", 0);
+        }
+    }
+
+    void UpdateMatricesAndRenderTexture() {
+        Vector2 halfBufferSize = new Vector2(bufferSize.x / 2, bufferSize.y / 2);
+        Vector2 currentBufferSize = new Vector2(bufferSize.x, bufferSize.y);
+        if (cameraBufferSize != currentBufferSize) {
+            cameraBufferSize = currentBufferSize;
+            //SceneColor and HierarchicalDepth RT
+            RenderTexture.ReleaseTemporary(SSR_SceneColor_RT);
+            SSR_SceneColor_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
+            SSR_HierarchicalDepth_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
+            SSR_HierarchicalDepth_RT.filterMode = FilterMode.Point;
+            SSR_HierarchicalDepth_RT.useMipMap = true;
+            SSR_HierarchicalDepth_RT.autoGenerateMips = true;
+            RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_BackUp_RT);
+            SSR_HierarchicalDepth_BackUp_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
+            SSR_HierarchicalDepth_BackUp_RT.filterMode = FilterMode.Point;
+            SSR_HierarchicalDepth_BackUp_RT.useMipMap = true;
+            SSR_HierarchicalDepth_BackUp_RT.autoGenerateMips = false;
+            //RayMarching and RayMask RT
+            RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[0]);
+            SSR_TraceMask_RT[0] = RenderTexture.GetTemporary((int)cameraBufferSize.x / (int)settings.rayCastSize, (int)cameraBufferSize.y / (int)settings.rayCastSize, 0, RenderTextureFormat.ARGBHalf);
+            SSR_TraceMask_RT[0].filterMode = FilterMode.Point;
+            SSR_TraceMask_ID[0] = SSR_TraceMask_RT[0].colorBuffer;
+            RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[1]);
+            SSR_TraceMask_RT[1] = RenderTexture.GetTemporary((int)cameraBufferSize.x / (int)settings.rayCastSize, (int)cameraBufferSize.y / (int)settings.rayCastSize, 0, RenderTextureFormat.ARGBHalf);
+            SSR_TraceMask_RT[1].filterMode = FilterMode.Point;
+            SSR_TraceMask_ID[1] = SSR_TraceMask_RT[1].colorBuffer;
+            //Spatial RT
+            RenderTexture.ReleaseTemporary(SSR_Spatial_RT);
+            SSR_Spatial_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, RenderTextureFormat.ARGBHalf);
+            SSR_Spatial_RT.filterMode = FilterMode.Bilinear;
+            //Temporal RT
+            RenderTexture.ReleaseTemporary(SSR_TemporalPrev_RT);
+            SSR_TemporalPrev_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, RenderTextureFormat.ARGBHalf);
+            SSR_TemporalPrev_RT.filterMode = FilterMode.Bilinear;
+            RenderTexture.ReleaseTemporary(SSR_TemporalCurr_RT);
+            SSR_TemporalCurr_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, RenderTextureFormat.ARGBHalf);
+            SSR_TemporalCurr_RT.filterMode = FilterMode.Bilinear;
+            //Combine RT
+            RenderTexture.ReleaseTemporary(SSR_CombineScene_RT);
+            SSR_CombineScene_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            SSR_CombineScene_RT.filterMode = FilterMode.Point;
+            //update uniform variable
+            UpdateUniformVariable();
+        }
+
+        //set martrices
+        material.SetVector("_SSR_Jitter", new Vector4(cameraBufferSize.x / 1024, cameraBufferSize.y / 1024, randomSampler.x, randomSampler.y));
+        SSR_WorldToCameraMatrix = camera.worldToCameraMatrix;
+        SSR_CameraToWorldMatrix = SSR_WorldToCameraMatrix.inverse;
+        SSR_ProjectionMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
+        SSR_ViewProjectionMatrix = SSR_ProjectionMatrix * SSR_WorldToCameraMatrix;
+        material.SetMatrix("_SSR_ProjectionMatrix", SSR_ProjectionMatrix);
+        material.SetMatrix("_SSR_InverseProjectionMatrix", SSR_ProjectionMatrix.inverse);
+        material.SetMatrix("_SSR_ViewProjectionMatrix", SSR_ViewProjectionMatrix);
+        material.SetMatrix("_SSR_InverseViewProjectionMatrix", SSR_ViewProjectionMatrix.inverse);
+        material.SetMatrix("_SSR_WorldToCameraMatrix", SSR_WorldToCameraMatrix);
+        material.SetMatrix("_SSR_CameraToWorldMatrix", SSR_CameraToWorldMatrix);
+        material.SetMatrix("_SSR_LastFrameViewProjectionMatrix", SSR_Prev_ViewProjectionMatrix);
+        Matrix4x4 warpToScreenSpaceMatrix = Matrix4x4.identity;
+        warpToScreenSpaceMatrix.m00 = halfBufferSize.x; warpToScreenSpaceMatrix.m03 = halfBufferSize.x;
+        warpToScreenSpaceMatrix.m11 = halfBufferSize.y; warpToScreenSpaceMatrix.m13 = halfBufferSize.y;
+        Matrix4x4 SSR_ProjectToPixelMatrix = warpToScreenSpaceMatrix * SSR_ProjectionMatrix;
+        material.SetMatrix("_SSR_ProjectToPixelMatrix", SSR_ProjectToPixelMatrix);
+        Vector4 SSR_ProjInfo = new Vector4
+        ((-2 / (cameraBufferSize.x * SSR_ProjectionMatrix[0])),
+        (-2 / (cameraBufferSize.y * SSR_ProjectionMatrix[5])),
+        ((1 - SSR_ProjectionMatrix[2]) / SSR_ProjectionMatrix[0]),
+        ((1 + SSR_ProjectionMatrix[6]) / SSR_ProjectionMatrix[5]));
+        material.SetVector("_SSR_ProjInfo", SSR_ProjInfo);
+        Vector3 SSR_ClipInfo = (float.IsPositiveInfinity(camera.farClipPlane)) ?
+        new Vector3(camera.nearClipPlane, -1, 1) :
+        new Vector3(camera.nearClipPlane * camera.farClipPlane, camera.nearClipPlane - camera.farClipPlane, camera.farClipPlane);
+        material.SetVector("_SSR_ClipInfo", SSR_ClipInfo);
+    }
+
+    void ReleaseBuffer() {
+        RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
+        RenderTexture.ReleaseTemporary(SSR_SceneColor_RT);
+        RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[0]);
+        RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[1]);
+        RenderTexture.ReleaseTemporary(SSR_Spatial_RT);
+        RenderTexture.ReleaseTemporary(SSR_TemporalPrev_RT);
+        RenderTexture.ReleaseTemporary(SSR_TemporalCurr_RT);
+        RenderTexture.ReleaseTemporary(SSR_CombineScene_RT);
+        if (buffer != null) {
+            buffer.Dispose();
+        }
     }
 }
