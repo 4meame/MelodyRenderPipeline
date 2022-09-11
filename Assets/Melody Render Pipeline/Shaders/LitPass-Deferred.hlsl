@@ -1,5 +1,5 @@
-﻿#ifndef MELODY_LIT_SSR_PASS_INCLUDED
-#define MELODY_LIT_SSR_PASS_INCLUDED
+﻿#ifndef MELODY_LIT_DEFERRED_PASS_INCLUDED
+#define MELODY_LIT_DEFERRED_PASS_INCLUDED
 
 #include "../ShaderLibrary/Common.hlsl"
 #include "../ShaderLibrary/Surface.hlsl"

@@ -1,8 +1,8 @@
 #ifndef MELODY_GI_INCLUDED
 #define MELODY_GI_INCLUDED
 
+#include "ImageBasedLighting.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ImageBasedLighting.hlsl"
 
 #if defined(LIGHTMAP_ON)
 	#define GI_ATTRIBUTE_DATA float2 lightMapUV : TEXCOORD1;
