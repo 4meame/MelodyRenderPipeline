@@ -15,13 +15,14 @@ public class ScreenSpaceReflection {
     ComputeShader cs;
     bool useHDR;
     Vector2 bufferSize;
+    bool copyTextureSupported;
     //normal ssr
     Vector2 ssrBufferSize;
     int ssrResultId = Shader.PropertyToID("_SSR_Result");
     int ssrBlurId = Shader.PropertyToID("_SSR_Blur");
     //stochastic ssr
     enum Pass {
-        
+        RayCasting
     }
     int m_SampleIndex = 0;
     const int k_SampleCount = 64;
@@ -53,13 +54,14 @@ public class ScreenSpaceReflection {
     static int SSR_TemporalPrev_ID = Shader.PropertyToID("_SSR_TemporalPrev_RT");
     static int SSR_TemporalCurr_ID = Shader.PropertyToID("_SSR_TemporalCurr_RT");
 
-    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.SSR settings, bool useHDR) {
+    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.SSR settings, bool useHDR, bool copyTextureSupported) {
         this.context = context;
         this.camera = camera;
         this.settings = settings;
         this.bufferSize = bufferSize;
         this.cs = settings.computeShader;
         this.useHDR = useHDR;
+        this.copyTextureSupported = copyTextureSupported;
         if(material == null) {
             material = new Material(Shader.Find("Hidden/Melody RP/StochasticSSR"));
         }
@@ -81,9 +83,10 @@ public class ScreenSpaceReflection {
     }
 
     public void Render() {
-        buffer.BeginSample("SSR Resolve");
         if (settings.enabled) {
             if (settings.sSRType == CameraBufferSettings.SSR.SSRType.SSR) {
+                buffer.BeginSample("SSR Resolve");
+                buffer.EnableShaderKeyword("_SSR_ON");
                 Configure();
                 //ray trace params
                 buffer.SetComputeFloatParam(cs, "maxDistance", settings.maxDistance);
@@ -115,27 +118,53 @@ public class ScreenSpaceReflection {
                 buffer.SetComputeTextureParam(cs, kernel_SSRBlur, "BlurRT", ssrBlurId);
                 buffer.DispatchCompute(cs, kernel_SSRBlur, (int)ssrBufferSize.x / 8, (int)ssrBufferSize.y / 8, 1);
                 buffer.SetGlobalTexture("_SSR_Filtered", ssrBlurId);
-                buffer.EnableShaderKeyword("_SSR_ON");
+                buffer.EndSample("SSR Resolve");
+                ExecuteBuffer();
             }
             if(settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
-                if(settings.traceMethod == CameraBufferSettings.SSR.TraceMethod.HiZTrace)
-                {
+                buffer.DisableShaderKeyword("_SSR_ON");
+                randomSampler = GenerateRandomOffset();
+                UpdateMatricesAndRenderTexture();
+                //bilt scene depth
+                buffer.Blit("_CameraDepthTexture", SSR_HierarchicalDepth_RT);
+                //set Hiz-depth RT
+
+                buffer.SetGlobalTexture(SSR_HierarchicalDepth_ID, SSR_HierarchicalDepth_RT);
+                //set scene color RT
+                buffer.SetGlobalTexture(SSR_SceneColor_ID, SSR_SceneColor_RT);
+                CopyTexture("_CameraColorTexture", SSR_SceneColor_RT);
+                //ray casting
+                buffer.SetGlobalTexture(SSR_Trace_ID, SSR_TraceMask_RT[0]);
+                buffer.SetGlobalTexture(SSR_Mask_ID, SSR_TraceMask_RT[1]);
+                if (settings.traceMethod == CameraBufferSettings.SSR.TraceMethod.HiZTrace) {
 
                 } else {
-
+                    buffer.SetRenderTarget(SSR_TraceMask_ID, SSR_TraceMask_RT[0]);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.RayCasting, MeshTopology.Triangles, 3);
                 }
+                //do spatial filter
+                
+
+
+                ExecuteBuffer();
             }
         } else {
             buffer.DisableShaderKeyword("_SSR_ON");
         }
-        buffer.EndSample("SSR Resolve");
-        ExecuteBuffer();
     }
 
     public void Debug(int sourceId) {
         if (settings.enabled && settings.debugMode == CameraBufferSettings.SSR.DebugMode.Reflection) {
             buffer.Blit(ssrResultId, sourceId);
             ExecuteBuffer();
+        }
+    }
+
+    void CopyTexture(RenderTargetIdentifier source, RenderTargetIdentifier destination) {
+        if (copyTextureSupported) {
+            buffer.CopyTexture(source, destination);
+        } else {
+            buffer.Blit(source, destination);
         }
     }
 

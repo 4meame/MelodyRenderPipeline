@@ -20,7 +20,6 @@
 #define UNITY_PREV_MATRIX_M unity_MatrixPreviousM
 #define UNITY_PREV_MATRIX_I_M unity_MatrixPreviousMI
 
-#define PI 3.1415926
 #define Inv_PI 0.3183091
 #define Two_PI 6.2831852
 #define Inv_Two_PI 0.15915494

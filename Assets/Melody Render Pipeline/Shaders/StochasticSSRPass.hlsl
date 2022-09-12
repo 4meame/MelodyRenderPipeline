@@ -102,7 +102,7 @@ float GetHierarchicalZBuffer(Varyings input) : SV_TARGET{
 
 //2D linear trace sampler(single spp: sample per pixel, pdf : probability distribution function)
 void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, out float4 Mask : SV_TARGET1) {
-	float uv = input.screenUV;
+	float2 uv = input.screenUV;
 	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
 	float roughness = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a;
 	roughness = clamp(1 - roughness, 0.02, 1);
@@ -117,7 +117,7 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 	float4 screenTexelSize = float4(1 / _SSR_ScreenSize.x, 1 / _SSR_ScreenSize.y, _SSR_ScreenSize.x, _SSR_ScreenSize.y);
 	float3 Ray_Origin_VS = GetPosition(_CameraDepthTexture, screenTexelSize, _SSR_ProjInfo, uv);
 	float Ray_Bump = max(-0.01 * Ray_Origin_VS.z, 0.001);
-	float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_linear_clamp, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
+	float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
 	float Jitter = hash.x + hash.y;
 	hash.y = lerp(hash.y, 0.0, _SSR_BRDFBias);
 	//calculate half vector by important sample
@@ -161,7 +161,7 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 
 //2D linear trace sampler(mutilple spp: samples per pixel, pdf : probability distribution function)
 void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, out float4 Mask_Depth_HitUV : SV_TARGET1) {
-	float uv = input.screenUV;
+	float2 uv = input.screenUV;
 	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
 	float roughness = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a;
 	roughness = clamp(1 - roughness, 0.02, 1);
@@ -179,10 +179,10 @@ void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, o
 	float4 screenTexelSize = float4(1 / _SSR_ScreenSize.x, 1 / _SSR_ScreenSize.y, _SSR_ScreenSize.x, _SSR_ScreenSize.y);
 	float3 Ray_Origin_VS = GetPosition(_CameraDepthTexture, screenTexelSize, _SSR_ProjInfo, uv);
 	float Ray_Bump = max(-0.01 * Ray_Origin_VS.z, 0.001);
-	float2 blueNoise = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_linear_clamp, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
+	float2 blueNoise = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
 	//loop all multi rays
 	for (uint i = 0; i < (uint)_SSR_NumRays; i++) {
-		float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_linear_clamp, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
+		float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
 		hash.y = lerp(hash.y, 0.0, _SSR_BRDFBias);
 		//calculate half vector by important sample
 		float4 H = 0.0;
@@ -242,5 +242,13 @@ void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, o
 	SSRColor_PDF = half4(Out_Color.rgb, Out_PDF);
 	Mask_Depth_HitUV = half4(Square(Out_Mask), Out_RayDepth, Out_UV);
 }
+
+
+static const int2 offset[9] = { 
+	int2(-2.0, -2.0), int2(0.0, -2.0), int2(2.0, -2.0), 
+	int2(-2.0, 0.0), int2(0.0, 0.0), int2(2.0, 0.0), 
+	int2(-2.0, 2.0), int2(0.0, 2.0), int2(2.0, 2.0) 
+};
+
 
 #endif

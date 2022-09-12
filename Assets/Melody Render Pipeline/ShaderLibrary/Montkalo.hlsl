@@ -130,7 +130,7 @@ float2 RandToCircle(uint2 Rand) {
 	return sf;
 }
 
-/////////////Sampler
+//Sampler
 float2 UniformSampleDisk(float2 E) {
 	float Theta = 2 * PI * E.x;
 	float Radius = sqrt(E.y);

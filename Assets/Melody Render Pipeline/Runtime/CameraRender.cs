@@ -170,7 +170,7 @@ public partial class CameraRender {
         }
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
-        ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR);
+        ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, useHDR, copyTextureSupported);
@@ -208,9 +208,9 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
-            motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssr.Render();
             ssao.Render();
+            motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
         //draw SSPR renders
