@@ -15,9 +15,9 @@
         #include "StochasticSSRPass.hlsl"
         ENDHLSL
 
-        Pass
+        Pass 
         {
-            Name ""
+            Name "Linear Trace 1 SPP"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
@@ -27,5 +27,64 @@
             ENDHLSL
         }
 
+        Pass 
+        {
+            Name "Linear Trace Multi SPP"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment LinearTraceMultiSPP
+            ENDHLSL
+        }
+
+        Pass 
+        {
+            Name "Spatio Filter 1 SPP"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment SpatioFilterSingleSPP
+            ENDHLSL
+        }
+
+        Pass 
+        {
+            Name "Spatio Filter Multi SPP"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment SpatioFilterMultiSPP
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Temporal Filter 1 SPP"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment TemporalFilterSingelSSP
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Temporal Filter Multi SPP"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment TemporalFilterSingelSSP
+            ENDHLSL
+        }
     }
 }

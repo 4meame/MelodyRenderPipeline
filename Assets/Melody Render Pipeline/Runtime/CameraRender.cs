@@ -169,10 +169,10 @@ public partial class CameraRender {
             DrawDepthNormal(useDepthNormalTexture);
         }
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
-        ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
-        ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
+        ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
+        ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
         taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, useHDR, copyTextureSupported);
         //sspr Objects
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
@@ -208,9 +208,9 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
+            motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssr.Render();
             ssao.Render();
-            motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
         //draw SSPR renders
@@ -246,6 +246,7 @@ public partial class CameraRender {
         Submit();
 
         motionVector.Refresh();
+        ssr.Refresh();
         taa.Refresh();
         //make the projection reflect normal camera's parameters.
         camera.ResetProjectionMatrix();

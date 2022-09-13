@@ -22,7 +22,12 @@ public class ScreenSpaceReflection {
     int ssrBlurId = Shader.PropertyToID("_SSR_Blur");
     //stochastic ssr
     enum Pass {
-        RayCasting
+        LinearTrace,
+        LinearMultiTrace,
+        SpatioFilter,
+        SpatioMultiFilter,
+        TemporalFilter,
+        TemporalMultiFilter
     }
     int m_SampleIndex = 0;
     const int k_SampleCount = 64;
@@ -140,11 +145,19 @@ public class ScreenSpaceReflection {
 
                 } else {
                     buffer.SetRenderTarget(SSR_TraceMask_ID, SSR_TraceMask_RT[0]);
-                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.RayCasting, MeshTopology.Triangles, 3);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (settings.rayNums > 1) ? (int)Pass.LinearMultiTrace : (int)Pass.LinearTrace, MeshTopology.Triangles, 3);
                 }
                 //do spatial filter
-                
-
+                buffer.SetGlobalTexture(SSR_Spatial_ID, SSR_Spatial_RT);
+                buffer.SetRenderTarget(SSR_Spatial_RT);
+                buffer.DrawProcedural(Matrix4x4.identity, material, (settings.rayNums > 1) ? (int)Pass.SpatioMultiFilter : (int)Pass.SpatioFilter, MeshTopology.Triangles, 3);
+                CopyTexture(SSR_Spatial_RT, SSR_TemporalCurr_RT);
+                //do temporal filter
+                buffer.SetGlobalTexture(SSR_TemporalPrev_ID, SSR_TemporalPrev_RT);
+                buffer.SetGlobalTexture(SSR_TemporalCurr_ID, SSR_TemporalCurr_RT);
+                buffer.SetRenderTarget(SSR_TemporalCurr_RT);
+                buffer.DrawProcedural(Matrix4x4.identity, material, (settings.rayNums > 1) ? (int)Pass.TemporalMultiFilter : (int)Pass.TemporalFilter, MeshTopology.Triangles, 3);
+                CopyTexture(SSR_TemporalCurr_RT, SSR_TemporalPrev_RT);
 
                 ExecuteBuffer();
             }
@@ -297,6 +310,12 @@ public class ScreenSpaceReflection {
         new Vector3(camera.nearClipPlane, -1, 1) :
         new Vector3(camera.nearClipPlane * camera.farClipPlane, camera.nearClipPlane - camera.farClipPlane, camera.farClipPlane);
         material.SetVector("_SSR_ClipInfo", SSR_ClipInfo);
+    }
+
+    public void Refresh() {
+        if (settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
+            SSR_Prev_ViewProjectionMatrix = SSR_ViewProjectionMatrix;
+        }
     }
 
     void ReleaseBuffer() {

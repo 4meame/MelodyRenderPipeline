@@ -18,7 +18,7 @@ inline float3 GetPosition(TEXTURE2D(depth), float4 _MainTex_TexelSize, float4 _P
     return P;
 }
 
-//2D linear trace
+//---------------------------2D linear trace--------------------------//
 inline float distanceSquared(float2 A, float2 B) {
     A -= B;
     return dot(A, A);

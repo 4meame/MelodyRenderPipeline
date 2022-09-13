@@ -148,6 +148,32 @@ float4 ComputeScreenPos(float4 positionCS) {
 	return o;
 }
 
+float3 GetScreenSpacePos(float2 uv, float depth) {
+	return float3(uv.xy * 2 - 1, depth.r);
+}
+
+float3 GetWorldSpacePos(float3 screenPos, float4x4 inverseVPMatrix) {
+	float4 worldPos = mul(inverseVPMatrix, float4(screenPos, 1));
+	return worldPos.xyz / worldPos.w;
+}
+
+float3 GetViewSpacePos(float3 screenPos, float4x4 inversePMatrix) {
+	float4 worldPos = mul(inversePMatrix, float4(screenPos, 1));
+	return worldPos.xyz / worldPos.w;
+}
+
+float2 GetMotionVector(half SceneDepth, half2 inUV, half4x4 inverseVPMatrix, half4x4 prevVPMatrix, half4x4 VPMatrix) {
+	float3 screenPos = GetScreenSpacePos(inUV, SceneDepth);
+	float4 worldPos = half4(GetWorldSpacePos(screenPos, inverseVPMatrix), 1);
+	float4 prevClipPos = mul(prevVPMatrix, worldPos);
+	float4 curClipPos = mul(VPMatrix, worldPos);
+	float2 prevHPos = prevClipPos.xy / prevClipPos.w;
+	float2 curHPos = curClipPos.xy / curClipPos.w;
+	float2 vPosPrev = (prevHPos.xy + 1) / 2;
+	float2 vPosCur = (curHPos.xy + 1) / 2;
+	return vPosCur - vPosPrev;
+}
+
 float3 DecodeNormal(float4 sample, float scale) {
 #if defined(UNITY_NO_DXT5nm)
 	return UnpackNormalRGB(sample, scale);

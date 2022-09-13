@@ -103,8 +103,7 @@ float GetHierarchicalZBuffer(Varyings input) : SV_TARGET{
 //2D linear trace sampler(single spp: sample per pixel, pdf : probability distribution function)
 void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, out float4 Mask : SV_TARGET1) {
 	float2 uv = input.screenUV;
-	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
-	float roughness = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a;
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
 	roughness = clamp(1 - roughness, 0.02, 1);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
@@ -120,7 +119,7 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 	float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
 	float Jitter = hash.x + hash.y;
 	hash.y = lerp(hash.y, 0.0, _SSR_BRDFBias);
-	//calculate half vector by important sample
+	//calculate half vector by important sampling
 	float4 H = 0.0;
 	if (roughness > 0.1) {
 		H = TangentToWorld(ImportanceSampleGGX(hash, roughness), float4(viewNormal, 1.0));
@@ -162,8 +161,7 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 //2D linear trace sampler(mutilple spp: samples per pixel, pdf : probability distribution function)
 void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, out float4 Mask_Depth_HitUV : SV_TARGET1) {
 	float2 uv = input.screenUV;
-	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
-	float roughness = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a;
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
 	roughness = clamp(1 - roughness, 0.02, 1);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
@@ -221,7 +219,7 @@ void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, o
 					Ray_HitMask = 0;
 			}
 		}
-		//calculate reflect color
+		//calculate reflect color, last frame reflect color can be the light source for this frame
 		float4 SampleColor = SAMPLE_TEXTURE2D_LOD(_SSR_SceneColor_RT, sampler_linear_clamp, Ray_HitUV, 0);
 		SampleColor.rgb /= 1 + Luminance(SampleColor.rgb);
 		//accumulate sample result
@@ -243,12 +241,193 @@ void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, o
 	Mask_Depth_HitUV = float4(Square(Out_Mask), Out_RayDepth, Out_UV);
 }
 
+static const int2 offset1[9] = {
+	int2(-1.0, -1.0), int2(0.0, -1.0), int2(1.0, -1.0),
+	int2(-1.0, 0.0), int2(0.0, 0.0), int2(1.0, 0.0),
+	int2(-1.0, 1.0), int2(0.0, 2.0), int2(1.0, 1.0)
+};
 
-static const int2 offset[9] = { 
+static const int2 offset2[9] = { 
 	int2(-2.0, -2.0), int2(0.0, -2.0), int2(2.0, -2.0), 
 	int2(-2.0, 0.0), int2(0.0, 0.0), int2(2.0, 0.0), 
 	int2(-2.0, 2.0), int2(0.0, 2.0), int2(2.0, 2.0) 
 };
 
+float4 SpatioFilterSingleSPP(Varyings input) : SV_TARGET {
+	float2 uv = input.screenUV;
+	//sample buffers' properties
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
+	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
+	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
+	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
+	//get screen pos
+	float3 screenPos = GetScreenSpacePos(uv, sceneDepth);
+	float3 viewPos = GetViewSpacePos(screenPos, _SSR_InverseProjectionMatrix);
+	//make offset rotate matrix to calculate neighbor uv
+	float2 blueNoise = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0) * 2 - 1;
+	float2x2 offsetRotationMatrix = float2x2(blueNoise.x, blueNoise.y, -blueNoise.y, -blueNoise.x);
+
+	float NumWeight, Weight;
+	float2 Offset_UV, Neighbor_UV;
+	float4 SampleColor, ReflecttionColor;
+	for (int i = 0; i < _SSR_NumResolver; i++) {
+		Offset_UV = mul(offsetRotationMatrix, offset2[i] * (1 / _SSR_ScreenSize.xy));
+		Neighbor_UV = uv + Offset_UV;
+		//_SSR_RayCastRT stores rg : hit uv b : depth a : pdf
+		float4 HitUV_PDF = SAMPLE_TEXTURE2D_LOD(_SSR_RayCastRT, sampler_point_clamp, Neighbor_UV, 0);
+		float3 Hit_ViewPos = GetViewSpacePos(float3(HitUV_PDF.rg, HitUV_PDF.b), _SSR_InverseProjectionMatrix);
+		// spatio sampler : 
+		// We assume that the hit point of the neighbor's ray is also visible for our ray, and we blindly pretend
+		// that the current pixel shot that ray. To do that, we treat the hit point as a tiny light source. To calculate
+		// a lighting contribution from it, we evaluate the BRDF. Finally, we need to account for the probability of getting
+		// this specific position of the "light source", and that is approximately 1/PDF, where PDF comes from the neighbor.
+		// Finally, the weight is BRDF/PDF. BRDF uses the local pixel's normal and roughness, but PDF comes from the neighbor.
+		Weight = SSR_BRDF(normalize(-viewPos), normalize(Hit_ViewPos - viewPos), viewNormal, roughness) / max(1e-5, HitUV_PDF.a);
+		SampleColor.rgb = SAMPLE_TEXTURE2D_LOD(_SSR_SceneColor_RT, sampler_linear_clamp, HitUV_PDF.rg, 0).rgb;
+		SampleColor.rgb /= 1 + Luminance(SampleColor.rgb);
+		SampleColor.a = SAMPLE_TEXTURE2D_LOD(_SSR_RayMask_RT, sampler_point_clamp, Neighbor_UV, 0).r;
+		//calculate weight
+		ReflecttionColor += SampleColor * Weight;
+		NumWeight += Weight;
+	}
+	ReflecttionColor /= NumWeight;
+	ReflecttionColor.rgb /= 1 - Luminance(ReflecttionColor.rgb);
+	ReflecttionColor = max(1e-5, ReflecttionColor);
+	return ReflecttionColor;
+}
+
+//spatio filter weight by brdf
+float4 SpatioFilterMultiSPP(Varyings input) : SV_TARGET {
+	float2 uv = input.screenUV;
+	//sample buffers' properties
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
+	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
+	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
+	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
+	//get screen pos
+	float3 screenPos = GetScreenSpacePos(uv, sceneDepth);
+	float3 viewPos = GetViewSpacePos(screenPos, _SSR_InverseProjectionMatrix);
+	//make offset rotate matrix
+	float2 blueNoise = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0) * 2 - 1;
+	float2x2 offsetRotationMatrix = float2x2(blueNoise.x, blueNoise.y, -blueNoise.y, -blueNoise.x);
+
+	float NumWeight, Weight;
+	float2 Offset_UV, Neighbor_UV;
+	float3 Hit_ViewPos;
+	float4 SampleColor, ReflecttionColor;
+	for (int i = 0; i < _SSR_NumResolver; i++) {
+		Offset_UV = mul(offsetRotationMatrix, offset2[i] * (1 / _SSR_ScreenSize.xy));
+		Neighbor_UV = uv + Offset_UV;
+		//_SSR_RayCastRT stores rg : hit uv b : depth a : pdf
+		float PDF = SAMPLE_TEXTURE2D_LOD(_SSR_RayCastRT, sampler_point_clamp, Neighbor_UV, 0).a;
+		float4 Hit_Mask_Depth_UV = SAMPLE_TEXTURE2D_LOD(_SSR_RayMask_RT, sampler_point_clamp, Neighbor_UV, 0);
+		float3 Hit_ViewPos = GetViewSpacePos(float3(Hit_Mask_Depth_UV.ba, Hit_Mask_Depth_UV.g), _SSR_InverseProjectionMatrix);
+		//spatio sampler
+		Weight = SSR_BRDF(normalize(-viewPos), normalize(Hit_ViewPos - viewPos), viewNormal, roughness) / max(1e-5, PDF);
+		SampleColor.rgb = SAMPLE_TEXTURE2D_LOD(_SSR_RayCastRT, sampler_linear_clamp, Neighbor_UV, 0).rgb;
+		SampleColor.a = SAMPLE_TEXTURE2D_LOD(_SSR_RayMask_RT, sampler_point_clamp, Neighbor_UV, 0).r;
+		//calculate weight
+		ReflecttionColor += SampleColor * Weight;
+		NumWeight += Weight;
+	}
+	ReflecttionColor /= NumWeight;
+	ReflecttionColor = max(1e-5, ReflecttionColor);
+	return ReflecttionColor;
+}
+
+//temporal filter by reproject
+float4 TemporalFilterSingelSSP(Varyings input) : SV_TARGET{
+	float2 uv = input.screenUV;
+	float hitDepth = SAMPLE_TEXTURE2D_LOD(_SSR_RayCastRT, sampler_point_clamp, uv, 0).b;
+	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
+	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
+	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 1)).xyz;
+	//get reprojection velocity
+	float2 depthVelocity = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorTexture, sampler_point_clamp, uv, 0).rg;
+	float2 rayVelocity = GetMotionVector(hitDepth, uv, _SSR_InverseViewProjectionMatrix, _SSR_LastFrameViewProjectionMatrix, _SSR_ViewProjectionMatrix);
+	float velocityWeight = saturate(dot(worldNormal, half3(0, 1, 0)));
+	float2 velocity = lerp(depthVelocity, rayVelocity, velocityWeight);
+	//AABB clipping
+	float SSR_Variance = 0;
+	float4 SSR_CurrColor = 0;
+	float4 SSR_MinColor, SSR_MaxColor;
+	float4 SampleColors[9];
+	for (uint i = 0; i < 9; i++) {
+		SampleColors[i] = SAMPLE_TEXTURE2D_LOD(_SSR_Spatial_RT, sampler_linear_clamp, uv + (offset1[i] / _SSR_ScreenSize.xy), 0);
+	}
+	float4 m1 = 0.0;
+	float4 m2 = 0.0;
+	for (uint x = 0; x < 9; x++) {
+		m1 += SampleColors[x];
+		m2 += SampleColors[x] * SampleColors[x];
+	}
+	float4 mean = m1 / 9.0;
+	float4 stddev = sqrt((m2 / 9.0) - pow2(mean));
+	SSR_MinColor = mean - _SSR_TemporalScale * stddev;
+	SSR_MaxColor = mean + _SSR_TemporalScale * stddev;
+	SSR_CurrColor = SampleColors[4];
+	SSR_MinColor = min(SSR_MinColor, SSR_CurrColor);
+	SSR_MaxColor = max(SSR_MaxColor, SSR_CurrColor);
+	float4 TotalVariance = 0;
+	for (uint n = 0; n < 9; n++) {
+		TotalVariance += pow2(Luminance(SampleColors[n]) - Luminance(mean));
+	}
+	SSR_Variance = saturate((TotalVariance / 9) * 256);
+	SSR_Variance *= SSR_CurrColor.a;
+	//clamp temporal color
+	float4 SSR_PrevColor = SAMPLE_TEXTURE2D_LOD(_SSR_TemporalPrev_RT, sampler_linear_clamp, uv - velocity, 0);
+	SSR_PrevColor = clamp(SSR_PrevColor, SSR_MinColor, SSR_MaxColor);
+	//combine
+	float Temporal_BlendWeight = saturate(_SSR_TemporalWeight * (1 - length(velocity) * 8));
+	float4 ReflectionColor = lerp(SSR_CurrColor, SSR_PrevColor, Temporal_BlendWeight);
+	return ReflectionColor;
+}
+
+float4 TemporalFilterMultiSSP(Varyings input) : SV_TARGET {
+	float2 uv = input.screenUV;
+	float hitDepth = SAMPLE_TEXTURE2D_LOD(_SSR_RayMask_RT, sampler_point_clamp, uv, 0).g;
+	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
+	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
+	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 1)).xyz;
+	//get reprojection velocity
+	float2 depthVelocity = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorTexture, sampler_point_clamp, uv, 0).rg;
+	float2 rayVelocity = GetMotionVector(hitDepth, uv, _SSR_InverseViewProjectionMatrix, _SSR_LastFrameViewProjectionMatrix, _SSR_ViewProjectionMatrix);
+	float velocityWeight = saturate(dot(worldNormal, half3(0, 1, 0)));
+	float2 velocity = lerp(depthVelocity, rayVelocity, velocityWeight);
+	//AABB clipping
+	float SSR_Variance = 0;
+	float4 SSR_CurrColor = 0;
+	float4 SSR_MinColor, SSR_MaxColor;
+	float4 SampleColors[9];
+	for (uint i = 0; i < 9; i++) {
+		SampleColors[i] = SAMPLE_TEXTURE2D_LOD(_SSR_Spatial_RT, sampler_linear_clamp, uv + (offset1[i] / _SSR_ScreenSize.xy), 0);
+	}
+	float4 m1 = 0.0;
+	float4 m2 = 0.0;
+	for (uint x = 0; x < 9; x++) {
+		m1 += SampleColors[x];
+		m2 += SampleColors[x] * SampleColors[x];
+	}
+	float4 mean = m1 / 9.0;
+	float4 stddev = sqrt((m2 / 9.0) - pow2(mean));
+	SSR_MinColor = mean - _SSR_TemporalScale * stddev;
+	SSR_MaxColor = mean + _SSR_TemporalScale * stddev;
+	SSR_CurrColor = SampleColors[4];
+	SSR_MinColor = min(SSR_MinColor, SSR_CurrColor);
+	SSR_MaxColor = max(SSR_MaxColor, SSR_CurrColor);
+	float4 TotalVariance = 0;
+	for (uint n = 0; n < 9; n++) {
+		TotalVariance += pow2(Luminance(SampleColors[n]) - Luminance(mean));
+	}
+	SSR_Variance = saturate((TotalVariance / 9) * 256);
+	SSR_Variance *= SSR_CurrColor.a;
+	//clamp temporal color
+	float4 SSR_PrevColor = SAMPLE_TEXTURE2D_LOD(_SSR_TemporalPrev_RT, sampler_linear_clamp, uv - velocity, 0);
+	SSR_PrevColor = clamp(SSR_PrevColor, SSR_MinColor, SSR_MaxColor);
+	//combine
+	float Temporal_BlendWeight = saturate(_SSR_TemporalWeight * (1 - length(velocity) * 8));
+	float4 ReflectionColor = lerp(SSR_CurrColor, SSR_PrevColor, Temporal_BlendWeight);
+	return ReflectionColor;
+}
 
 #endif
