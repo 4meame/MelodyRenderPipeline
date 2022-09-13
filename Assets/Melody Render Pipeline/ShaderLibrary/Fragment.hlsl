@@ -12,6 +12,8 @@ TEXTURE2D(_CameraDepthNormalTexture);
 TEXTURE2D(_CameraDiffuseTexture);
 //rgb : specular, a : smoothness
 TEXTURE2D(_CameraSpecularTexture);
+//rgb : specular, a : smoothness
+TEXTURE2D(_CameraReflectionsTexture);
 
 float4 _CameraBufferSize;
 

@@ -86,5 +86,17 @@
             #pragma fragment TemporalFilterSingelSSP
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "Combine Scene"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CombineReflectionColor
+            ENDHLSL
+        }
     }
 }

@@ -2,10 +2,13 @@
 #define MELODY_STOCHASTIC_SSR_PASS_INCLUDED
 
 #include "../ShaderLibrary/ScreenSpaceTrace.hlsl"
+#include "../ShaderLibrary/ImageBasedLighting.hlsl"
 
 TEXTURE2D(_SSR_SceneColor_RT);
 TEXTURE2D(_SSR_Noise);
 TEXTURE2D(_SSR_PreintegratedGF);
+//store RO
+TEXTURE2D(_SSAO_Filtered);
 TEXTURE2D(_SSR_HierarchicalDepth_RT);
 TEXTURE2D(_SSR_CombienReflection_RT);
 TEXTURE2D(_SSR_RayCastRT);
@@ -428,6 +431,38 @@ float4 TemporalFilterMultiSSP(Varyings input) : SV_TARGET {
 	float Temporal_BlendWeight = saturate(_SSR_TemporalWeight * (1 - length(velocity) * 8));
 	float4 ReflectionColor = lerp(SSR_CurrColor, SSR_PrevColor, Temporal_BlendWeight);
 	return ReflectionColor;
+}
+
+float4 CombineReflectionColor(Varyings input) : SV_TARGET{
+	float2 uv = input.screenUV;
+	//sample buffers' properties
+	float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0);
+	float roughness = clamp(specular, 0.02, 1.0);
+	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
+	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
+	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 1)).xyz;
+	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
+	//get screen pos and view direction
+	float3 screenPos = GetScreenSpacePos(uv, sceneDepth);
+	float3 worldPos = GetViewSpacePos(screenPos, _SSR_InverseViewProjectionMatrix);
+	float3 viewDir = normalize(worldPos - _WorldSpaceCameraPos);
+	float ndotv = saturate(dot(worldNormal, -viewDir));
+	//preintegrated DGF lut
+	float3 Enviorfilter_GFD = SAMPLE_TEXTURE2D_LOD(_SSR_PreintegratedGF, sampler_linear_clamp, float2(roughness, ndotv), 0).rgb;
+	float3 ReflectionGF = lerp(saturate(50.0 * specular.g) * Enviorfilter_GFD.ggg, Enviorfilter_GFD.rrr, specular.rgb);
+	float4 PreintegratedGF =  float4(ReflectionGF, Enviorfilter_GFD.b);
+	//sample ro if we have
+	float ReflectionOcclusion = saturate(SAMPLE_TEXTURE2D_LOD(_SSAO_Filtered, sampler_linear_clamp, uv, 0).g);
+	//ReflectionOcclusion = ReflectionOcclusion == 0.5 ? 1 : ReflectionOcclusion;
+	ReflectionOcclusion = 1;
+	float4 SceneColor = SAMPLE_TEXTURE2D_LOD(_SSR_SceneColor_RT, sampler_linear_clamp, uv, 0);
+	float4 CubemapColor = SAMPLE_TEXTURE2D_LOD(_CameraReflectionsTexture, sampler_linear_clamp, uv, 0) * ReflectionOcclusion;
+	//combine reflection and cubemap and add it to the scene color
+	SceneColor.rgb = max(1e-5, SceneColor.rgb - CubemapColor.rgb);
+	float4 SSRColor = SAMPLE_TEXTURE2D_LOD(_SSR_TemporalCurr_RT, sampler_linear_clamp, uv, 0);
+	float SSRMask = Square(SSRColor.a);
+	float4 ReflectionColor = (CubemapColor * (1 - SSRMask)) + (SSRColor * PreintegratedGF * SSRMask * ReflectionOcclusion);
+	return SceneColor + ReflectionColor;
 }
 
 #endif

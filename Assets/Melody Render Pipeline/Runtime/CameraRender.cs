@@ -188,14 +188,6 @@ public partial class CameraRender {
             DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             //for forward path we use screen-space post fx to render indirect illumination
-            if (renderSSR) {
-                ssr.Render();
-                buffer.name = "Combine SSR";
-                Draw(colorAttachmentId, colorTextureId);
-                buffer.SetRenderTarget(colorAttachmentId);
-                buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.CombineSSR, MeshTopology.Triangles, 3);
-                ExecuteBuffer();
-            }
             if (renderSSAO) {
                 ssao.Render();
                 buffer.name = "Combine SSAO";
@@ -204,17 +196,28 @@ public partial class CameraRender {
                 buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.CombineSSAO, MeshTopology.Triangles, 3);
                 ExecuteBuffer();
             }
+            if (renderSSR) {
+                ssr.Render();
+                buffer.name = "Combine SSR";
+                Draw(colorAttachmentId, colorTextureId);
+                buffer.SetRenderTarget(colorAttachmentId);
+                buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.CombineSSR, MeshTopology.Triangles, 3);
+                ExecuteBuffer();
+            }
         } else {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
-            ssr.Render();
             ssao.Render();
+            ssr.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
         //draw SSPR renders
         sspr.Render();
+        //screen space feature debug or combine
+        ssao.Debug(colorAttachmentId);
+        ssr.Debug(colorAttachmentId);
 
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
@@ -228,8 +231,6 @@ public partial class CameraRender {
             atmosphere.RenderFog(colorAttachmentId);
         }
         DrawUnsupportedShaders();
-        ssao.Debug(colorAttachmentId);
-        ssr.Debug(colorAttachmentId);
         DrawGizmosBeforeFX();
         taa.Render(colorAttachmentId);
         if (postFXStack.IsActive) {

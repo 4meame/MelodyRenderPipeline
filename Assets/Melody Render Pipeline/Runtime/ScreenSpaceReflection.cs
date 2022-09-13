@@ -27,7 +27,8 @@ public class ScreenSpaceReflection {
         SpatioFilter,
         SpatioMultiFilter,
         TemporalFilter,
-        TemporalMultiFilter
+        TemporalMultiFilter,
+        Combine
     }
     int m_SampleIndex = 0;
     const int k_SampleCount = 64;
@@ -48,8 +49,6 @@ public class ScreenSpaceReflection {
     RenderTexture SSR_Spatial_RT;
     RenderTexture SSR_TemporalPrev_RT;
     RenderTexture SSR_TemporalCurr_RT;
-    static int SSR_Noise_ID = Shader.PropertyToID("_SSR_Noise");
-    static int SSR_PreintegratedGF_ID = Shader.PropertyToID("_SSR_PreintegratedGF");
     static int SSR_HierarchicalDepth_ID = Shader.PropertyToID("_SSR_HierarchicalDepth_RT");
     static int SSR_SceneColor_ID = Shader.PropertyToID("_SSR_SceneColor_RT");
     static int SSR_CombineScene_ID = Shader.PropertyToID("_SSR_CombienReflection_RT");
@@ -158,7 +157,6 @@ public class ScreenSpaceReflection {
                 buffer.SetRenderTarget(SSR_TemporalCurr_RT);
                 buffer.DrawProcedural(Matrix4x4.identity, material, (settings.rayNums > 1) ? (int)Pass.TemporalMultiFilter : (int)Pass.TemporalFilter, MeshTopology.Triangles, 3);
                 CopyTexture(SSR_TemporalCurr_RT, SSR_TemporalPrev_RT);
-
                 ExecuteBuffer();
             }
         } else {
@@ -167,9 +165,23 @@ public class ScreenSpaceReflection {
     }
 
     public void Debug(int sourceId) {
-        if (settings.enabled && settings.debugMode == CameraBufferSettings.SSR.DebugMode.Reflection) {
+        if (settings.enabled && settings.sSRType == CameraBufferSettings.SSR.SSRType.SSR && settings.debugMode == CameraBufferSettings.SSR.DebugMode.Reflection) {        
             buffer.Blit(ssrResultId, sourceId);
             ExecuteBuffer();
+        }
+        if (settings.enabled && settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
+            switch (settings.debugMode) {
+                case CameraBufferSettings.SSR.DebugMode.Combine:
+                    buffer.SetGlobalTexture(SSR_CombineScene_ID, SSR_CombineScene_RT);
+                    buffer.SetRenderTarget(sourceId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Combine, MeshTopology.Triangles, 3);
+                    ExecuteBuffer();
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.Reflection:
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
