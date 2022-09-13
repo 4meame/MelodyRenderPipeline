@@ -113,8 +113,8 @@ float3 TangentToWorld(float3 Vec, float3 TangentZ) {
 }
 
 float4 TangentToWorld(float3 Vec, float4 TangentZ) {
-	half3 T2W = TangentToWorld(Vec, TangentZ.rgb);
-	return half4(T2W, TangentZ.a);
+	float3 T2W = TangentToWorld(Vec, TangentZ.rgb);
+	return float4(T2W, TangentZ.a);
 }
 
 float2 RandToCircle(uint2 Rand) {

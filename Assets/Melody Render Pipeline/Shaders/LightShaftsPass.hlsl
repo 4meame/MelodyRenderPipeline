@@ -46,7 +46,7 @@ float4 LightShaftsBloomPrefilterPassFragment(Varyings input) : SV_TARGET{
 	edgeMask = edgeMask * edgeMask * edgeMask * edgeMask;
 	float invOcclusionDepthRange = _LightShaftParameters.x;
 	//only bloom colors over bloomThreshold
-	float luminance = max(dot(sceneColor, half3(.3f, .59f, .11f)), 6.10352e-5);
+	float luminance = max(dot(sceneColor, float3(.3f, .59f, .11f)), 6.10352e-5);
 	float adjustedLuminance = max(luminance - _BloomTintAndThreshold.a, 0.0f);
 	float3 bloomColor = _LightShaftParameters.y * sceneColor / luminance * adjustedLuminance * 2.0f;
 	//only allow bloom from pixels whose depth are in the far half of OcclusionDepthRange

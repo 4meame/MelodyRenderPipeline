@@ -16,7 +16,7 @@ float2 _TileMaxOffs;
 float _MaxBlurRadius;
 float _RcpMaxBlurRadius;
 //filter parameters/coefficients
-half _LoopCount;
+float _LoopCount;
 
 //history buffer for frame blending
 TEXTURE2D(_History1LumaTex);
@@ -88,7 +88,7 @@ float2 VMax(float2 v1, float2 v2) {
 }
 
 float3 LinearToGammaSpace(float3 linRGB) {
-    linRGB = max(linRGB, half3(0.h, 0.h, 0.h));
+    linRGB = max(linRGB, float3(0.h, 0.h, 0.h));
     // An almost-perfect approximation from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
     return max(1.055h * pow(linRGB, 0.416666667h) - 0.055h, 0.h);
 }
@@ -175,7 +175,7 @@ float4 NeighborMax(Imag input) : SV_Target{
 }
 
 //returns true or false with a given interval.
-bool Interval(half phase, half interval) {
+bool Interval(float phase, float interval) {
     return frac(phase / interval) > 0.499;
 }
 
@@ -276,9 +276,9 @@ CompressorOutput FrameCompress(Imag input) {
     //pixel width
     float pw = _CameraBufferSize.x;
     //rgb to YCbCr convertion matrix
-    const half3 kY = half3(0.299, 0.587, 0.114);
-    const half3 kCB = half3(-0.168736, -0.331264, 0.5);
-    const half3 kCR = half3(0.5, -0.418688, -0.081312);
+    const float3 kY = float3(0.299, 0.587, 0.114);
+    const float3 kCB = float3(-0.168736, -0.331264, 0.5);
+    const float3 kCR = float3(0.5, -0.418688, -0.081312);
     //0: even column, 1: odd column
     float odd = frac(input.screenUV.x * sw * 0.5) > 0.5;
     //calculate UV for chroma componetns.
@@ -321,12 +321,12 @@ float4 FrameBlending(Multitex input) : SV_Target {
     float2 uvCr = uvCb;
     uvCr.x += pw;
     //sample from the source image
-    half4 src = SAMPLE_TEXTURE2D(_MotionBlurSource, sampler_linear_clamp, input.screenUV0);
+    float4 src = SAMPLE_TEXTURE2D(_MotionBlurSource, sampler_linear_clamp, input.screenUV0);
     //sampling and blending
     #if UNITY_COLORSPACE_GAMMA
-    half3 acc = src.rgb;
+    float3 acc = src.rgb;
     #else
-    half3 acc = LinearToGammaSpace(src.rgb);
+    float3 acc = LinearToGammaSpace(src.rgb);
     #endif
     acc += DecodeHistory(uvLuma, uvCb, uvCr, _History1LumaTex, _History1ChromaTex) * _History1Weight;
     acc += DecodeHistory(uvLuma, uvCb, uvCr, _History2LumaTex, _History2ChromaTex) * _History2Weight;
@@ -336,7 +336,7 @@ float4 FrameBlending(Multitex input) : SV_Target {
     #if !UNITY_COLORSPACE_GAMMA
     acc = GammaToLinearSpace(acc);
     #endif
-    return half4(acc, src.a);
+    return float4(acc, src.a);
 }
 
 #endif

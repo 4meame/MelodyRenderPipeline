@@ -111,12 +111,12 @@ VertexOutput vert(VertexInput i) {
 }
 
 float4 frag(VertexOutput i) : SV_Target {
-    float3 defaultLightColor = saturate(max(half3(0.05, 0.05, 0.05) * _Unlit_Intensity, max(ShadeSH9(half3(0.0, 0.0, 0.0)), ShadeSH9(half3(0.0, -1.0, 0.0))) * _Unlit_Intensity));
+    float3 defaultLightColor = saturate(max(float3(0.05, 0.05, 0.05) * _Unlit_Intensity, max(ShadeSH9(float3(0.0, 0.0, 0.0)), ShadeSH9(float3(0.0, -1.0, 0.0))) * _Unlit_Intensity));
 	Light light = GetMainLight();
 	float3 lightColor = max(defaultLightColor, light.color.rgb);
 	float lightColorIntensity = (0.299 * lightColor.r + 0.587 * lightColor.g + 0.114 * lightColor.b);
 	lightColor = lightColorIntensity < 1 ? lightColor : lightColor / lightColorIntensity;
-	lightColor = lerp(half3(1.0,1.0,1.0), lightColor, _Is_LightColor_Outline);
+	lightColor = lerp(float3(1.0,1.0,1.0), lightColor, _Is_LightColor_Outline);
 	float4 _MainMap_var = SAMPLE_TEXTURE2D(_MainMap, sampler_MainMap, TRANSFORM_TEX(i.baseUV, _MainMap));
 	float3 Set_BaseColor = _BaseColor.rgb * _MainMap_var.rgb;
 	float3 _Is_BlendBaseColor_var = lerp(_Outline_Color.rgb * lightColor, (_Outline_Color.rgb * Set_BaseColor * Set_BaseColor * lightColor), _Is_BlendBaseColor);
