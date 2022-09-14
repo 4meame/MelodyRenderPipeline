@@ -106,7 +106,7 @@ float GetHierarchicalZBuffer(Varyings input) : SV_TARGET{
 //2D linear trace sampler(single spp: sample per pixel, pdf : probability distribution function)
 void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, out float4 Mask : SV_TARGET1) {
 	float2 uv = input.screenUV;
-	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
 	roughness = clamp(1 - roughness, 0.02, 1);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
@@ -163,7 +163,7 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 //2D linear trace sampler(mutilple spp: samples per pixel, pdf : probability distribution function)
 void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, out float4 Mask_Depth_HitUV : SV_TARGET1) {
 	float2 uv = input.screenUV;
-	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
 	roughness = clamp(1 - roughness, 0.02, 1);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
@@ -258,7 +258,7 @@ static const int2 offset2[9] = {
 float4 SpatioFilterSingleSPP(Varyings input) : SV_TARGET {
 	float2 uv = input.screenUV;
 	//sample buffers' properties
-	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
 	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
@@ -302,7 +302,7 @@ float4 SpatioFilterSingleSPP(Varyings input) : SV_TARGET {
 float4 SpatioFilterMultiSPP(Varyings input) : SV_TARGET {
 	float2 uv = input.screenUV;
 	//sample buffers' properties
-	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0).a, 0.02, 1);
+	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
 	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
@@ -343,7 +343,7 @@ float4 TemporalFilterSingelSSP(Varyings input) : SV_TARGET{
 	float hitDepth = SAMPLE_TEXTURE2D_LOD(_SSR_RayCastRT, sampler_point_clamp, uv, 0).b;
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
-	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 1)).xyz;
+	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 0)).xyz;
 	//get reprojection velocity
 	float2 depthVelocity = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorTexture, sampler_point_clamp, uv, 0).rg;
 	float2 rayVelocity = GetMotionVector(hitDepth, uv, _SSR_InverseViewProjectionMatrix, _SSR_LastFrameViewProjectionMatrix, _SSR_ViewProjectionMatrix);
@@ -390,7 +390,7 @@ float4 TemporalFilterMultiSSP(Varyings input) : SV_TARGET {
 	float hitDepth = SAMPLE_TEXTURE2D_LOD(_SSR_RayMask_RT, sampler_point_clamp, uv, 0).g;
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
-	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 1)).xyz;
+	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 0)).xyz;
 	//get reprojection velocity
 	float2 depthVelocity = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorTexture, sampler_point_clamp, uv, 0).rg;
 	float2 rayVelocity = GetMotionVector(hitDepth, uv, _SSR_InverseViewProjectionMatrix, _SSR_LastFrameViewProjectionMatrix, _SSR_ViewProjectionMatrix);
@@ -435,11 +435,12 @@ float4 TemporalFilterMultiSSP(Varyings input) : SV_TARGET {
 float4 CombineReflectionColor(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV;
 	//sample buffers' properties
-	float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, uv, 0);
+	float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0);
 	float roughness = clamp(specular, 0.02, 1.0);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
-	float3 worldNormal = mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 1)).xyz;
+	//NOTE HERE : FOR w component, point : 1, vector : 0
+	float3 worldNormal = normalize(mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 0))).xyz;
 	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
 	//get screen pos and view direction
 	float3 screenPos = GetScreenSpacePos(uv, sceneDepth);
@@ -461,6 +462,7 @@ float4 CombineReflectionColor(Varyings input) : SV_TARGET{
 	SceneColor.rgb = max(1e-5, SceneColor.rgb - CubemapColor.rgb);
 	float SSRMask = Square(SSRColor.a);
 	float4 ReflectionColor = (CubemapColor * (1 - SSRMask)) + (SSRColor * PreintegratedGF * SSRMask * ReflectionOcclusion);
+	return SSRMask.xxxx;
 	return ReflectionColor + SceneColor;
 }
 
