@@ -439,7 +439,7 @@ float4 CombineReflectionColor(Varyings input) : SV_TARGET{
 	float roughness = clamp(specular, 0.02, 1.0);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
-	//NOTE HERE : FOR w component, point : 1, vector : 0
+	//NOTE HERE : FOR w component, point : 1, direction : 0
 	float3 worldNormal = normalize(mul(_SSR_CameraToWorldMatrix, float4(viewNormal, 0))).xyz;
 	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
 	//get screen pos and view direction
