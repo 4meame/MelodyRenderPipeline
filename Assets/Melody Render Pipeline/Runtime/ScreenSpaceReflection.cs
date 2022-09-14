@@ -197,6 +197,7 @@ public class ScreenSpaceReflection {
                     break;
             }
             buffer.SetGlobalTexture(SSR_CombineScene_ID, SSR_CombineScene_RT);
+            CopyTexture(sourceId, SSR_SceneColor_RT);
             buffer.SetRenderTarget(sourceId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Combine, MeshTopology.Triangles, 3);
             ExecuteBuffer();
