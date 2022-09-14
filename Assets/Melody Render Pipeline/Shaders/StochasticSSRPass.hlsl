@@ -456,10 +456,10 @@ float4 CombineReflectionColor(Varyings input) : SV_TARGET{
 	//ReflectionOcclusion = ReflectionOcclusion == 0.5 ? 1 : ReflectionOcclusion;
 	ReflectionOcclusion = 1;
 	float4 SceneColor = SAMPLE_TEXTURE2D_LOD(_SSR_SceneColor_RT, sampler_linear_clamp, uv, 0);
+	float4 SSRColor = SAMPLE_TEXTURE2D_LOD(_SSR_TemporalCurr_RT, sampler_linear_clamp, uv, 0);
 	float4 CubemapColor = SAMPLE_TEXTURE2D_LOD(_CameraReflectionsTexture, sampler_linear_clamp, uv, 0) * ReflectionOcclusion;
 	//combine reflection and cubemap and add it to the scene color
 	SceneColor.rgb = max(1e-5, SceneColor.rgb - CubemapColor.rgb);
-	float4 SSRColor = SAMPLE_TEXTURE2D_LOD(_SSR_TemporalCurr_RT, sampler_linear_clamp, uv, 0);
 	float SSRMask = Square(SSRColor.a);
 	float4 ReflectionColor = (CubemapColor * (1 - SSRMask)) + (SSRColor * PreintegratedGF * SSRMask * ReflectionOcclusion);
 	return SceneColor + ReflectionColor;

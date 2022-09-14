@@ -89,7 +89,6 @@ public class ScreenSpaceReflection {
     public void Render() {
         if (settings.enabled) {
             if (settings.sSRType == CameraBufferSettings.SSR.SSRType.SSR) {
-                buffer.BeginSample("SSR Resolve");
                 buffer.EnableShaderKeyword("_SSR_ON");
                 Configure();
                 //ray trace params
@@ -122,7 +121,6 @@ public class ScreenSpaceReflection {
                 buffer.SetComputeTextureParam(cs, kernel_SSRBlur, "BlurRT", ssrBlurId);
                 buffer.DispatchCompute(cs, kernel_SSRBlur, (int)ssrBufferSize.x / 8, (int)ssrBufferSize.y / 8, 1);
                 buffer.SetGlobalTexture("_SSR_Filtered", ssrBlurId);
-                buffer.EndSample("SSR Resolve");
                 ExecuteBuffer();
             }
             if(settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
