@@ -36,7 +36,7 @@
             Name "MelodyDeferred"
             Tags { "LightMode" = "MelodyDeferred" }
 
-            Blend[_SrcBlend][_DstBlend], One OneMinusSrcAlpha
+            Blend[_SrcBlend][_DstBlend]//, One OneMinusSrcAlpha
             ZWrite[_ZWrite]
             HLSLPROGRAM
             #pragma target 3.5
