@@ -45,6 +45,8 @@ int _SSR_HiZ_PrevDepthLevel;
 int _SSR_NumResolver;
 float _SSR_TemporalScale;
 float _SSR_TemporalWeight;
+//debug
+int _DebugPass;
 
 float4x4 _SSR_ProjectionMatrix;
 float4x4 _SSR_InverseProjectionMatrix;
@@ -156,6 +158,7 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 	}
 
 	RayHit_PDF = float4(Ray_HitUV, SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, Ray_HitUV, 0).r, H.a);
+	//RayHit_PDF = H;
 	Mask = Square(Ray_HitMask * GetScreenFadeBord(Ray_HitUV, _SSR_ScreenFade));
 }
 
@@ -432,7 +435,7 @@ float4 TemporalFilterMultiSSP(Varyings input) : SV_TARGET {
 	return ReflectionColor;
 }
 
-float4 CombineReflectionColor(Varyings input) : SV_TARGET{
+float4 CombineReflectionColor(Varyings input) : SV_TARGET {
 	float2 uv = input.screenUV;
 	//sample buffers' properties
 	float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0);
@@ -462,8 +465,38 @@ float4 CombineReflectionColor(Varyings input) : SV_TARGET{
 	SceneColor.rgb = max(1e-5, SceneColor.rgb - CubemapColor.rgb);
 	float SSRMask = Square(SSRColor.a);
 	float4 ReflectionColor = (CubemapColor * (1 - SSRMask)) + (SSRColor * PreintegratedGF * SSRMask * ReflectionOcclusion);
-	return SSRMask.xxxx;
-	return ReflectionColor + SceneColor;
+	
+	if (_DebugPass == 0)
+		SceneColor.rgb += ReflectionColor;
+	else if (_DebugPass == 1)
+		SceneColor.rgb += (SSRColor * PreintegratedGF * SSRMask * ReflectionOcclusion);
+	else if (_DebugPass == 2)
+		SceneColor.rgb = SSRColor.rgb * SSRMask;
+	else if (_DebugPass == 3)
+		SceneColor.rgb = CubemapColor.rgb;
+	else if (_DebugPass == 4)
+		SceneColor.rgb = ReflectionColor;
+	else if (_DebugPass == 5)
+		SceneColor.rgb = SSRMask;
+	else if (_DebugPass == 6) {
+		float4 H = 0.0;
+		float2 jitter = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
+		jitter.y = lerp(jitter.y, 0.0, _SSR_BRDFBias);
+		if (roughness > 0.1) {
+			H = TangentToWorld(ImportanceSampleGGX(jitter, roughness), float4(viewNormal, 1.0));
+		}
+		else {
+			H = float4(viewNormal, 1.0);
+		}
+		SceneColor.rgb = H.rgb;
+	}
+	else if (_DebugPass == 7) {
+		float2 jitter = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
+		SceneColor.rg = jitter;
+		SceneColor.b = 0;
+	}
+
+	return SceneColor;
 }
 
 #endif

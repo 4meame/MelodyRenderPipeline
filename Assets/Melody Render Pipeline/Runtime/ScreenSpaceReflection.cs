@@ -170,16 +170,36 @@ public class ScreenSpaceReflection {
         if (settings.enabled && settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
             switch (settings.debugMode) {
                 case CameraBufferSettings.SSR.DebugMode.Combine:
-                    buffer.SetGlobalTexture(SSR_CombineScene_ID, SSR_CombineScene_RT);
-                    buffer.SetRenderTarget(sourceId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Combine, MeshTopology.Triangles, 3);
-                    ExecuteBuffer();
+                    material.SetInt("_DebugPass", 0);
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.CombineNoCubemap:
+                    material.SetInt("_DebugPass", 1);
                     break;
                 case CameraBufferSettings.SSR.DebugMode.Reflection:
+                    material.SetInt("_DebugPass", 2);
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.CubeMap:
+                    material.SetInt("_DebugPass", 3);
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.ReflectionAndCubemap:
+                    material.SetInt("_DebugPass", 4);
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.Mask:
+                    material.SetInt("_DebugPass", 5);
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.PDF:
+                    material.SetInt("_DebugPass", 6);
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.Jitter:
+                    material.SetInt("_DebugPass", 7);
                     break;
                 default:
                     break;
             }
+            buffer.SetGlobalTexture(SSR_CombineScene_ID, SSR_CombineScene_RT);
+            buffer.SetRenderTarget(sourceId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Combine, MeshTopology.Triangles, 3);
+            ExecuteBuffer();
         }
     }
 

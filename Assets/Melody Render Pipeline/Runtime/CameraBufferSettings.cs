@@ -115,7 +115,13 @@ public struct CameraBufferSettings {
         }
         public enum DebugMode {
             Combine,
-            Reflection
+            CombineNoCubemap,
+            Reflection,
+            CubeMap,
+            ReflectionAndCubemap,
+            Mask,
+            PDF,
+            Jitter
         };
         public enum TraceMethod {
             HiZTrace = 0,
