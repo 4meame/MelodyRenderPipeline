@@ -158,7 +158,6 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 	}
 
 	RayHit_PDF = float4(Ray_HitUV, SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, Ray_HitUV, 0).r, H.a);
-	//RayHit_PDF = H;
 	Mask = Square(Ray_HitMask * GetScreenFadeBord(Ray_HitUV, _SSR_ScreenFade));
 }
 
