@@ -122,7 +122,6 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 	float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
 	float Jitter = hash.x + hash.y;
 	hash.y = lerp(hash.y, 0.0, _SSR_BRDFBias);
-	//calculate half vector by important sampling
 	float4 H = 0.0;
 	if (roughness > 0.1) {
 		H = TangentToWorld(ImportanceSampleGGX(hash, roughness), float4(viewNormal, 1.0));
@@ -462,7 +461,7 @@ float4 CombineReflectionColor(Varyings input) : SV_TARGET{
 	SceneColor.rgb = max(1e-5, SceneColor.rgb - CubemapColor.rgb);
 	float SSRMask = Square(SSRColor.a);
 	float4 ReflectionColor = (CubemapColor * (1 - SSRMask)) + (SSRColor * PreintegratedGF * SSRMask * ReflectionOcclusion);
-	return SceneColor + ReflectionColor;
+	return ReflectionColor + SceneColor;
 }
 
 #endif
