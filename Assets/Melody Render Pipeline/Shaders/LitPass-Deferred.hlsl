@@ -98,7 +98,7 @@ void LitPassFragment(Varyings input,
 					out float4 GT1 : SV_TARGET1,
 					out float4 GT2 : SV_TARGET2,
 					out float4 GT3 : SV_TARGET3,
-					out float2 GT4 : SV_TARGET4) {
+					out float4 GT4 : SV_TARGET4) {
 	UNITY_SETUP_INSTANCE_ID(input);
 //Init fragment data
 	Fragment fragment;
@@ -211,5 +211,6 @@ void LitPassFragment(Varyings input,
 	//depth and normal
 	float3 normalVS = mul((float3x3)UNITY_MATRIX_V, surface.normal);
 	GT3 = EncodeDepthNormal(1, normalVS);
+	GT4 = float4(gi.specular, 1);
 }
 #endif

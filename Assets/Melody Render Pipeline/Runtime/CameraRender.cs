@@ -66,10 +66,11 @@ public partial class CameraRender {
     #endregion
     //Deferred Render Buffers
     #region G Buffer
-    const int GBufferLength = 4;
+    const int GBufferLength = 5;
     static int GBuffer1Id = Shader.PropertyToID("_GBuffer1");
     static int GBuffer2Id = Shader.PropertyToID("_GBuffer2");
     static int GBuffer3Id = Shader.PropertyToID("_GBuffer3");
+    static int GBuffer4Id = Shader.PropertyToID("_GBuffer4");
     RenderTargetIdentifier[] GBuffersID = new RenderTargetIdentifier[GBufferLength];
     RenderBufferLoadAction[] GBuffersLA = new RenderBufferLoadAction[GBufferLength];
     RenderBufferStoreAction[] GBuffersSA = new RenderBufferStoreAction[GBufferLength];
@@ -463,12 +464,14 @@ public partial class CameraRender {
         buffer.GetTemporaryRT(GBuffer1Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         buffer.GetTemporaryRT(GBuffer2Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         buffer.GetTemporaryRT(GBuffer3Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+        buffer.GetTemporaryRT(GBuffer4Id, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         buffer.GetTemporaryRT(depthAttachmentId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
         //identifies a render texture for a command buffer.
         GBuffersID[0] = new RenderTargetIdentifier(colorAttachmentId);
         GBuffersID[1] = new RenderTargetIdentifier(GBuffer1Id);
         GBuffersID[2] = new RenderTargetIdentifier(GBuffer2Id);
         GBuffersID[3] = new RenderTargetIdentifier(GBuffer3Id);
+        GBuffersID[4] = new RenderTargetIdentifier(GBuffer4Id);
         for (int i = 0; i < GBufferLength; i++) {
             GBuffersLA[i] = RenderBufferLoadAction.DontCare;
             GBuffersSA[i] = RenderBufferStoreAction.Store;
@@ -480,6 +483,7 @@ public partial class CameraRender {
         buffer.SetGlobalTexture("_CameraDiffuseTexture", GBuffersID[1]);
         buffer.SetGlobalTexture("_CameraSpecularTexture", GBuffersID[2]);
         buffer.SetGlobalTexture("_CameraDepthNormalTexture", GBuffersID[3]);
+        buffer.SetGlobalTexture("_CameraReflectionsTexture", GBuffersID[4]);
         buffer.SetRenderTarget(renderTargetBinding);
         buffer.ClearRenderTarget(true, true, Color.clear);
         //buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
@@ -496,6 +500,7 @@ public partial class CameraRender {
         buffer.SetGlobalTexture("_CameraDiffuseTexture", missingTexture);
         buffer.SetGlobalTexture("_CameraSpecularTexture", missingTexture);
         buffer.SetGlobalTexture("_CameraDepthNormalTexture", missingTexture);
+        buffer.SetGlobalTexture("_CameraReflectionsTexture", missingTexture);
         //Init set up "missing" depth and color texture
         buffer.SetGlobalTexture("_CameraDepthTexture", missingTexture);
         buffer.SetGlobalTexture("_CameraColorTexture", missingTexture);
@@ -548,6 +553,7 @@ public partial class CameraRender {
             buffer.ReleaseTemporaryRT(GBuffer1Id);
             buffer.ReleaseTemporaryRT(GBuffer2Id);
             buffer.ReleaseTemporaryRT(GBuffer3Id);
+            buffer.ReleaseTemporaryRT(GBuffer4Id);
         }
         taa.CleanUp();
         motionVector.CleanUp(motionVectorTextureId);
