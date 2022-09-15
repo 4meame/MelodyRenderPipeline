@@ -33,7 +33,7 @@ public class AtmosphereScattering {
     Texture2D sunColorTexture;
     Texture2D abmeintTexture;
     Texture2D randomVectorsLUT;
-    ReflectionProbe reflectionProbe;
+    ReflectionProbe[] reflectionProbes;
     Quaternion temp = Quaternion.identity;
     Vector4[] frustumCorners = new Vector4[4];
     bool precomputeCompleted = false;
@@ -72,8 +72,8 @@ public class AtmosphereScattering {
         if (sun == null) {
             sun = RenderSettings.sun;
         }
-        if (reflectionProbe == null) {
-            reflectionProbe = Object.FindObjectOfType<ReflectionProbe>();
+        if (reflectionProbes == null) {
+            reflectionProbes = Object.FindObjectsOfType<ReflectionProbe>();
         }
         //get four corners of camera furstum in world space
         frustumCorners[0] = camera.ViewportToWorldPoint(new Vector3(0, 0, camera.farClipPlane));
@@ -335,11 +335,13 @@ public class AtmosphereScattering {
     }
 
     void UpdateReflectionProbe() {
-        if (reflectionProbe != null) {
-            if(sun.transform.rotation != temp) {
-                reflectionProbe.RenderProbe();
-                temp = sun.transform.rotation;
+        if (reflectionProbes != null) {
+            foreach (var reflectionProbe in reflectionProbes) {
+                if(sun.transform.rotation != temp) {
+                    reflectionProbe.RenderProbe();
+                }
             }
+            temp = sun.transform.rotation;
         }
     }
     void ExecuteBuffer() {
