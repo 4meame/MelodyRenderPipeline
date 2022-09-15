@@ -228,7 +228,7 @@ float4 SSPRPassFragment(Varyings input) : SV_TARGET{
 	reflectionInput.posWS = input.positionWS;
 	reflectionInput.screenUV = fragment.screenUV;
 	reflectionInput.screenSpaceNoise = _SSPR_Noise;
-	reflectionInput.roughness = 1 - surface.smoothness;
+	reflectionInput.roughness = brdf.roughness;
 	reflectionInput.SSPR_Usage = baseColor.a;
 	float3 reflectionResult = GetReflectionResult(reflectionInput);	
 

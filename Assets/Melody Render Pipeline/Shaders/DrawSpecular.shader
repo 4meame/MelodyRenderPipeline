@@ -45,14 +45,24 @@
         uniform fixed4 _BaseColor;
         #define MIN_REFLECTIVITY 0.04
 
+        fixed PerceptualSmoothnessToPerceptualRoughness(fixed perceptualSmoothness) {
+            return (1.0 - perceptualSmoothness);
+        }
+
+        fixed PerceptualRoughnessToRoughness(fixed perceptualRoughness) {
+            return perceptualRoughness * perceptualRoughness;
+        }
+
         fixed4 frag(v2f i) : SV_Target{
             fixed4 texcol = tex2D(_BaseMap, i.uv);
             fixed4 maskMap = tex2D(_MaskMap, i.uv);
             fixed metallic = maskMap.r * _Metallic;
             fixed smoothness = maskMap.a * _Smoothness;
             fixed3 specular = lerp(MIN_REFLECTIVITY, texcol.rgb * _BaseColor.rgb, metallic);
+            fixed roughness = PerceptualSmoothnessToPerceptualRoughness(smoothness);
+            roughness = PerceptualRoughnessToRoughness(roughness);
             clip(texcol.a * _BaseColor.a - _Cutoff);
-            return fixed4(specular, smoothness);
+            return fixed4(specular, roughness);
         }
 
         ENDCG

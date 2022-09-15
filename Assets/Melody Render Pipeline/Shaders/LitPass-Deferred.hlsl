@@ -206,8 +206,8 @@ void LitPassFragment(Varyings input,
 	GT0 = float4(color, UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ZWrite) ? 1.0 : surface.alpha);
 	//diffuse and occlusion
 	GT1 = float4(brdf.diffuse, surface.occlusion);
-	//specular and smoothness
-	GT2 = float4(brdf.specular, surface.smoothness);
+	//specular and roughness
+	GT2 = float4(brdf.specular, brdf.roughness);
 	//depth and normal
 	float3 normalVS = mul((float3x3)UNITY_MATRIX_V, surface.normal);
 	GT3 = EncodeDepthNormal(1, normalVS);

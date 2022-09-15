@@ -110,7 +110,6 @@ float GetHierarchicalZBuffer(Varyings input) : SV_TARGET{
 void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, out float4 Mask : SV_TARGET1) {
 	float2 uv = input.screenUV;
 	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
-	roughness = clamp(1 - roughness, 0.02, 1);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
 	//const property
@@ -167,7 +166,6 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 void LinearTraceMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, out float4 Mask_Depth_HitUV : SV_TARGET1) {
 	float2 uv = input.screenUV;
 	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
-	roughness = clamp(1 - roughness, 0.02, 1);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
 	//const property
@@ -439,7 +437,7 @@ float4 CombineReflectionColorSingleSPP(Varyings input) : SV_TARGET {
 	float2 uv = input.screenUV;
 	//sample buffers' properties
 	float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0);
-	float roughness = clamp(specular, 0.02, 1.0);
+	float roughness = specular.a;
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
 	//NOTE HERE : FOR w component, point : 1, direction : 0
@@ -513,7 +511,7 @@ float4 CombineReflectionColorMultiSPP(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV;
 	//sample buffers' properties
 	float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0);
-	float roughness = clamp(specular, 0.02, 1.0);
+	float roughness = specular.a;
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
 	//NOTE HERE : FOR w component, point : 1, direction : 0

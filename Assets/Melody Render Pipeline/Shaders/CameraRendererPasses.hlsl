@@ -44,7 +44,7 @@ float4 CombineSSRPassFragment(Varyings input) : SV_TARGET{
 	float4 ssrResult = SAMPLE_TEXTURE2D(_SSR_Filtered, sampler_linear_clamp, input.screenUV);
 	float roughness = SAMPLE_TEXTURE2D(_CameraSpecularTexture, sampler_linear_clamp, input.screenUV).a;
 	//reflectAmount = reflectAmount.r * 0.299 + reflectAmount.g * 0.587 + reflectAmount.b * 0.144;
-	source.rgb = lerp(source.rgb, ssrResult.rgb, ssrResult.a * roughness);
+	source.rgb = lerp(ssrResult.rgb, source.rgb, ssrResult.a * roughness);
 	return source;
 }
 
