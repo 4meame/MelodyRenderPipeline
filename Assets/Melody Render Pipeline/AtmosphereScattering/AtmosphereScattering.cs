@@ -337,7 +337,7 @@ public class AtmosphereScattering {
     void UpdateReflectionProbe() {
         if (reflectionProbes != null) {
             foreach (var reflectionProbe in reflectionProbes) {
-                if(sun.transform.rotation != temp) {
+                if(sun.transform.rotation != temp && reflectionProbe != null) {
                     reflectionProbe.RenderProbe();
                 }
             }
