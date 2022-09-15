@@ -162,7 +162,7 @@ public class ScreenSpaceReflection {
         }
     }
 
-    public void Debug(int sourceId) {
+    public void Combine(int sourceId) {
         if (settings.enabled && settings.sSRType == CameraBufferSettings.SSR.SSRType.SSR && settings.debugMode == CameraBufferSettings.SSR.DebugMode.Reflection) {        
             buffer.Blit(ssrResultId, sourceId);
             ExecuteBuffer();

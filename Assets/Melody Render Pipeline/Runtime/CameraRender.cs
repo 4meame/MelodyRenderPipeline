@@ -217,8 +217,8 @@ public partial class CameraRender {
         //draw SSPR renders
         sspr.Render();
         //screen space feature debug or combine
-        ssao.Debug(colorAttachmentId);
-        ssr.Debug(colorAttachmentId);
+        ssao.Combine(colorAttachmentId);
+        ssr.Combine(colorAttachmentId);
 
         if (renderCloud) {
             cloud.Render(colorAttachmentId);

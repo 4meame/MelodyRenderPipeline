@@ -176,10 +176,10 @@ void LitPassFragment(Varyings input,
 	BRDF brdf = GetBRDF(surface);
 #endif
 	GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
+
 #if defined(_SSAO_ON)
 	float3 ssaoResult = SAMPLE_TEXTURE2D(_SSAO_Filtered, sampler_SSAO_Filtered, fragment.screenUV).rrr;
 #if defined(_Multiple_Bounce_AO)
-	//float3 bounceSource = SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, fragment.screenUV, 0);
 	float3 bounceSource = gi.diffuse;
 	ssaoResult = MultiBounce(ssaoResult.r, bounceSource);
 #endif
@@ -211,6 +211,12 @@ void LitPassFragment(Varyings input,
 	//depth and normal
 	float3 normalVS = mul((float3x3)UNITY_MATRIX_V, surface.normal);
 	GT3 = EncodeDepthNormal(1, normalVS);
-	GT4 = float4(gi.specular, 1);
+	//gi reflection calculate by IndirectBRDF
+	float fresnelStrength = Pow4(1.0 - saturate(dot(surface.normal, surface.viewDirection))) * surface.fresnelStrength;
+	float3 reflection = gi.specular * lerp(brdf.specular, brdf.fresnel, fresnelStrength);
+	//high roughness will halve the reflection while low roughness will not matter much
+	reflection /= brdf.roughness * brdf.roughness + 1.0;
+	reflection *= surface.occlusion;
+	GT4 = float4(reflection, 1);
 }
 #endif
