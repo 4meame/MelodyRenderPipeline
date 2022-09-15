@@ -28,7 +28,8 @@ public class ScreenSpaceReflection {
         SpatioMultiFilter,
         TemporalFilter,
         TemporalMultiFilter,
-        Combine
+        Combine,
+        CombineMulti
     }
     int m_SampleIndex = 0;
     const int k_SampleCount = 64;
@@ -193,13 +194,19 @@ public class ScreenSpaceReflection {
                 case CameraBufferSettings.SSR.DebugMode.Jitter:
                     material.SetInt("_DebugPass", 7);
                     break;
+                case CameraBufferSettings.SSR.DebugMode.RO:
+                    material.SetInt("_DebugPass", 8);
+                    break;
+                case CameraBufferSettings.SSR.DebugMode.Motion:
+                    material.SetInt("_DebugPass", 9);
+                    break;
                 default:
                     break;
             }
             buffer.SetGlobalTexture(SSR_CombineScene_ID, SSR_CombineScene_RT);
             CopyTexture(sourceId, SSR_SceneColor_RT);
             buffer.SetRenderTarget(sourceId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Combine, MeshTopology.Triangles, 3);
+            buffer.DrawProcedural(Matrix4x4.identity, material, (settings.rayNums > 1) ? (int)Pass.CombineMulti : (int)Pass.Combine, MeshTopology.Triangles, 3);
             ExecuteBuffer();
         }
     }
@@ -252,6 +259,7 @@ public class ScreenSpaceReflection {
         material.SetInt("_SSR_BackwardsRay", settings.Linear_TowardRay ? 1 : 0);
         material.SetInt("_SSR_CullBack", settings.Linear_TowardRay ? 1 : 0);
         material.SetInt("_SSR_TraceBehind", settings.Linear_TraceBehind ? 1 : 0);
+        material.SetInt("_SSR_ReflectionOcclusion", settings.ReflectionOcclusion ? 1 : 0);
         material.SetInt("_SSR_HiZ_MaxLevel", settings.Hiz_MaxLevel);
         material.SetInt("_SSR_HiZ_StartLevel", settings.Hiz_StartLevel);
         material.SetInt("_SSR_HiZ_StopLevel", settings.Hiz_StopLevel);

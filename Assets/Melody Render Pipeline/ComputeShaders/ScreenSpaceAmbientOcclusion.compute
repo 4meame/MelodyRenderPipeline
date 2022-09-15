@@ -448,11 +448,11 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     bentNormal = normalize(normalize(bentNormal) - viewVector * 0.5);
     //calculate reflection occlusion
     float4 specular = SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_linear_clamp, screenUV, 0);
-    float roughness = 1 - specular.a;
+    float roughness = specular.a;
     float3 reflectVector = reflect(viewVector, geometricNormal);
-    ro = ReflectionOcclusion(bentNormal, reflectVector, roughness,0.5);
+    ro = ReflectionOcclusion(bentNormal, reflectVector, roughness, 0.5);
 
-    AmbientOcclusionRT[id.xy] = float3(ao, ro, linear01Depth);
+    AmbientOcclusionRT[id.xy] = float3(ao, pow2(ro), linear01Depth);
 }
 
 float3 GetSource(float2 screenUV) {

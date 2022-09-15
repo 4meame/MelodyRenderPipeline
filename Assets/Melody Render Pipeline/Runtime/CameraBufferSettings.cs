@@ -121,7 +121,9 @@ public struct CameraBufferSettings {
             ReflectionAndCubemap,
             Mask,
             PDF,
-            Jitter
+            Jitter,
+            RO,
+            Motion
         };
         public enum TraceMethod {
             HiZTrace = 0,
@@ -161,6 +163,7 @@ public struct CameraBufferSettings {
         public float THK;
         [Range(0, 1)]
         public float screenFade;
+        public bool ReflectionOcclusion;
         [Range(32, 512)]
         public int Hiz_RaySteps;
         [Range(4, 10)]

@@ -71,7 +71,7 @@
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment TemporalFilterSingelSSP
+            #pragma fragment TemporalFilterSingelSPP
             ENDHLSL
         }
 
@@ -83,7 +83,7 @@
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment TemporalFilterSingelSSP
+            #pragma fragment TemporalFilterSingelSPP
             ENDHLSL
         }
 
@@ -95,7 +95,19 @@
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment CombineReflectionColor
+            #pragma fragment CombineReflectionColorSingleSPP
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Combine Scene"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CombineReflectionColorMultiSPP
             ENDHLSL
         }
     }
