@@ -221,14 +221,13 @@ public class PostFXStack {
         int width, height;
         if (bloom.ignoreRenderScale)
         {
-            width = camera.pixelWidth / 2;
-            height = camera.pixelHeight / 2;
+            width = camera.pixelWidth;
+            height = camera.pixelHeight;
         } else {
-            width = bufferSize.x / 2;
-            height = bufferSize.y / 2;
+            width = bufferSize.x;
+            height = bufferSize.y;
         }
-        //multiply 2 because half resolution then
-        if (bloom.maxIterations == 0 || height < bloom.downscaleLimit * 2 || width < bloom.downscaleLimit * 2 || bloom.intensity <= 0f) {
+        if (bloom.maxIterations == 0 || height < bloom.downscaleLimit || width < bloom.downscaleLimit || bloom.intensity <= 0f) {
             return false;
         }
         buffer.BeginSample("Bloom");
