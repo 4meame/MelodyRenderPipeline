@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useDynamicBachting: 0
   useInstancing: 1
-  useSRPBatcher: 0
+  useSRPBatcher: 1
   useLightsPerObject: 0
   shadows:
-    maxDistance: 120
+    maxDistance: 80
     distanceFade: 0.303
     directional:
       atlasSize: 4096
@@ -33,7 +33,7 @@ MonoBehaviour:
       filter: 3
   atmosphere: {fileID: 11400000, guid: 21777d4397c8a5842bd9927000c6afc3, type: 2}
   cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
-  postFXSettings: {fileID: 11400000, guid: ceba552ee508b8244ba6a81cbcfd905c, type: 2}
+  postFXSettings: {fileID: 11400000, guid: b4828196f5e88184d928f696687e89a2, type: 2}
   cameraBufferSettings:
     allowHDR: 1
     renderScale: 1
@@ -43,15 +43,25 @@ MonoBehaviour:
     copyDepthReflections: 0
     copyColor: 1
     copyColorReflections: 0
-    useDepthNormal: 1
-    useDiffuse: 1
-    useSpecular: 1
+    useDepthNormal: 0
+    useDiffuse: 0
+    useSpecular: 0
     fxaa:
       enabled: 1
       fixedThreshold: 0.0359
       relativeThreshold: 0.068
       subpixelBlending: 0.793
       quality: 2
+    taa:
+      mode: 2
+      motionVectorEnabled: 1
+      jitterScale: 1
+      sharpness: 0.2
+      staticBlending: 0.901
+      motionBlending: 0.953
+      staticAABBScale: 2
+      motionAABBScale: 2.65
+      feedBack: 0
     sspr:
       enabled: 0
       computeShader: {fileID: 7200000, guid: f2a4c2a9bafc08c4bb76a19c765becc6, type: 3}
@@ -66,18 +76,39 @@ MonoBehaviour:
     ssr:
       enabled: 1
       computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
-      sSRType: 0
+      sSRType: 1
       downSample: 1
       maxDistance: 25
       iterations: 128
-      binarySearchIterations: 6
+      binarySearchIterations: 8
       pixelStrideSize: 4
-      pixelStrideZCuttoff: 8.03
-      thickness: 1.23
+      pixelStrideZCuttoff: 11
+      thickness: 0.07
       screenEdgeFade: 0.918
       eyeFadeStart: 0.024
       eyeFadeEnd: 1
-      debug: 0
+      traceMethod: 1
+      rayCastSize: 1
+      rayNums: 1
+      BRDFBias: 0.7
+      THK: 0.1
+      screenFade: 0.1
+      ReflectionOcclusion: 0
+      Hiz_RaySteps: 32
+      Hiz_MaxLevel: 4
+      Hiz_StartLevel: 0
+      Hiz_StopLevel: 0
+      Linear_TraceBehind: 1
+      Linear_TowardRay: 1
+      Linear_RaySteps: 128
+      Linear_StepSize: 10
+      BlueNoise: {fileID: 2800000, guid: 8c73ffcfcde66e14586a946ee802a1bf, type: 3}
+      PreintegratedGF: {fileID: 2800000, guid: a4757db3355bd3d4e9536edd00d3a6bd, type: 3}
+      SpatioSampler: 9
+      TemporalWeight: 0.97
+      TemporalScale: 1.5
+      deNoise: 1
+      debugMode: 0
     ssao:
       aOType: 3
       filterType: 0
@@ -86,9 +117,9 @@ MonoBehaviour:
       computeShader: {fileID: 7200000, guid: 292fa2e92df0b4640a68ab2c61571f6e, type: 3}
       randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
       downSample: 2
-      sampleCount: 2
-      aoRadius: 2.5
-      filterRadius: 3
+      sampleCount: 4
+      aoRadius: 2.7
+      filterRadius: 2.15
       filterFactor: 0.973
       kernelSize: 8
       pureDepthAOParameters: {x: 0.001, y: 1, z: 0.96, w: 0.15}
@@ -99,9 +130,9 @@ MonoBehaviour:
       hbaoStrength: 1.2
       fadeParams: {x: 0, y: 0, z: 0, w: 0}
       numSlice: 4
-      thickness: 0.87
-      gtaoStrength: 1.1
-      multipleBounce: 0
+      thickness: 0.11
+      gtaoStrength: 1.39
+      multipleBounce: 1
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}

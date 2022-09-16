@@ -17,26 +17,26 @@ MonoBehaviour:
     maxIterations: 5
     downscaleLimit: 10
     bicubicUpsampling: 1
-    threshold: 1.51
+    threshold: 1
     thresholdKnee: 0.102
     fadeFireflies: 1
     mode: 0
-    intensity: 1
-    scatter: 0.497
+    intensity: 0.46
+    scatter: 0.567
     ignoreRenderScale: 1
   colorAdjustment:
-    postExposure: -0.07
-    constrat: 0
+    postExposure: 0.12
+    constrat: -5
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 17.2
+    saturation: 11.6
   whiteBalance:
-    Temperature: 0
+    Temperature: 1.7
     Tint: 0
   splitToning:
-    shadows: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    highlights: {r: 0.75, g: 0.75, b: 0.75, a: 1}
-    balance: -2.6
+    shadows: {r: 0.5019608, g: 0.47334903, b: 0.47334903, a: 0}
+    highlights: {r: 0.7463897, g: 0.7490196, b: 0.70632553, a: 1}
+    balance: -1.4
   channelMixer:
     red: {x: 1, y: 0, z: 0}
     green: {x: 0, y: 1, z: 0}
@@ -50,19 +50,19 @@ MonoBehaviour:
     highlightsStart: 0.55
     highlightsEnd: 1
   posterize:
-    colorRamp: 256
+    colorRamp: 255
     rampGamma: 0.3
   toneMapping:
     mode: 3
   outlineSetting:
     enable: 0
     color: {r: 0, g: 0, b: 0, a: 1}
-    outlineScale: 2
-    ColorThreshold: 0
-    depthThreshold: 0
-    normalThreshold: 0
-    depthNormalThreshold: 0
-    depthNormalThresholdScale: 0
+    outlineScale: 1
+    ColorThreshold: 1
+    depthThreshold: 2.48
+    normalThreshold: 0.265
+    depthNormalThreshold: 0.447
+    depthNormalThresholdScale: 4.92
   lightShaftsSetting:
     mode: 1
     enable: 1
@@ -74,3 +74,8 @@ MonoBehaviour:
     decay: 0.949
     exposure: 1.045
     bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}
+  motionBlurSetting:
+    enable: 1
+    shutterAngle: 120
+    sampleCount: 8
+    frameBlending: 0.5

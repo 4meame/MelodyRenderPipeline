@@ -31,7 +31,7 @@ MonoBehaviour:
     other:
       atlasSize: 1024
       filter: 3
-  atmosphere: {fileID: 11400000, guid: 38a539761d3a0f8448f79f428ec6d661, type: 2}
+  atmosphere: {fileID: 11400000, guid: 40b97409a5a8e9a488d282afbe8256cc, type: 2}
   cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
   postFXSettings: {fileID: 11400000, guid: ceba552ee508b8244ba6a81cbcfd905c, type: 2}
   cameraBufferSettings:
@@ -43,15 +43,25 @@ MonoBehaviour:
     copyDepthReflections: 0
     copyColor: 1
     copyColorReflections: 0
-    useDepthNormal: 1
-    useDiffuse: 1
-    useSpecular: 1
+    useDepthNormal: 0
+    useDiffuse: 0
+    useSpecular: 0
     fxaa:
       enabled: 1
       fixedThreshold: 0.0359
       relativeThreshold: 0.068
       subpixelBlending: 0.793
       quality: 2
+    taa:
+      mode: 2
+      motionVectorEnabled: 1
+      jitterScale: 0.9
+      sharpness: 0.25
+      staticBlending: 0.953
+      motionBlending: 0.932
+      staticAABBScale: 3
+      motionAABBScale: 3
+      feedBack: 0
     sspr:
       enabled: 0
       computeShader: {fileID: 7200000, guid: f2a4c2a9bafc08c4bb76a19c765becc6, type: 3}
@@ -66,7 +76,7 @@ MonoBehaviour:
     ssr:
       enabled: 1
       computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
-      sSRType: 0
+      sSRType: 1
       downSample: 1
       maxDistance: 25
       iterations: 128
@@ -77,7 +87,28 @@ MonoBehaviour:
       screenEdgeFade: 0.598
       eyeFadeStart: 0.131
       eyeFadeEnd: 0.606
-      debug: 0
+      traceMethod: 1
+      rayCastSize: 1
+      rayNums: 1
+      BRDFBias: 0.7
+      THK: 0.1
+      screenFade: 0.1
+      ReflectionOcclusion: 0
+      Hiz_RaySteps: 32
+      Hiz_MaxLevel: 4
+      Hiz_StartLevel: 0
+      Hiz_StopLevel: 0
+      Linear_TraceBehind: 1
+      Linear_TowardRay: 1
+      Linear_RaySteps: 64
+      Linear_StepSize: 10
+      BlueNoise: {fileID: 2800000, guid: 8c73ffcfcde66e14586a946ee802a1bf, type: 3}
+      PreintegratedGF: {fileID: 2800000, guid: a4757db3355bd3d4e9536edd00d3a6bd, type: 3}
+      SpatioSampler: 9
+      TemporalWeight: 0.985
+      TemporalScale: 3
+      deNoise: 1
+      debugMode: 0
     ssao:
       aOType: 3
       filterType: 0
@@ -87,9 +118,9 @@ MonoBehaviour:
       randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
       downSample: 2
       sampleCount: 2
-      aoRadius: 1.3
-      filterRadius: 3
-      filterFactor: 0.784
+      aoRadius: 1
+      filterRadius: 2.75
+      filterFactor: 0.91
       kernelSize: 12
       pureDepthAOParameters: {x: 0.001, y: 1, z: 1.5, w: 0.13}
       SSAOParameters: {x: 0.001, y: 0.13, z: 1.92, w: 6.33}
@@ -99,9 +130,9 @@ MonoBehaviour:
       hbaoStrength: 1
       fadeParams: {x: 0, y: 0, z: 0, w: 0}
       numSlice: 4
-      thickness: 1.06
-      gtaoStrength: 1.22
-      multipleBounce: 0
+      thickness: 0.96
+      gtaoStrength: 1.3
+      multipleBounce: 1
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}

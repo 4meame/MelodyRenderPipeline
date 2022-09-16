@@ -15,13 +15,13 @@ MonoBehaviour:
   shader: {fileID: 4800000, guid: 94b6d1a1245ff2142b12e2b3962e91b9, type: 3}
   bloom:
     maxIterations: 5
-    downscaleLimit: 2
+    downscaleLimit: 10
     bicubicUpsampling: 1
-    threshold: 1.51
-    thresholdKnee: 0.102
+    threshold: 1.2
+    thresholdKnee: 0.508
     fadeFireflies: 1
     mode: 0
-    intensity: 0
+    intensity: 0.45
     scatter: 0.542
     ignoreRenderScale: 1
   colorAdjustment:
@@ -29,14 +29,14 @@ MonoBehaviour:
     constrat: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 17.2
+    saturation: 37.4
   whiteBalance:
-    Temperature: 0
+    Temperature: 2
     Tint: 0
   splitToning:
     shadows: {r: 0.5, g: 0.5, b: 0.5, a: 0}
-    highlights: {r: 0.74509805, g: 0.8936393, b: 1, a: 1}
-    balance: -2.6
+    highlights: {r: 0.865, g: 0.93350744, b: 1, a: 1}
+    balance: 6
   channelMixer:
     red: {x: 1, y: 0, z: 0}
     green: {x: 0, y: 1, z: 0}
@@ -74,3 +74,8 @@ MonoBehaviour:
     decay: 0.949
     exposure: 1.045
     bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}
+  motionBlurSetting:
+    enable: 1
+    shutterAngle: 294
+    sampleCount: 16
+    frameBlending: 0.24

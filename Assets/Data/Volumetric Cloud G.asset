@@ -21,7 +21,7 @@ MonoBehaviour:
   fixedHeight: 720
   downsample: 2
   coverageOffsetX: 0.509
-  coverageOffsetY: 0
+  coverageOffsetY: 0.186
   horizonCoverageStart: 0
   horizonCoverageEnd: 0.968
   baseScale: 0.254
@@ -121,8 +121,8 @@ MonoBehaviour:
   cloudDistortionScale: 0.43
   cloudBaseColor: {r: 0.33445096, g: 0.46265563, b: 0.7254902, a: 1}
   cloudTopColor: {r: 1, g: 1, b: 1, a: 1}
-  sunScale: 2.51
-  ambientScale: 0.57
+  sunScale: 1.43
+  ambientScale: 0.09
   sunRayLength: 0.188
   coneRadius: 0.532
   density: 5.9
