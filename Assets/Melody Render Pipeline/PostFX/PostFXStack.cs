@@ -142,6 +142,12 @@ public class PostFXStack {
             DoColorGradingAndToneMappingAndFxaa(bloomResultId);
             buffer.ReleaseTemporaryRT(bloomResultId);
         } else {
+            #region Motion Blur
+            if (settings.motionBlurSettings.enable) {
+                //updating current result to source
+                sourceId = motionResultId;
+            }
+            #endregion
             #region Light Shafts
             if (settings.LightShaftsSetting.enable) {
                 //updating outline result to source

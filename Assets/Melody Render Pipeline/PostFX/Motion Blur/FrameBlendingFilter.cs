@@ -95,8 +95,8 @@ public class FrameBlendingFilter {
 
         public void MakeRecord(CommandBuffer buffer, RenderTargetIdentifier source, int width, int height, Material material) {
             Release();
-            lumaTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
-            chromaTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear);
+            lumaTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.R16, RenderTextureReadWrite.Linear);
+            chromaTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.R16, RenderTextureReadWrite.Linear);
             lumaTexture.filterMode = FilterMode.Point;
             chromaTexture.filterMode = FilterMode.Point;
             if (identifier == null) {
