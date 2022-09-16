@@ -128,6 +128,7 @@ void LinearTraceSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, ou
 	if (roughness > 0.1) {
 		H = TangentToWorld(ImportanceSampleGGX(hash, roughness), float4(viewNormal, 1.0));
 	}
+	//make relfection unbiased if it is near total smoothness
 	else {
 		H = float4(viewNormal, 1.0);
 	}
