@@ -10,6 +10,8 @@ public class ActorController : MonoBehaviour {
     [Range(0, 1.0f)]
     public float turnSpeedRate = 0.2f;
     public float jumpVelocity = 1.0f;
+    public float rollVelocity = 1.0f;
+    public float jabVelocity = 1.0f;
     PlayerInput pi;
     Animator anim;
     Rigidbody rigid;
@@ -30,6 +32,9 @@ public class ActorController : MonoBehaviour {
         if (pi.jump) {
             anim.SetTrigger("jump");
         }
+        if (rigid.velocity.magnitude > 2.1f) {
+            anim.SetTrigger("roll");
+        }
         if (pi.Dmag > 0.05f) {
             //make translation softer
             model.transform.forward = Vector3.Slerp(model.transform.forward, pi.DVec, turnSpeedRate);
@@ -43,14 +48,50 @@ public class ActorController : MonoBehaviour {
         thrustVec = Vector3.zero;
     }
 
+
+    //message
     public void OnJumpEnter() {
         pi.inputEnable = false;
         lockPlanar = true;
         thrustVec = new Vector3(0, jumpVelocity, 0);
     }
 
-    public void OnJumpExit() {
+    //public void OnJumpExit() {
+    //    pi.inputEnable = true;
+    //    lockPlanar = false;
+    //}
+
+    public void IsGround() {
+        anim.SetBool("isGround", true);
+    }
+
+    public void IsNotGround() {
+        anim.SetBool("isGround", false);
+    }
+
+    public void OnGroundEnter() {
         pi.inputEnable = true;
         lockPlanar = false;
+    }
+
+    public void OnFallEnter() {
+        pi.inputEnable = false;
+        lockPlanar = true;
+    }
+
+    public void OnRollEnter() {
+        pi.inputEnable = false;
+        lockPlanar = true;
+    }
+    public void OnRollUpdate() {
+        thrustVec = model.transform.forward * anim.GetFloat("rollVelocity") * rollVelocity;
+    }
+    public void OnJabEnter() {
+        pi.inputEnable = false;
+        lockPlanar = true;
+    }
+
+    public void OnJabUpdate() {
+        thrustVec = model.transform.forward * anim.GetFloat("jabVelocity") * jabVelocity;
     }
 }
