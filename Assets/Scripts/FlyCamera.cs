@@ -4,6 +4,7 @@ using System.Collections;
 
 public class FlyCamera : MonoBehaviour 
 {
+	public bool move;
 	public float lookSpeed = 0.2f;
 	public float moveSpeed = 15.0f;
 	public float runMultiplier = 4.0f;
@@ -34,20 +35,22 @@ public class FlyCamera : MonoBehaviour
 	void Update ()
 	{
 		UpdateInput();
+		if (move) 
+		{
+			_rotationX += _mouseDelta.x * Time.deltaTime * lookSpeed;
+			_rotationY += _mouseDelta.y * Time.deltaTime * lookSpeed;
+			_rotationY = Mathf.Clamp(_rotationY, -90, 90);
 
-		_rotationX += _mouseDelta.x * Time.deltaTime * lookSpeed;
-		_rotationY += _mouseDelta.y * Time.deltaTime * lookSpeed;
-		_rotationY = Mathf.Clamp( _rotationY, -90, 90);
-			
-		transform.localRotation = Quaternion.AngleAxis( _rotationX, Vector3.up);
-		transform.localRotation *= Quaternion.AngleAxis( _rotationY, Vector3.left);
+			transform.localRotation = Quaternion.AngleAxis(_rotationX, Vector3.up);
+			transform.localRotation *= Quaternion.AngleAxis(_rotationY, Vector3.left);
 
-		float run = _isRunning ? runMultiplier : 1.0f;
-		_targetPosition += transform.forward * moveSpeed * run * Time.deltaTime * _movement.z;
-		_targetPosition += transform.right * moveSpeed * run * Time.deltaTime * _movement.x;
-		_targetPosition += transform.up * moveSpeed * run * Time.deltaTime * _movement.y;
-	
-		transform.position = Vector3.Lerp( transform.position, _targetPosition, 0.5f); 
+			float run = _isRunning ? runMultiplier : 1.0f;
+			_targetPosition += transform.forward * moveSpeed * run * Time.deltaTime * _movement.z;
+			_targetPosition += transform.right * moveSpeed * run * Time.deltaTime * _movement.x;
+			_targetPosition += transform.up * moveSpeed * run * Time.deltaTime * _movement.y;
+
+			transform.position = Vector3.Lerp(transform.position, _targetPosition, 0.5f);
+		}
 	}
 
     void UpdateInput()
