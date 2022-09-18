@@ -15,6 +15,18 @@
         #include "StochasticSSRPass.hlsl"
         ENDHLSL
 
+        Pass
+        {
+            Name "Prepare Hierarchical Z"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment GetHierarchicalZBuffer
+            ENDHLSL
+        }
+
         Pass 
         {
             Name "Linear Trace 1 SPP"
@@ -36,6 +48,30 @@
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
             #pragma fragment LinearTraceMultiSPP
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Hiz Trace 1 SPP"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment HierarchicalZSingleSPP
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Hiz Trace Multi SPP"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment HierarchicalZMultiSPP
             ENDHLSL
         }
 

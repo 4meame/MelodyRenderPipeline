@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
 
-public class ScreenSpaceReflection {
+public class ScreenSpaceReflection : MonoBehaviour {
     const string bufferName = "ScreenSpaceReflection";
     CommandBuffer buffer = new CommandBuffer {
         name = bufferName
@@ -22,8 +22,11 @@ public class ScreenSpaceReflection {
     int ssrBlurId = Shader.PropertyToID("_SSR_Blur");
     //stochastic ssr
     enum Pass {
+        PrepareHiz,
         LinearTrace,
         LinearMultiTrace,
+        HizTrace,
+        HizMultiTrace,
         SpatioFilter,
         SpatioMultiFilter,
         TemporalFilter,
@@ -131,7 +134,12 @@ public class ScreenSpaceReflection {
                 //bilt scene depth
                 buffer.Blit("_CameraDepthTexture", SSR_HierarchicalDepth_RT);
                 //set Hiz-depth RT
-
+                for (int i = 0; i < settings.Hiz_MaxLevel; i++) {
+                    buffer.SetGlobalInt("_SSR_HiZ_PrevDepthLevel", i);
+                    buffer.SetRenderTarget(SSR_HierarchicalDepth_BackUp_RT, i + 1);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.PrepareHiz, MeshTopology.Triangles, 3);
+                    buffer.CopyTexture(SSR_HierarchicalDepth_BackUp_RT, 0, i + 1, SSR_HierarchicalDepth_RT, 0, i + 1);
+                }
                 buffer.SetGlobalTexture(SSR_HierarchicalDepth_ID, SSR_HierarchicalDepth_RT);
                 //set scene color RT
                 buffer.SetGlobalTexture(SSR_SceneColor_ID, SSR_SceneColor_RT);
@@ -140,7 +148,8 @@ public class ScreenSpaceReflection {
                 buffer.SetGlobalTexture(SSR_Trace_ID, SSR_TraceMask_RT[0]);
                 buffer.SetGlobalTexture(SSR_Mask_ID, SSR_TraceMask_RT[1]);
                 if (settings.traceMethod == CameraBufferSettings.SSR.TraceMethod.HiZTrace) {
-
+                    buffer.SetRenderTarget(SSR_TraceMask_ID, SSR_TraceMask_RT[0]);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (settings.rayNums > 1) ? (int)Pass.HizMultiTrace : (int)Pass.HizTrace, MeshTopology.Triangles, 3);
                 } else {
                     buffer.SetRenderTarget(SSR_TraceMask_ID, SSR_TraceMask_RT[0]);
                     buffer.DrawProcedural(Matrix4x4.identity, material, (settings.rayNums > 1) ? (int)Pass.LinearMultiTrace : (int)Pass.LinearTrace, MeshTopology.Triangles, 3);
@@ -355,6 +364,10 @@ public class ScreenSpaceReflection {
         if (settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
             SSR_Prev_ViewProjectionMatrix = SSR_ViewProjectionMatrix;
         }
+    }
+
+    void OnDisable() {
+        ReleaseBuffer();
     }
 
     void ReleaseBuffer() {
