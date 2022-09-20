@@ -20,9 +20,7 @@ Texture2D _SSR_HierarchicalDepth_RT; SamplerState sampler_SSR_HierarchicalDepth_
 float _SSR_BRDFBias;
 float _SSR_ScreenFade;
 float _SSR_Thickness;
-int _SSR_RayStepSize;
 int _SSR_NumRays;
-int _SSR_TraceDistance;
 float3 _SSR_CameraClipInfo;
 float4 _SSR_ScreenSize;
 float4 _SSR_RayCastSize;
@@ -30,12 +28,15 @@ float4 _SSR_NoiseSize;
 float4 _SSR_Jitter;
 float4 _SSR_RandomSeed;
 float4 _SSR_ProjInfo;
-//linear trace
-int _SSR_NumSteps_Linear;
 int _SSR_BackwardsRay;
 int _SSR_CullBack;
 int _SSR_TraceBehind;
+//linear trace
+int _SSR_NumSteps_Linear;
+int _SSR_RayStepSize;
+int _SSR_TraceDistance;
 //HiZ trace
+float _SSR_Threshold_Hiz;
 int _SSR_NumSteps_HiZ;
 int _SSR_HiZ_MaxLevel;
 int _SSR_HiZ_StartLevel;
@@ -256,7 +257,7 @@ void HierarchicalZSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, 
 	float3 screenPos = GetScreenSpacePos(uv, sceneDepth);
 	float4 screenTexelSize = float4(1 / _SSR_ScreenSize.x, 1 / _SSR_ScreenSize.y, _SSR_ScreenSize.x, _SSR_ScreenSize.y);
 	float3 Ray_Origin_VS = GetPosition(_CameraDepthTexture, screenTexelSize, _SSR_ProjInfo, uv);
-	float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
+	float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_ScreenSize.xy / _SSR_NoiseSize.xy), 0).xy;
 	hash.y = lerp(hash.y, 0.0, _SSR_BRDFBias);
 	float4 H = 0.0;
 	if (roughness > 0.1) {
@@ -267,12 +268,19 @@ void HierarchicalZSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, 
 		H = float4(viewNormal, 1.0);
 	}
 	float3 Ray_Dir_VS = reflect(normalize(Ray_Origin_VS), H.xyz);
+	//early exit if is opposite direction, or trace backward ray
+	UNITY_BRANCH
+	if (_SSR_BackwardsRay == 0 && Ray_Dir_VS.z > 0) {
+		RayHit_PDF = 0;
+		Mask = 0;
+		return;
+	}
 	//hiz trace
 	float3 Ray_Start = float3(uv, screenPos.z);
 	float4 Ray_Proj = mul(_SSR_ProjectionMatrix, float4(Ray_Origin_VS + Ray_Dir_VS, 1.0));
 	float3 Ray_Dir = normalize((Ray_Proj.xyz / Ray_Proj.w) - screenPos);
 	Ray_Dir.xy *= 0.5;
-	float4 Ray_Hit_Data = HierarchicalZTrace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_RayCastSize.xy, Ray_Start, Ray_Dir, _SSR_HierarchicalDepth_RT);
+	float4 Ray_Hit_Data = HierarchicalZTrace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_TraceBehind == 1, _SSR_Threshold_Hiz, _SSR_ScreenSize.xy, Ray_Start, Ray_Dir, _SSR_HierarchicalDepth_RT);
 
 	RayHit_PDF = float4(Ray_Hit_Data.xyz, H.a);
 	Mask = Square(Ray_Hit_Data.w * GetScreenFadeBord(Ray_Hit_Data.xy, _SSR_ScreenFade));
@@ -283,24 +291,22 @@ void HierarchicalZSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, 
 void HierarchicalZMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0, out float4 Mask_Depth_HitUV : SV_TARGET1) {
 	float2 uv = input.screenUV;
 	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
+	float sceneDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0);
 	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
 	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
 	//const property
-	float Ray_HitMask = 0.0;
-	float Out_Fade = 0.0;
 	float Out_Mask = 0.0;
 	float Out_PDF = 0.0;
 	float Out_RayDepth = 0.0;
 	float2 Out_UV = 0;
 	float4 Out_Color = 0;
 	//begin trace
+	float3 screenPos = GetScreenSpacePos(uv, sceneDepth);
 	float4 screenTexelSize = float4(1 / _SSR_ScreenSize.x, 1 / _SSR_ScreenSize.y, _SSR_ScreenSize.x, _SSR_ScreenSize.y);
 	float3 Ray_Origin_VS = GetPosition(_CameraDepthTexture, screenTexelSize, _SSR_ProjInfo, uv);
-	float Ray_Bump = max(-0.01 * Ray_Origin_VS.z, 0.001);
-	float2 blueNoise = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
 	//loop all multi rays
 	for (uint i = 0; i < (uint)_SSR_NumRays; i++) {
-		float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_RayCastSize.xy / _SSR_NoiseSize.xy), 0).xy;
+		float2 hash = SAMPLE_TEXTURE2D_LOD(_SSR_Noise, sampler_point_repeat, float2((uv + _SSR_Jitter.zw) * _SSR_ScreenSize.xy / _SSR_NoiseSize.xy), 0).xy;
 		hash.y = lerp(hash.y, 0.0, _SSR_BRDFBias);
 		//calculate half vector by important sample
 		float4 H = 0.0;
@@ -313,40 +319,25 @@ void HierarchicalZMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0,
 		float3 Ray_Dir_VS = reflect(normalize(Ray_Origin_VS), H.xyz);
 		//early exit if is opposite direction, or trace backward ray
 		UNITY_BRANCH
-			if (_SSR_BackwardsRay == 0 && Ray_Dir_VS.z > 0) {
-				SSRColor_PDF = 0;
-				Mask_Depth_HitUV = 0;
-				return;
-			}
-		//ray trace
-		float Jitter = blueNoise.x + blueNoise.y;
-		float Ray_NumMarch = 0.0;
-		float2 Ray_HitUV = 0.0;
-		float3 Ray_HitPoint = 0.0;
-		bool hit = Linear2D_Trace(_CameraDepthTexture, Ray_Origin_VS + viewNormal * Ray_Bump, Ray_Dir_VS, _SSR_ProjectToPixelMatrix, _SSR_ScreenSize, Jitter, _SSR_NumSteps_Linear, _SSR_Thickness, _SSR_TraceDistance, Ray_HitUV, _SSR_RayStepSize, _SSR_TraceBehind == 1, Ray_HitPoint, Ray_NumMarch);
-		Ray_HitUV /= _SSR_ScreenSize;
-		UNITY_BRANCH
-			if (hit) {
-				Ray_HitMask = Square(1 - max(2 * float(Ray_NumMarch) / float(_SSR_NumSteps_Linear) - 1, 0));
-				Ray_HitMask *= saturate(((_SSR_TraceDistance - dot(Ray_HitPoint - Ray_Origin_VS, Ray_Dir_VS))));
-				//calculate backward ray mask
-				if (_SSR_CullBack == 0) {
-					float4 Ray_HitDepthNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, Ray_HitUV, 0);
-					float3 Ray_HitNormal_VS = DecodeViewNormalStereo(Ray_HitDepthNormal);
-					float3 Ray_HitNormal_WS = mul(_SSR_CameraToWorldMatrix, float4(Ray_HitNormal_VS, 0)).xyz;
-					float3 Ray_Dir_WS = mul(_SSR_CameraToWorldMatrix, float4(Ray_Dir_VS, 0)).xyz;
-					if (dot(Ray_HitNormal_WS, Ray_Dir_WS) > 0)
-						Ray_HitMask = 0;
-				}
-			}
+		if (_SSR_BackwardsRay == 0 && Ray_Dir_VS.z > 0) {
+			SSRColor_PDF = 0;
+			Mask_Depth_HitUV = 0;
+			return;
+		}
+		//hiz trace
+		float3 Ray_Start = float3(uv, screenPos.z);
+		float4 Ray_Proj = mul(_SSR_ProjectionMatrix, float4(Ray_Origin_VS + Ray_Dir_VS, 1.0));
+		float3 Ray_Dir = normalize((Ray_Proj.xyz / Ray_Proj.w) - screenPos);
+		Ray_Dir.xy *= 0.5;
+		float4 Ray_Hit_Data = HierarchicalZTrace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_TraceBehind == 1, _SSR_Threshold_Hiz, _SSR_ScreenSize.xy, Ray_Start, Ray_Dir, _SSR_HierarchicalDepth_RT);
 		//calculate reflect color, last frame reflect color can be the light source for this frame
-		float4 SampleColor = SAMPLE_TEXTURE2D_LOD(_SSR_SceneColor_RT, sampler_linear_clamp, Ray_HitUV, 0);
+		float4 SampleColor = SAMPLE_TEXTURE2D_LOD(_SSR_SceneColor_RT, sampler_linear_clamp, Ray_Hit_Data.xy, 0);
 		SampleColor.rgb /= 1 + Luminance(SampleColor.rgb);
 		//accumulate sample result
 		Out_Color += SampleColor;
-		Out_Mask += Ray_HitMask * GetScreenFadeBord(Ray_HitUV, _SSR_ScreenFade);
-		Out_RayDepth += SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, Ray_HitUV, 0).r;
-		Out_UV += Ray_HitUV;
+		Out_Mask += Ray_Hit_Data.w * GetScreenFadeBord(Ray_Hit_Data.xy, _SSR_ScreenFade);
+		Out_RayDepth += Ray_Hit_Data.z;
+		Out_UV += Ray_Hit_Data.xy;
 		Out_PDF += H.a;
 	}
 	//output

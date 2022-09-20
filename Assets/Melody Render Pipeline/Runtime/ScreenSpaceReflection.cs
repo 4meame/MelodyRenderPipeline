@@ -265,13 +265,14 @@ public class ScreenSpaceReflection : MonoBehaviour {
         material.SetInt("_SSR_NumSteps_Linear", settings.Linear_RaySteps);
         material.SetInt("_SSR_NumSteps_HiZ", settings.Hiz_RaySteps);
         material.SetInt("_SSR_NumRays", settings.rayNums);
-        material.SetInt("_SSR_BackwardsRay", settings.Linear_TowardRay ? 1 : 0);
-        material.SetInt("_SSR_CullBack", settings.Linear_TowardRay ? 1 : 0);
-        material.SetInt("_SSR_TraceBehind", settings.Linear_TraceBehind ? 1 : 0);
+        material.SetInt("_SSR_BackwardsRay", settings.traceTowardRay ? 1 : 0);
+        material.SetInt("_SSR_CullBack", settings.traceTowardRay ? 1 : 0);
+        material.SetInt("_SSR_TraceBehind", settings.traceBehind ? 1 : 0);
         material.SetInt("_SSR_ReflectionOcclusion", settings.ReflectionOcclusion ? 1 : 0);
         material.SetInt("_SSR_HiZ_MaxLevel", settings.Hiz_MaxLevel);
         material.SetInt("_SSR_HiZ_StartLevel", settings.Hiz_StartLevel);
         material.SetInt("_SSR_HiZ_StopLevel", settings.Hiz_StopLevel);
+        material.SetFloat("_SSR_Threshold_Hiz", settings.Hiz_Threshold);
         if (settings.deNoise) {
             material.SetInt("_SSR_NumResolver", settings.SpatioSampler);
             material.SetFloat("_SSR_TemporalScale", settings.TemporalScale);

@@ -192,21 +192,24 @@ float3 intersectDepthPlane(float3 rayOrigin, float3 rayDir, float marchSize) {
     return rayOrigin + rayDir * marchSize;
 }
 
-//cell Index
+//returns the 2D integer index of the cell that contains the given 2D position within it
 float2 cell(float2 ray, float2 cellCount) {
     return floor(ray * cellCount);
 }
 
-//x,y cell count
+//cell count is just the resolution of the Hiz texture at the specific mip level 
 float2 cellCount(float mipLevel, float2 bufferSize) {
     return bufferSize / (mipLevel == 0 ? 1 : exp2(mipLevel));
 }
 
 float3 intersectCellBoundary(float3 rayOrigin, float3 rayDir, float2 cellIndex, float2 cellCount, float2 crossStep, float2 crossOffset) {
+    //by dividing the cell index by cell count, we can get the position of the boundaries between the current cell and the new cell
     float2 cellSize = 1.0 / cellCount;
+    //crossStep is added to the current cell to get the next cell index, crossOffset is used to push the position just a tiny bit further to make sure the new position is not right on the boundary
     float2 planes = cellIndex / cellCount + cellSize * crossStep;
+    //the delta between the new position and the origin is calculated. The delta is divided by xy component of d vector, after division, the x and y component in delta will have value between 0 to 1 which represents how far the delta position is from the origin of the ray
     float2 solutions = (planes - rayOrigin) / rayDir.xy;
-    float3 intersectionPos = rayOrigin + rayDir * min(solutions.x, solutions.y);
+    float3 intersectionPos = intersectDepthPlane(rayOrigin, rayDir, min(solutions.x, solutions.y));
     intersectionPos.xy += (solutions.x < solutions.y) ? float2(crossOffset.x, 0.0) : float2(0.0, crossOffset.y);
     return intersectionPos;
 }
@@ -220,7 +223,7 @@ float minimumDepthPlane(float2 ray, float mipLevel, float2 cellCount, Texture2D 
     return -SceneDepth.Load(int3((ray * cellCount), mipLevel));
 }
 
-float4 HierarchicalZTrace(int HizMaxLevel, int HizStartLevel, int HizStopLevel, int numSteps, float thickness, float2 bufferSize, float3 rayOrigin, float3 rayDir, Texture2D sceneDepth) {
+float4 HierarchicalZTrace(int HizMaxLevel, int HizStartLevel, int HizStopLevel, int numSteps, float thickness, bool traceBehind, float threshold, float2 bufferSize, float3 rayOrigin, float3 rayDir, Texture2D sceneDepth) {
     HizMaxLevel = clamp(HizMaxLevel, 0, 7);
     rayOrigin.z *= -1;
     rayDir.z *= -1;
@@ -244,6 +247,7 @@ float4 HierarchicalZTrace(int HizMaxLevel, int HizStartLevel, int HizStopLevel, 
         //get the minimum depth plane in which the current ray
         float minZ = minimumDepthPlane(ray.xy, mipLevel, currentCellCount, sceneDepth);
         if (rayDir.z > 0) {
+            //compare min ray with current ray pos
             float minMinusRay = minZ - ray.z;
             tempRay = minMinusRay > 0 ? ray + (rayDir / rayDir.z) * minMinusRay : tempRay;
             float2 newCellId = cell(tempRay, currentCellCount);
@@ -251,6 +255,11 @@ float4 HierarchicalZTrace(int HizMaxLevel, int HizStartLevel, int HizStopLevel, 
                 //so intersect the boundary of that cell instead, and go up a level for taking a larger step next loop
                 tempRay = intersectCellBoundary(ray, rayDir, oldCellId, currentCellCount, crossStep, crossOffset);
                 mipLevel = min(HizMaxLevel, mipLevel + 2.0);
+            } else {
+                if (mipLevel == HizStartLevel && abs(minMinusRay) > threshold && traceBehind) {
+                    tempRay = intersectCellBoundary(ray, rayDir, oldCellId, currentCellCount, crossStep, crossOffset);
+                    mipLevel = HizStartLevel + 1;
+                }
             }
         }
         else if (ray.z < minZ) {

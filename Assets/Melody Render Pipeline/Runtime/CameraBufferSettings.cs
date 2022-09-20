@@ -163,17 +163,19 @@ public struct CameraBufferSettings {
         public float THK;
         [Range(0, 1)]
         public float screenFade;
+        public bool traceBehind;
+        public bool traceTowardRay;
         public bool ReflectionOcclusion;
         [Range(32, 512)]
         public int Hiz_RaySteps;
+        [Range(0, 0.001f)]
+        public float Hiz_Threshold;
         [Range(4, 10)]
         public int Hiz_MaxLevel;
         [Range(0, 2)]
         public int Hiz_StartLevel;
         [Range(0, 2)]
         public int Hiz_StopLevel;
-        public bool Linear_TraceBehind;
-        public bool Linear_TowardRay;
         [Range(64, 512)]
         public int Linear_RaySteps;
         [Range(5, 20)]
