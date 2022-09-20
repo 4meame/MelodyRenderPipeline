@@ -257,6 +257,7 @@ float4 HierarchicalZTrace(int HizMaxLevel, int HizStartLevel, int HizStopLevel, 
                 mipLevel = min(HizMaxLevel, mipLevel + 2.0);
             } else {
                 if (mipLevel == HizStartLevel && abs(minMinusRay) > threshold && traceBehind) {
+                    //https://www.jpgrenier.org/ssr.html, trace behind cost pretty much sometimes degenerate into linear search
                     tempRay = intersectCellBoundary(ray, rayDir, oldCellId, currentCellCount, crossStep, crossOffset);
                     mipLevel = HizStartLevel + 1;
                 }
