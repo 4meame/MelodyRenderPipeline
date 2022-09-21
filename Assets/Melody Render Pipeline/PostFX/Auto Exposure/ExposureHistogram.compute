@@ -1,0 +1,35 @@
+﻿#include "../ShaderLibrary/Common.hlsl"
+#include "ExposureHistogram.hlsl"
+
+#define USE_VIGNETTE_WEIGHTING 1
+
+#pragma kernel EyeHistogram
+RWStructuredBuffer<uint> _HistogramBuffer;
+Texture2D<float4> _SourceTex;
+float4 _ScaleOffsetRes;
+
+//groupshared mark a varible for thread-group-shared memory for cs
+groupshared uint gs_histogram[HISTOGRAM_BINS];
+
+[numthreads(HISTOGRAM_THREAD_X, HISTOGRAM_THREAD_Y, 1) ]
+void EyeHistogram(uint2 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID) {
+    //thread <--- group
+    const uint localThreadId = groupThreadId.y * HISTOGRAM_THREAD_X + groupThreadId.x;
+    //clear shared memory
+    if (localThreadId < HISTOGRAM_BINS) {
+        gs_histogram[localThreadId] = 0u;
+    }
+    //half resolution
+    float2 ipos = float2(dispatchThreadId) * 2.0;
+    //Blocks execution of all threads in a group until all group shared accesses have been completed and all threads in the group have reached this call.
+    GroupMemoryBarrierWithGroupSync();
+
+}
+
+#pragma kernel EyeHistogramClear
+[numthreads(HISTOGRAM_THREAD_X, 1, 1)]
+void EyeHistogramClear(uint dispatchThreadId : SV_DispatchThreadID) {
+    if (dispatchThreadId < HISTOGRAM_BINS)
+        //0u : uint 0
+        _HistogramBuffer[dispatchThreadId] = 0u;
+}
