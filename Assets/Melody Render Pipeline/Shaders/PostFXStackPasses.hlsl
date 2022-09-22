@@ -186,7 +186,6 @@ float3 ColorGradePosterize(float3 color) {
 }
 
 float3 ColorGrade(float3 color, bool useACES = false) {
-	color = min(color, 60.0);
 	color = ColorGradePostExposure(color);
 	color = ColorGradeWhiteBalance(color);
 	color = ColorGradeContrast(color, useACES);
