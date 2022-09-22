@@ -1,5 +1,5 @@
 ﻿#include "../ShaderLibrary/Common.hlsl"
-#include "ExposureHistogram.hlsl"
+#include "../Shaders/ExposureHistogram.hlsl"
 
 #pragma kernel AutoExposureAvgLuminance_fixed MAIN=AutoExposureAvgLuminance_fixed
 #pragma kernel AutoExposureAvgLuminance_progressive MAIN=AutoExposureAvgLuminance_progressive PROGRESSIVE

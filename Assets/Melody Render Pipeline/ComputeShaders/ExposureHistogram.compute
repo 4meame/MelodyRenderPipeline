@@ -1,7 +1,5 @@
 ﻿#include "../ShaderLibrary/Common.hlsl"
-#include "ExposureHistogram.hlsl"
-
-#define USE_VIGNETTE_WEIGHTING 1
+#include "../Shaders/ExposureHistogram.hlsl"
 
 #pragma kernel EyeHistogram
 RWStructuredBuffer<uint> _HistogramBuffer;
@@ -24,17 +22,18 @@ void EyeHistogram(uint2 dispatchThreadId : SV_DispatchThreadID, uint2 groupThrea
     GroupMemoryBarrierWithGroupSync();
     //get local group histogram
     if (ipos.x < _ScaleOffsetRes.z && ipos.y < _ScaleOffsetRes.w) {
-        uint weight = 1u;
+        uint weight;
         float2 sspos = ipos / _ScaleOffsetRes.zw;
+        if (_MeteringMask == 0) {
+            weight = 1u;
+        }
         //vignette weighting to put more focus on center screen
-#if USE_VIGNETTE_WEIGHTING
-        {
+        else if(_MeteringMask == 1) {
             float2 d = abs(sspos - (0.5).xx);
             float vfactor = saturate(1.0 - dot(d, d));
             vfactor *= vfactor;
-            weight = (uint)(64.0 * vfactor);
+            weight = (uint)(128.0 * vfactor);
         }
-#endif
         //bilinear donwnsample 2x
         float3 color = _SourceTex.SampleLevel(sampler_linear_clamp, sspos, 0.0).xyz;
         float luminance = color.r * 0.2125 + color.g * 0.7154 + color.b * 0.0721;

@@ -7,6 +7,9 @@
 #define HISTOGRAM_REDUCTION_THREAD_Y    HISTOGRAM_BINS / HISTOGRAM_THREAD_Y
 #define HISTOGRAM_REDUCTION_BINS HISTOGRAM_REDUCTION_THREAD_X * HISTOGRAM_REDUCTION_THREAD_Y
 
+//
+int _MeteringMask;
+
 float GetHistogramFromLuminance(float value, float2 scaleOffset) {
 	return saturate(log2(value) * scaleOffset.x + scaleOffset.y);
 }

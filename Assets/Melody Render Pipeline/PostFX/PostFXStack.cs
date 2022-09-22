@@ -144,14 +144,15 @@ public class PostFXStack {
         //buffer.Blit(sourceId, BuiltinRenderTextureType.CameraTarget);
         //Draw(sourceId, BuiltinRenderTextureType.CameraTarget, Pass.Copy);
 
-        if (settings.autoExposureSettings.metering != AutoExposureSettings.MeteringMode.None) {
-            DoAutoExposure(sourceId);
-        }
-
         if (DoBloom(sourceId)) {
+            DoAutoExposure(bloomResultId);
+
             DoColorGradingAndToneMappingAndFxaa(bloomResultId);
             buffer.ReleaseTemporaryRT(bloomResultId);
         } else {
+            #region Auto Exposure
+            DoAutoExposure(bloomResultId);
+            #endregion
             #region Motion Blur
             if (settings.motionBlurSettings.enable) {
                 //updating current result to source
@@ -561,11 +562,31 @@ public class PostFXStack {
     }
 
     void DoAutoExposure(int from) {
-        if(autoExposure == null) {
+        if(settings.autoExposureSettings.metering == AutoExposureSettings.MeteringMode.None) {
+            //set buffer keyword
+            buffer.SetGlobalFloat("_AutoExposure", 0);
+            return;
+        }
+        buffer.SetGlobalFloat("_AutoExposure", 1);
+
+        if (autoExposure == null) {
             autoExposure = new AutoExposure(buffer, settings.autoExposureSettings.autoExposure);
         }
         if(logHistogram == null) {
             logHistogram = new LogHistogram(buffer, settings.autoExposureSettings.logHistogram);
+        }
+        switch (settings.autoExposureSettings.meteringMask) {
+            case AutoExposureSettings.MeteringMask.None:
+                buffer.SetGlobalInt("_MeteringMask", 0);
+                break;
+            case AutoExposureSettings.MeteringMask.Vignette:
+                buffer.SetGlobalInt("_MeteringMask", 1);
+                break;
+            case AutoExposureSettings.MeteringMask.Custom:
+                buffer.SetGlobalInt("_MeteringMask", 2);
+                break;
+            default:
+                break;
         }
         buffer.BeginSample("Auto Exposure");
         logHistogram.GenerateHistorgram(bufferSize.x, bufferSize.y, from);

@@ -176,6 +176,9 @@ public class PostFXSettings : ScriptableObject {
         public ComputeShader logHistogram;
         public enum MeteringMode { None, Auto, Curve, Physical }
         public MeteringMode metering;
+        public enum MeteringMask { None, Vignette, Custom }
+        public MeteringMask meteringMask;
+        public Texture2D mask;
         [Range(-10, 10)]
         public float minEV;
         [Range(-10, 10)]
