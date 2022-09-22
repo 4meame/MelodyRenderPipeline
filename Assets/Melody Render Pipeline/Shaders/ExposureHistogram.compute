@@ -13,7 +13,6 @@ groupshared uint gs_histogram[HISTOGRAM_BINS];
 
 [numthreads(HISTOGRAM_THREAD_X, HISTOGRAM_THREAD_Y, 1) ]
 void EyeHistogram(uint2 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID) {
-    //thread <--- group
     const uint localThreadId = groupThreadId.y * HISTOGRAM_THREAD_X + groupThreadId.x;
     //clear shared memory
     if (localThreadId < HISTOGRAM_BINS) {
@@ -23,7 +22,35 @@ void EyeHistogram(uint2 dispatchThreadId : SV_DispatchThreadID, uint2 groupThrea
     float2 ipos = float2(dispatchThreadId) * 2.0;
     //Blocks execution of all threads in a group until all group shared accesses have been completed and all threads in the group have reached this call.
     GroupMemoryBarrierWithGroupSync();
+    //get local group histogram
+    if (ipos.x < _ScaleOffsetRes.z && ipos.y < _ScaleOffsetRes.w) {
+        uint weight = 1u;
+        float2 sspos = ipos / _ScaleOffsetRes.zw;
+        //vignette weighting to put more focus on center screen
+#if USE_VIGNETTE_WEIGHTING
+        {
+            float2 d = abs(sspos - (0.5).xx);
+            float vfactor = saturate(1.0 - dot(d, d));
+            vfactor *= vfactor;
+            weight = (uint)(64.0 * vfactor);
+        }
+#endif
+        //bilinear donwnsample 2x
+        float3 color = _SourceTex.SampleLevel(sampler_linear_clamp, sspos, 0.0).xyz;
+        float luminance = color.r * 0.2125 + color.g * 0.7154 + color.b * 0.0721;
+        //scale : [-10, 10] * (1.0 / 20.0) offset : 0.5 , range logLumin to [0, 1]
+        float logLuminance = GetHistogramFromLuminance(luminance, _ScaleOffsetRes.xy);
+        //ensure bin index([0,255]) from EV([0,1])
+        uint idx = (uint)(logLuminance * (HISTOGRAM_BINS - 1u));
+        //fill this into bin
+        InterlockedAdd(gs_histogram[idx], weight);
+    }
+    GroupMemoryBarrierWithGroupSync();
 
+    //merge everything
+    if (localThreadId < HISTOGRAM_BINS) {
+        InterlockedAdd(_HistogramBuffer[localThreadId], gs_histogram[localThreadId]);
+    }
 }
 
 #pragma kernel EyeHistogramClear

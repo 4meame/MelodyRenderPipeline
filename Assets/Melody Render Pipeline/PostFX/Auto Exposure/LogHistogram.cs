@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 public class LogHistogram {
-    //EV range [2^-9, 2^9]
-    public const int rangeMin = -9;
-    public const int rangeMax = 9;
-    const int bins = 128;
+    //EV range [2^-10, 2^10]
+    public const int rangeMin = -10;
+    public const int rangeMax = 10;
+    const int bins = 256;
     CommandBuffer buffer;
     public ComputeShader cs;
     public ComputeBuffer data;

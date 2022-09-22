@@ -1,14 +1,65 @@
-﻿// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+﻿#include "../ShaderLibrary/Common.hlsl"
+#include "ExposureHistogram.hlsl"
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-RWTexture2D<float4> Result;
+#pragma kernel AutoExposureAvgLuminance_fixed MAIN=AutoExposureAvgLuminance_fixed
+#pragma kernel AutoExposureAvgLuminance_progressive MAIN=AutoExposureAvgLuminance_progressive PROGRESSIVE
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
-{
-    // TODO: insert actual code here!
+StructuredBuffer<uint> _HistogramBuffer;
+Texture2D<float> _SourceTex;
+RWTexture2D<float> _DestinationTex;
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+//x: lowPercent, y: highPercent, z: minBrightness, w: maxBrightness
+float4 _Params1;
+//x: speed down, y: speed up, z: exposure compensation, w: delta time
+float4 _Params2;
+float4 _ScaleOffsetRes;
+
+groupshared uint gs_pyramid[HISTOGRAM_REDUCTION_BINS];
+
+float GetExposureMultiplier(float avgLuminance) {
+    avgLuminance = max(0.00001, avgLuminance);
+    //Krzysztof's method
+    //float compensation = 1.03 - (2.0 / (2.0 + log2(avgLuminance + 1.0)));
+    float compensation = _Params2.z;
+    float exposure = compensation / avgLuminance;
+    return exposure;
+}
+
+float InterpolateExposure(float newExposure, float oldExposure) {
+    float delta = newExposure - oldExposure;
+    float speed = delta > 0.0 ? _Params2.x : _Params2.y;
+    float exposure = oldExposure + delta * (1.0 - exp2(-_Params2.w * speed));
+    return exposure;
+}
+
+[numthreads(HISTOGRAM_REDUCTION_THREAD_X, HISTOGRAM_REDUCTION_THREAD_Y, 1)]
+void MAIN(uint2 groupThreadId : SV_GroupThreadID) {
+    const uint thread_id = groupThreadId.y * HISTOGRAM_REDUCTION_THREAD_X + groupThreadId.x;
+    gs_pyramid[thread_id] = _HistogramBuffer[thread_id];
+    GroupMemoryBarrierWithGroupSync();
+    //Faster Method : parallel reduction to find the max value
+    UNITY_UNROLL
+        for (uint i = HISTOGRAM_REDUCTION_BINS >> 1u; i > 0u; i >>= 1u)
+        {
+            if (thread_id < i)
+                gs_pyramid[thread_id] = max(gs_pyramid[thread_id], gs_pyramid[thread_id + i]);
+            GroupMemoryBarrierWithGroupSync();
+        }
+    GroupMemoryBarrierWithGroupSync();
+    if (thread_id == 0u) {
+        //float maxValue = FindMaxHistogramValue(_HistogramBuffer);
+        float maxValue = float(gs_pyramid[0]);
+#if PROGRESSIVE
+        float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
+        float exposure = GetExposureMultiplier(avgLuminance);
+        //pre-apply last frame EV to prevent sudden changes in exposure and calculation leak
+        float prevExposure = _SourceTex[uint2(0u, 0u)].x;
+        exposure = InterpolateExposure(exposure, prevExposure);
+        _DestinationTex[uint2(0u, 0u)].x = exposure.x;
+#else
+        float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
+        float exposure = GetExposureMultiplier(avgLuminance);
+        _DestinationTex[uint2(0u, 0u)].x = exposure.x;
+#endif
+    }
 }

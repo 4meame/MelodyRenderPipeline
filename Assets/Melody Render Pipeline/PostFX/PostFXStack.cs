@@ -118,6 +118,12 @@ public class PostFXStack {
     FrameBlendingFilter frameBlendingFilter;
     int motionResultId = Shader.PropertyToID("_MotionResult");
     #endregion
+    #region Auto Exposure
+    AutoExposure autoExposure;
+    LogHistogram logHistogram;
+    int autoEVId = Shader.PropertyToID("_AutoEV");
+    #endregion
+
     public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.RescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
         this.camera = camera;
@@ -137,6 +143,10 @@ public class PostFXStack {
     public void Render(int sourceId) {
         //buffer.Blit(sourceId, BuiltinRenderTextureType.CameraTarget);
         //Draw(sourceId, BuiltinRenderTextureType.CameraTarget, Pass.Copy);
+
+        if (settings.autoExposureSettings.metering != AutoExposureSettings.MeteringMode.None) {
+            DoAutoExposure(sourceId);
+        }
 
         if (DoBloom(sourceId)) {
             DoColorGradingAndToneMappingAndFxaa(bloomResultId);
@@ -548,5 +558,30 @@ public class PostFXStack {
             //nothing to do!
         }
         buffer.EndSample("Motion Blur");
+    }
+
+    void DoAutoExposure(int from) {
+        if(autoExposure == null) {
+            autoExposure = new AutoExposure(buffer, settings.autoExposureSettings.autoExposure);
+        }
+        if(logHistogram == null) {
+            logHistogram = new LogHistogram(buffer, settings.autoExposureSettings.logHistogram);
+        }
+        buffer.BeginSample("Auto Exposure");
+        logHistogram.GenerateHistorgram(bufferSize.x, bufferSize.y, from);
+        //make sure filtering values are correct to avoid apocalyptic consequences
+        float lowPercent = settings.autoExposureSettings.lowPercent;
+        float highPercent = settings.autoExposureSettings.highPercent;
+        const float minDelta = 1e-2f;
+        highPercent = Mathf.Clamp(highPercent, 1f + minDelta, 99f);
+        lowPercent = Mathf.Clamp(lowPercent, 1f, highPercent - minDelta);
+        //clamp min/max adaptation values as well
+        float minLum = settings.autoExposureSettings.minEV;
+        float maxLum = settings.autoExposureSettings.maxEV;
+        Vector4 exposureParams = new Vector4(lowPercent, highPercent, minLum, maxLum);
+        Vector4 adaptationParams = new Vector4(settings.autoExposureSettings.speedDown, settings.autoExposureSettings.speedUp, settings.autoExposureSettings.compensation, Time.deltaTime);
+        Vector4 scaleOffsetRes = logHistogram.GetHistogramScaleOffsetRes(bufferSize.x, bufferSize.y);
+        autoExposure.AutoExposureLookUp(exposureParams, adaptationParams, scaleOffsetRes, logHistogram.data, settings.autoExposureSettings.adaptation == AutoExposureSettings.AdaptationMode.Fixed ? true : false);     
+        buffer.EndSample("Auto Exposure");
     }
 }

@@ -10,8 +10,9 @@ TEXTURE2D(_PostFXSource2);
 SAMPLER(sampler_PostFXSource2);
 TEXTURE2D(_ColorGradingLUT);
 SAMPLER(sampler_ColorGradingLUT);
-TEXTURE2D(_SSR_Result);
-SAMPLER(sampler_SSR_Result);
+//auto exposure
+TEXTURE2D(_AutoExposureLUT);
+SAMPLER(sampler_AutoExposureLUT);
 
 float4 _PostFXSource_TexelSize;
 bool _BloomBicubicUpsampling;
@@ -112,7 +113,8 @@ float Luminance(float3 color, bool useACES) {
 
 //postexposure must be applied after all other post fx and before other color grading
 float3 ColorGradePostExposure(float3 color) {
-	return color * _ColorAdjustment.x;
+	float ev = SAMPLE_TEXTURE2D_LOD(_AutoExposureLUT, sampler_AutoExposureLUT, float2(0.5, 0.5), 0);
+	return color * ev;
 }
 
 //whiteBalance must be applied in LMS space after postexposure and before other color grading

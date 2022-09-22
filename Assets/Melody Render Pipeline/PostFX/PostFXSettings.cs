@@ -170,6 +170,30 @@ public class PostFXSettings : ScriptableObject {
         public float frameBlending;
     }
 
+    [System.Serializable]
+    public struct AutoExposureSettings {
+        public ComputeShader autoExposure;
+        public ComputeShader logHistogram;
+        public enum MeteringMode { None, Auto, Curve, Physical }
+        public MeteringMode metering;
+        [Range(-10, 10)]
+        public float minEV;
+        [Range(-10, 10)]
+        public float maxEV;
+        [Range(1,99)]
+        public float lowPercent;
+        [Range(1, 99)]
+        public float highPercent;
+        [Min(0)]
+        public float compensation;
+        public enum AdaptationMode { Fixed, Progressive }
+        public AdaptationMode adaptation;
+        [Min(0)]
+        public float speedUp;
+        [Min(0)]
+        public float speedDown;
+    }
+
     [SerializeField]
     BloomSettings bloom = default;
     [SerializeField]
@@ -199,6 +223,8 @@ public class PostFXSettings : ScriptableObject {
     LightShaftsSettings lightShaftsSetting = default;
     [SerializeField]
     MotionBlurSettings motionBlurSetting = new MotionBlurSettings { shutterAngle = 270, sampleCount = 8, frameBlending = 0.5f };
+    [SerializeField]
+    AutoExposureSettings autoExposureSetting = default;
     public BloomSettings Bloom => bloom;
     public ColorAdjustmentSettings ColorAdjustment => colorAdjustment;
     public WhiteBalanceSettings WhiteBalance => whiteBalance;
@@ -210,4 +236,5 @@ public class PostFXSettings : ScriptableObject {
     public OutlineSettings OutlineSetting => outlineSetting;
     public LightShaftsSettings LightShaftsSetting => lightShaftsSetting;
     public MotionBlurSettings motionBlurSettings => motionBlurSetting;
+    public AutoExposureSettings autoExposureSettings => autoExposureSetting;
 }
