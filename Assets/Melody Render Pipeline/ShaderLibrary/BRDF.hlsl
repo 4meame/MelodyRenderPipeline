@@ -324,14 +324,16 @@ BRDF GetBRDF(Surface surface, bool applyAlphaToDiffuse = false) {
 	return brdf;
 }
 
-//Approximation of the GGX BRDF
+//Approximation of the CookTorrance BRDF
 float SpecularStrength(Surface surface, BRDF brdf, Light light) {
 	//half vector
 	float3 h = SafeNormalize(light.direction + surface.viewDirection);
-	float ndoth = saturate(dot(surface.normal, h));
-	float4 r_4 = pow4(brdf.roughness);
-	float d = (ndoth * r_4 - r_4) * ndoth + 1;
-	return r_4 / (PI * pow2(d));
+	float ndoth_2 = Square(saturate(dot(surface.normal, h)));
+	float ldoth_2 = Square(saturate(dot(light.direction, h)));
+	float r_2 = Square(brdf.roughness);
+	float d_2 = Square(ndoth_2 * (r_2 - 1.0) + 1.00001);
+	float normalization = brdf.roughness * 4.0 + 2.0;
+	return r_2 / (d_2 * max(0.1, ldoth_2) * normalization);
 }
 
 float3 DirectBRDF(Surface surface, BRDF brdf, Light light) {
