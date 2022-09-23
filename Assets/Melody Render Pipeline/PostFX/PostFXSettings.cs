@@ -187,7 +187,6 @@ public class PostFXSettings : ScriptableObject {
         public float lowPercent;
         [Range(1, 99)]
         public float highPercent;
-        [Min(0)]
         public float compensation;
         public enum AdaptationMode { Fixed, Progressive }
         public AdaptationMode adaptation;

@@ -115,7 +115,7 @@ float Luminance(float3 color, bool useACES) {
 //postexposure must be applied after all other post fx and before other color grading
 float3 ColorGradePostExposure(float3 color) {
 	if (_AutoExposure) {
-		float ev = SAMPLE_TEXTURE2D_LOD(_AutoExposureLUT, sampler_AutoExposureLUT, float2(0.5, 0.5), 0);
+		float ev = SAMPLE_TEXTURE2D_LOD(_AutoExposureLUT, sampler_AutoExposureLUT, float2(0, 0), 0);
 		return color * ev;
 	}
 	else {

@@ -19,9 +19,10 @@ groupshared uint gs_pyramid[HISTOGRAM_REDUCTION_BINS];
 float GetExposureMultiplier(float avgLuminance) {
     avgLuminance = max(0.00001, avgLuminance);
     //Krzysztof's method
-    //float compensation = 1.03 - (2.0 / (2.0 + log2(avgLuminance + 1.0)));
-    float compensation = _Params2.z;
-    float exposure = compensation / avgLuminance;
+    float keyValue = 1.03 - (2.0 / (2.0 + log2(avgLuminance + 1.0)));
+    float compensation = exp2(_Params2.z);
+    //float compensation = _Params2.z;
+    float exposure = keyValue / avgLuminance * compensation;
     return exposure;
 }
 

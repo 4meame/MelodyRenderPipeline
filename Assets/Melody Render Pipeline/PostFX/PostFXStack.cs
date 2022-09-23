@@ -144,15 +144,11 @@ public class PostFXStack {
         //buffer.Blit(sourceId, BuiltinRenderTextureType.CameraTarget);
         //Draw(sourceId, BuiltinRenderTextureType.CameraTarget, Pass.Copy);
 
+        DoAutoExposure(sourceId);
         if (DoBloom(sourceId)) {
-            DoAutoExposure(bloomResultId);
-
             DoColorGradingAndToneMappingAndFxaa(bloomResultId);
             buffer.ReleaseTemporaryRT(bloomResultId);
         } else {
-            #region Auto Exposure
-            DoAutoExposure(bloomResultId);
-            #endregion
             #region Motion Blur
             if (settings.motionBlurSettings.enable) {
                 //updating current result to source
