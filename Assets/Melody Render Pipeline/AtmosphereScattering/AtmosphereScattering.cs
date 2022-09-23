@@ -146,6 +146,9 @@ public class AtmosphereScattering {
     }
 
     public void RenderFog(int sourceId) {
+        if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
+            buffer.SetGlobalFloat(sunIntensityId, 0);
+        }
         Matrix4x4 projection = camera.projectionMatrix;
         buffer.SetGlobalMatrix("_InvProj", projection.inverse);
         buffer.SetGlobalMatrix("_InvRot", camera.cameraToWorldMatrix);
