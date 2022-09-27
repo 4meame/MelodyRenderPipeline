@@ -10,21 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e9ed20029b7a5bd48a2c7f0545aa09bb, type: 3}
-  m_Name: Volumetric Cloud G
+  m_Name: Volumetric Cloud E
   m_EditorClassIdentifier: 
   shader: {fileID: 4800000, guid: e61add218821eec439de1c401c3b69ef, type: 3}
   enabled: 1
   subPixelSize: 2
-  maxIterations: 220
-  renderSize: 1
-  fixedWidth: 1280
-  fixedHeight: 720
+  maxIterations: 128
+  renderSize: 0
+  fixedWidth: 960
+  fixedHeight: 540
   downsample: 2
-  coverageOffsetX: 0.509
-  coverageOffsetY: 0.186
-  horizonCoverageStart: 0
-  horizonCoverageEnd: 0.968
-  baseScale: 0.254
+  coverageOffsetX: 0.591
+  coverageOffsetY: 0
+  horizonCoverageStart: 0.268
+  horizonCoverageEnd: 0.815
+  baseScale: 1
   cloudGradient1:
     serializedVersion: 2
     key0: {r: 0, g: 0, b: 0, a: 1}
@@ -112,42 +112,42 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 4
     m_NumAlphaKeys: 2
-  sampleThreshold: 0.208
+  sampleThreshold: 0.031
   sampleScalar: 1
-  bottomFade: 0.373
-  detailScale: 11.43
-  erosionEdgeSize: 0.459
-  cloudDistortion: 0.114
-  cloudDistortionScale: 0.43
-  cloudBaseColor: {r: 0.33445096, g: 0.46265563, b: 0.7254902, a: 1}
+  bottomFade: 0.244
+  detailScale: 3.4
+  erosionEdgeSize: 0.422
+  cloudDistortion: 0.372
+  cloudDistortionScale: 0.68
+  cloudBaseColor: {r: 0.16300005, g: 0.40589443, b: 1, a: 1}
   cloudTopColor: {r: 1, g: 1, b: 1, a: 1}
-  sunScale: 1.43
-  ambientScale: 0.09
-  sunRayLength: 0.188
-  coneRadius: 0.532
-  density: 5.9
-  forwardScatteringG: 0.839
-  backwardScatteringG: -0.409
+  sunScale: 1.13
+  ambientScale: 1.07
+  sunRayLength: 0.24
+  coneRadius: 0.24
+  density: 5.6
+  forwardScatteringG: 0.8
+  backwardScatteringG: -0.39
   darkOutlineScalar: 1
-  speed: 0
-  coverageOffsetPerFrame: {x: 0.04, y: 0.0014}
-  baseOffsetPerFrame: {x: 0.0001, y: -0.018, z: -0.003}
+  speed: 0.1
+  coverageOffsetPerFrame: {x: 0, y: 0}
+  baseOffsetPerFrame: {x: 0.000951, y: -0.001, z: 0}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
-  earthCenter: {x: 0, y: -6371000, z: 0}
-  earthRadius: 6371000
+  earthCenter: {x: 0, y: -1371000, z: 0}
+  earthRadius: 1371000
   useCalculatedRadius: 0
   showCalculatedRadius: 0
   horizonDistanceOfRadius: 0
-  atmosphereStartHeight: 2400
-  atmosphereEndHeight: 8500
+  atmosphereStartHeight: 1500
+  atmosphereEndHeight: 4000
   cameraPositionScale: {x: 1, y: 1, z: 1}
-  lodDistance: 0.336
+  lodDistance: 0.227
   horizonLevel: 0
-  horizonFade: 0.017
+  horizonFade: 0.427
   horizonFadeStartAlpha: 0
-  shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
-  detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
-  coverageTexture: {fileID: 2800000, guid: 0dfb11a4a52d6d446bd846dbcc09a060, type: 3}
+  shapeTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
+  detailTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
+  coverageTexture: {fileID: 2800000, guid: 813a69576878a33438240780d057dcf3, type: 3}
   curlTexture: {fileID: 2800000, guid: 4c1bdebb39a1f034aad3a28b4df53a8e, type: 3}
   blueNoiseTexture: {fileID: 0}
   debugTexture: 0

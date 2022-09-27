@@ -10,29 +10,29 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 54eb3ceb11826404a9f982167e9b640e, type: 3}
-  m_Name: Atmosphere Scattering C
+  m_Name: Atmosphere Scattering B
   m_EditorClassIdentifier: 
   updateEveryFrame: 1
   computeShader: {fileID: 7200000, guid: 5676ee6232d7d8d47b30a1d09dd6105a, type: 3}
-  mode: 1
+  mode: 0
   debugMode: 0
   planetRadius: 6371000
   atmosphereHeight: 80000
-  groundHeight: 1000
+  groundHeight: 0
   densityScaleHeight: {x: 7944, y: 1200}
-  rayleighCoefficients: {x: 5.26, y: 12.84, z: 27.07}
+  rayleighCoefficients: {x: 5.5, y: 14.08, z: 34}
   mieCoefficients: {x: 21, y: 21, z: 21}
   mieG: 0.625
   incomingLight: {r: 3.9533494, g: 3.9533494, b: 3.9533494, a: 4}
   sunIntensity: 0.3
   lightSamples: 64
-  distanceScale: 1
-  rayleighInscatterScale: 1.6
+  distanceScale: 2
+  rayleighInscatterScale: 2.2
   rayleighExtinctionScale: 0.94
-  mieInscatterScale: 1.2
+  mieInscatterScale: 1.16
   mieExtinctionScale: 1
-  directIntensity: 1.29
-  ambientIntensity: 0.783
+  directIntensity: 1.4
+  ambientIntensity: 0.5
   particleDensityLUTSize: 1024
   sunColorLUTSize: 256
   ambientLUTSize: 128
