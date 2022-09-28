@@ -29,9 +29,8 @@ public enum LensFlareDistribution
     Random
 }
 
-
-
-public class LensFlareDataElement {
+[System.Serializable]
+public sealed class LensFlareDataElement {
     public LensFlareDataElement() {
         visible = true;
         localIntensity = 1.0f;
@@ -162,8 +161,8 @@ public class LensFlareDataElement {
     bool isFoldOpened;
 }
 
-[CreateAssetMenu(menuName = "Rendering/Lens Flare")]
-public class LensFlareData : ScriptableObject {
+[System.Serializable, CreateAssetMenu(menuName = "Rendering/Lens Flare")]
+public sealed class LensFlareData : ScriptableObject {
     public LensFlareData() {
         elements = null;
     }

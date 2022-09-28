@@ -7,8 +7,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor;
 
-[CustomEditorForRenderPipeline(typeof(LensFlareData), typeof(RenderPipelineAsset))]
-class LensFlareDataSRPEditor : Editor
+[CustomEditor(typeof(LensFlareData))]
+class LensFlareDataEditor : Editor
 {
     static class Styles
     {
@@ -106,7 +106,7 @@ class LensFlareDataSRPEditor : Editor
     #region Reflection
     static Func<SerializedProperty, GenericMenu> FillPropertyContextMenu;
 
-    static LensFlareDataSRPEditor()
+    static LensFlareDataEditor()
     {
         MethodInfo FillPropertyContextMenuInfo = typeof(EditorGUI).GetMethod("FillPropertyContextMenu", BindingFlags.Static | BindingFlags.NonPublic);
         var propertyParam = Expression.Parameter(typeof(SerializedProperty), "property");
@@ -158,7 +158,7 @@ class LensFlareDataSRPEditor : Editor
         m_List.elementHeightCallback = ElementHeight;
 
         if (s_ProceduralThumbnailShader == null)
-            s_ProceduralThumbnailShader = Shader.Find("Hidden/Core/LensFlareDataDrivenPreview");
+            s_ProceduralThumbnailShader = Shader.Find("Hidden/Melody RP/Post FX Stack/LensFlare/Preview");
         m_PreviewLensFlare = new Material(s_ProceduralThumbnailShader);
 
         if (m_PreviewTexture == null)
