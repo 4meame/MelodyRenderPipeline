@@ -16,7 +16,7 @@ public enum LensFlareBlendMode
 {
     Additive,
     Screen,
-    Premutiply,
+    Premultiply,
     Lerp
 }
 

@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using System;
 
 [ExecuteAlways]
-public class LensFlare : MonoBehaviour {
+public class LensFlareComponent : MonoBehaviour {
     [SerializeField]
     LensFlareData m_LensFlareData = null;
     public LensFlareData lensFlareData {
@@ -26,7 +26,7 @@ public class LensFlare : MonoBehaviour {
     public float maxAttenuationDistance = 100.0f;
     public AnimationCurve distanceAttenuationCurve = new AnimationCurve(new Keyframe(0.0f, 1.0f), new Keyframe(1.0f, 0.0f));
     public float maxAttenuationScale = 100.0f;
-    public AnimationCurve scaleeAttenuationCurve = new AnimationCurve(new Keyframe(0.0f, 1.0f), new Keyframe(1.0f, 0.0f));
+    public AnimationCurve scaleAttenuationCurve = new AnimationCurve(new Keyframe(0.0f, 1.0f), new Keyframe(1.0f, 0.0f));
     //attenuation used radially, which allow for instance to enable flare only on the edge of the screen
     public AnimationCurve radialScreenAttenuationCurve = new AnimationCurve(new Keyframe(0.0f, 1.0f), new Keyframe(1.0f, 0.0f));
     [Header("Occlusion")]

@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 public class LensFlareCommon {
     static LensFlareCommon m_Instance = null;
     static readonly object m_Padlock = new object();
-    static List<LensFlare> m_Data = new List<LensFlare>();
+    static List<LensFlareComponent> m_Data = new List<LensFlareComponent>();
     //max occlusion
     public static int maxLensFlareWithOcclusion = 128;
     //occlusion RT temporal filter
@@ -46,13 +46,13 @@ public class LensFlareCommon {
         }
     }
 
-    List<LensFlare> Data {
+    List<LensFlareComponent> Data {
         get {
             return m_Data;
         }
     }
 
-    public List<LensFlare> GetData() {
+    public List<LensFlareComponent> GetData() {
         return Data;
     }
 
@@ -60,14 +60,14 @@ public class LensFlareCommon {
         return Data.Count == 0;
     }
 
-    public void AddData(LensFlare data) {
+    public void AddData(LensFlareComponent data) {
         Debug.Assert(Instance == this, "LensFlareCommon can have only one instance");
         if (!m_Data.Contains(data)) {
             m_Data.Add(data);
         }
     }
 
-    public void RemoveData(LensFlare data) {
+    public void RemoveData(LensFlareComponent data) {
         Debug.Assert(Instance == this, "LensFlareCommon can have only one instance");
         if (m_Data.Contains(data)) {
             m_Data.Remove(data);
@@ -129,6 +129,404 @@ public class LensFlareCommon {
         float localSin0 = Mathf.Sin(-rotation);
         return new Vector4(localCos0, localSin0, positionOffset.x + rayOff0.x * translationScale.x, -positionOffset.y + rayOff0.y * translationScale.y);
     }
+    static Vector2 GetLensFlareRayOffset(Vector2 screenPos, float position, float globalCos0, float globalSin0) {
+        Vector2 rayOff = -(screenPos + screenPos * (position - 1.0f));
+        return new Vector2(globalCos0 * rayOff.x - globalSin0 * rayOff.y, globalSin0 * rayOff.x + globalCos0 * rayOff.y);
+    }
+
+    //directional light or local light : point,spot,area light
+    static Vector3 WorldToViewport(Camera camera, bool isLocalLight, bool isCameraRelative, Matrix4x4 viewProjMatrix, Vector3 positionWS) {
+        if (isLocalLight) {
+            //treat light as world local object
+            return WorldToViewportLocal(isCameraRelative, viewProjMatrix, camera.transform.position, positionWS);
+        } else {
+            return WorldToViewportDistance(camera, positionWS);
+        }
+    }
+
+    static Vector3 WorldToViewportLocal(bool isCameraRelative, Matrix4x4 viewProjMatrix, Vector3 cameraPosWS, Vector3 positionWS) {
+        Vector3 localPositionWS = positionWS;
+        if (isCameraRelative) {
+            localPositionWS -= cameraPosWS;
+        }
+        Vector4 viewportPos4 = viewProjMatrix * localPositionWS;
+        Vector3 viewportPos = new Vector3(viewportPos4.x, viewportPos4.y, 0f);
+        viewportPos /= viewportPos4.w;
+        viewportPos.x = viewportPos.x * 0.5f + 0.5f;
+        viewportPos.y = viewportPos.y * 0.5f + 0.5f;
+        viewportPos.y = 1.0f - viewportPos.y;
+        viewportPos.z = viewportPos4.w;
+        return viewportPos;
+    }
+
+    static Vector3 WorldToViewportDistance(Camera cam, Vector3 positionWS) {
+        Vector4 camPos = cam.worldToCameraMatrix * positionWS;
+        Vector4 viewportPos4 = cam.projectionMatrix * camPos;
+        Vector3 viewportPos = new Vector3(viewportPos4.x, viewportPos4.y, 0f);
+        viewportPos /= viewportPos4.w;
+        viewportPos.x = viewportPos.x * 0.5f + 0.5f;
+        viewportPos.y = viewportPos.y * 0.5f + 0.5f;
+        viewportPos.z = viewportPos4.w;
+        return viewportPos;
+    }
+
+    static public void ComputeOcclusion(Material lensFlareMaterial, LensFlareCommon lensFlares, Camera camera, 
+        float actualWidth, float actualHeight, bool isCameraRelative,
+        Vector3 cameraPosWS, Matrix4x4 viewProjMatrix, 
+        CommandBuffer buffer, 
+        bool taaEnabled, int _FlareOcclusionTex, int _FlareOcclusionIndex, int _FlareTex, int _FlareColorValue, int _FlareData0, int _FlareData1, int _FlareData2, int _FlareData3, int _FlareData4) {
+
+        Vector2 vScreenRatio;
+        if(lensFlares.IsEmpty() || occlusionRT == null) {
+            return;
+        }
+        //exit in sceneView camera
+        if (camera.cameraType == CameraType.SceneView) {
+            //determine whether the "Animated Materials" checkbox is checked for the current view.
+            for (int i = 0; i < UnityEditor.SceneView.sceneViews.Count; i++) {
+                var sv = UnityEditor.SceneView.sceneViews[i] as UnityEditor.SceneView;
+                if (sv.camera == camera) {
+                    return;
+                }
+            }
+        }
+        //calculate screenRatio
+        Vector2 screenSize = new Vector2(actualWidth, actualHeight);
+        float screenRatio = screenSize.x / screenSize.y;
+        vScreenRatio = new Vector2(screenRatio, 1.0f);
+        //RT identifier already set
+        buffer.SetRenderTarget(occlusionRT);
+        if (!taaEnabled) {
+            buffer.ClearRenderTarget(false, true, Color.black);
+        }
+        //ddx ddy
+        float dx = 1.0f / ((float)maxLensFlareWithOcclusion);
+        float dy = 1.0f / ((float)(maxLensFlareWithOcclusionTemporalSample + 1 * mergeNeeded));
+        float halfx = 0.5f / ((float)maxLensFlareWithOcclusion);
+        float halfy = 0.5f / ((float)(maxLensFlareWithOcclusionTemporalSample + 1 * mergeNeeded));
+
+        int taaValue = taaEnabled ? 1 : 0;
+        int occlusionIndex = 0;
+        foreach (LensFlareComponent lensFlare in lensFlares.GetData()) {
+            if (lensFlare == null) {
+                continue;
+            }
+            LensFlareData data = lensFlare.lensFlareData;
+
+            if (!lensFlare.enabled ||
+                !lensFlare.gameObject.activeSelf ||
+                !lensFlare.gameObject.activeInHierarchy ||
+                data == null ||
+                data.elements == null ||
+                data.elements.Length == 0 ||
+                !lensFlare.useOcclusion ||
+                (lensFlare.useOcclusion && lensFlare.sampleCount == 0) ||
+                lensFlare.intensity <= 0.0f) {
+                continue;
+            }
+            //get light world position
+            Light light = lensFlare.GetComponent<Light>();
+            Vector3 positionWS;
+            Vector3 viewPortPos;
+            bool isLocalLight = false;
+            if (light != null && light.type == LightType.Directional) {
+                //directional light
+                positionWS = -light.transform.forward * camera.farClipPlane;
+            } else {
+                positionWS = light.transform.position;
+                isLocalLight = true;
+            }
+            viewPortPos = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS);
+            //opposite direction
+            if (viewPortPos.z < 0.0f) { 
+                continue; 
+            }
+            //viewport cull
+            if (!lensFlare.allowOffScreen) {
+                if (viewPortPos.x < 0.0f || viewPortPos.x > 1.0f ||
+                    viewPortPos.y < 0.0f || viewPortPos.y > 1.0f) {
+                    continue;
+                }
+            }
+            //calcuate attenuation coef
+            Vector3 diffToObject = positionWS - cameraPosWS;
+            float distanceToObject = diffToObject.magnitude;
+            float coefDistSample = distanceToObject / lensFlare.maxAttenuationDistance;
+            float coefScaleSample = distanceToObject / lensFlare.maxAttenuationScale;
+            float distanceAttenuation = isLocalLight && lensFlare.distanceAttenuationCurve.length > 0 ? lensFlare.distanceAttenuationCurve.Evaluate(coefDistSample) : 1.0f;
+            float scaleAttenuation = isLocalLight && lensFlare.scaleAttenuationCurve.length > 0 ? lensFlare.scaleAttenuationCurve.Evaluate(coefScaleSample) : 1.0f;
+            //viewport screenPos Z with offset
+            Vector3 direction = (camera.transform.position - lensFlare.transform.position).normalized;
+            Vector3 screenPosZ = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS + direction * lensFlare.occlusionOffset);
+            //calculate occlusion radius
+            float adjustedOcclusionRadius = isLocalLight ? lensFlare.occlusionRadius : lensFlare.CelestialProjectedOcclusionRadius(camera);
+            Vector2 occlusionRadiusEdgeScreenPos0 = (Vector2)viewPortPos;
+            Vector2 occlusionRadiusEdgeScreenPos1 = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS + camera.transform.up * adjustedOcclusionRadius);
+            float occlusionRadius = (occlusionRadiusEdgeScreenPos1 - occlusionRadiusEdgeScreenPos0).magnitude;
+            //_FlareData1 x: OcclusionRadius, y: OcclusionSampleCount, z: ScreenPosZ, w: ScreenRatio
+            buffer.SetGlobalVector(_FlareData1, new Vector4(occlusionRadius, lensFlare.sampleCount, screenPosZ.z, screenRatio));
+            buffer.EnableShaderKeyword("FLARE_COMPUTE_OCCLUSION");
+            Vector2 screenPos = new Vector2(2.0f * viewPortPos.x - 1.0f, 1.0f - 2.0f * viewPortPos.y);
+            Vector2 radPos = new Vector2(Mathf.Abs(screenPos.x), Mathf.Abs(screenPos.y));
+            // l1 norm (instead of l2 norm), do not know what is it
+            float radius = Mathf.Max(radPos.x, radPos.y);
+            float radialsScaleRadius = lensFlare.radialScreenAttenuationCurve.length > 0 ? lensFlare.radialScreenAttenuationCurve.Evaluate(radius) : 1.0f;
+            float currentIntensity = lensFlare.intensity * radialsScaleRadius * distanceAttenuation;
+            if (currentIntensity <= 0.0f) {
+                continue;
+            }
+            buffer.SetGlobalVector(_FlareOcclusionIndex, new Vector4(((float)(occlusionIndex)) * dx + halfx, halfy, 0, frameIndex + 1));
+            //falloff value
+            float gradientPosition = Mathf.Clamp01(1.0f - 1e-6f);
+            //_FlareData3 x: Allow Offscreen, y: Edge Offset, z: Falloff, w: invSideCount
+            buffer.SetGlobalVector(_FlareData3, new Vector4(lensFlare.allowOffScreen ? 1.0f : 0.0f, gradientPosition, Mathf.Exp(Mathf.Lerp(0.0f, 4.0f, 1.0f)), 1.0f / 3.0f));
+
+            float globalCos0 = Mathf.Cos(0.0f);
+            float globalSin0 = Mathf.Sin(0.0f);
+            float position = 0.0f;
+            Vector2 rayOffset = GetLensFlareRayOffset(screenPos, position, globalCos0, globalSin0);
+            Vector4 flareData0 = GetFlareData0(screenPos, Vector2.one, rayOffset, vScreenRatio, 0.0f, position, 0.0f, Vector2.zero, false);
+            //_FlareData0 x: localCos0, y: localSin0, zw: PositionOffsetXY
+            buffer.SetGlobalVector(_FlareData0, flareData0);
+            //_FlareData2 //xy: ScreenPos, zw: FlareSize
+            buffer.SetGlobalVector(_FlareData2, new Vector4(screenPos.x, screenPos.y, 0.0f, 0.0f));
+            //render to screen
+            buffer.SetViewport(new Rect() { x = occlusionIndex, y = (frameIndex + 1 * mergeNeeded) * taaValue, width = 1, height = 1 });
+            buffer.DrawProcedural(Matrix4x4.identity, lensFlareMaterial, 4, MeshTopology.Quads, 4, 1);
+            ++occlusionIndex;
+        }
+        ++frameIndex;
+        frameIndex %= maxLensFlareWithOcclusionTemporalSample;
+    }
+
+    static public void DoLensFlareCommon(Material lensFlareMaterial, LensFlareCommon lensFlares, Camera camera,
+        float actualWidth, float actualHeight, bool isCameraRelative,
+        Vector3 cameraPosWS, Matrix4x4 viewProjMatrix,
+        CommandBuffer buffer,RenderTargetIdentifier colorBuffer,
+        System.Func<Light, Camera, Vector3, float> GetLensFlareLightAttenuation,
+        bool taaEnabled, int _FlareOcclusionTex, int _FlareOcclusionIndex, int _FlareTex, int _FlareColorValue, int _FlareData0, int _FlareData1, int _FlareData2, int _FlareData3, int _FlareData4, bool debugView) {
+
+        Vector2 vScreenRatio;
+        if (lensFlares.IsEmpty()) {
+            return;
+        }
+        //exit in sceneView camera
+        if (camera.cameraType == CameraType.SceneView) {
+            //determine whether the "Animated Materials" checkbox is checked for the current view.
+            for (int i = 0; i < UnityEditor.SceneView.sceneViews.Count; i++) {
+                var sv = UnityEditor.SceneView.sceneViews[i] as UnityEditor.SceneView;
+                if (sv.camera == camera) {
+                    return;
+                }
+            }
+        }
+        //calculate screenRatio
+        Vector2 screenSize = new Vector2(actualWidth, actualHeight);
+        float screenRatio = screenSize.x / screenSize.y;
+        vScreenRatio = new Vector2(screenRatio, 1.0f);
+        //RT identifier already set
+        buffer.SetRenderTarget(colorBuffer);
+        buffer.SetViewport(new Rect() { width = screenSize.x, height = screenSize.y });
+        if (debugView) {
+            //background pitch black to see only the Flares
+            buffer.ClearRenderTarget(false, true, Color.black);
+        }
+
+        int occlusionIndex = 0;
+        foreach (LensFlareComponent lensFlare in lensFlares.GetData()) {
+            if (lensFlare == null) {
+                continue;
+            }
+            LensFlareData data = lensFlare.lensFlareData;
+
+            if (!lensFlare.enabled ||
+                !lensFlare.gameObject.activeSelf ||
+                !lensFlare.gameObject.activeInHierarchy ||
+                data == null ||
+                data.elements == null ||
+                data.elements.Length == 0 ||           
+                lensFlare.intensity <= 0.0f) {
+                continue;
+            }
+            //get light world position
+            Light light = lensFlare.GetComponent<Light>();
+            Vector3 positionWS;
+            Vector3 viewPortPos;
+            bool isLocalLight = false;
+            if (light != null && light.type == LightType.Directional) {
+                //directional light
+                positionWS = -light.transform.forward * camera.farClipPlane;
+            } else {
+                positionWS = light.transform.position;
+                isLocalLight = true;
+            }
+            viewPortPos = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS);
+            //opposite direction
+            if (viewPortPos.z < 0.0f) {
+                continue;
+            }
+            //viewport cull
+            if (!lensFlare.allowOffScreen) {
+                if (viewPortPos.x < 0.0f || viewPortPos.x > 1.0f ||
+                    viewPortPos.y < 0.0f || viewPortPos.y > 1.0f) {
+                    continue;
+                }
+            }
+            //calcuate attenuation coef
+            Vector3 diffToObject = positionWS - cameraPosWS;
+            //check if the light is forward, can be an issue with, the math associated to Panini projection
+            if (Vector3.Dot(camera.transform.forward, diffToObject) < 0.0f) {
+                continue;
+            }
+            float distanceToObject = diffToObject.magnitude;
+            float coefDistSample = distanceToObject / lensFlare.maxAttenuationDistance;
+            float coefScaleSample = distanceToObject / lensFlare.maxAttenuationScale;
+            float distanceAttenuation = isLocalLight && lensFlare.distanceAttenuationCurve.length > 0 ? lensFlare.distanceAttenuationCurve.Evaluate(coefDistSample) : 1.0f;
+            float scaleAttenuation = isLocalLight && lensFlare.scaleAttenuationCurve.length > 0 ? lensFlare.scaleAttenuationCurve.Evaluate(coefScaleSample) : 1.0f;
+            //lensflare color
+            Color globalColorModulation = Color.white;
+            if (light != null) {
+                if (lensFlare.attenuationByLightShape)
+                    globalColorModulation *= GetLensFlareLightAttenuation(light, camera, -diffToObject.normalized);
+            }
+            globalColorModulation *= distanceAttenuation;
+            //viewport screenPos Z with offset
+            Vector3 direction = (camera.transform.position - lensFlare.transform.position).normalized;
+            Vector3 screenPosZ = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS + direction * lensFlare.occlusionOffset);
+            //calculate occlusion radius
+            float adjustedOcclusionRadius = isLocalLight ? lensFlare.occlusionRadius : lensFlare.CelestialProjectedOcclusionRadius(camera);
+            Vector2 occlusionRadiusEdgeScreenPos0 = (Vector2)viewPortPos;
+            Vector2 occlusionRadiusEdgeScreenPos1 = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS + camera.transform.up * adjustedOcclusionRadius);
+            float occlusionRadius = (occlusionRadiusEdgeScreenPos1 - occlusionRadiusEdgeScreenPos0).magnitude;
+            //_FlareData1 x: OcclusionRadius, y: OcclusionSampleCount, z: ScreenPosZ, w: ScreenRatio
+            buffer.SetGlobalVector(_FlareData1, new Vector4(occlusionRadius, lensFlare.sampleCount, screenPosZ.z, screenRatio));
+            if (lensFlare.useOcclusion) {
+                buffer.EnableShaderKeyword("FLARE_OCCLUSION");
+            } else {
+                buffer.DisableShaderKeyword("FLARE_OCCLUSION");
+            }
+            if(occlusionRT != null) {
+                buffer.SetGlobalTexture(_FlareOcclusionTex, occlusionRT);
+            }
+            buffer.SetGlobalVector(_FlareOcclusionIndex, new Vector4((float)(occlusionIndex + 0.5f) / maxLensFlareWithOcclusion, 0.5f, 0.0f, 0.0f));
+            if (lensFlare.useOcclusion && lensFlare.sampleCount > 0)
+                ++occlusionIndex;
+            //draw lensflare elements
+            foreach (LensFlareDataElement element in data.elements) {
+                if (element == null ||
+                    element.visible == false ||
+                    (element.lensFlareTexture == null && element.flareType == LensFlareType.Image) ||
+                    element.localIntensity <= 0.0f ||
+                    element.count <= 0 ||
+                    element.localIntensity <= 0.0f) {
+                    continue;
+                }
+                //you can apply light color temperature in debug view inspector
+                Color colorModulation = globalColorModulation;
+                if (light != null && element.modulateByLightColor) {
+                    if (light.useColorTemperature)
+                        colorModulation *= light.color * Mathf.CorrelatedColorTemperatureToRGB(light.colorTemperature);
+                    else
+                        colorModulation *= light.color;
+                }
+                Color currColor = colorModulation;
+                Vector2 screenPos = new Vector2(2.0f * viewPortPos.x - 1.0f, 1.0f - 2.0f * viewPortPos.y);
+                Vector2 radPos = new Vector2(Mathf.Abs(screenPos.x), Mathf.Abs(screenPos.y));
+                // l1 norm (instead of l2 norm), do not know what is it
+                float radius = Mathf.Max(radPos.x, radPos.y);
+                float radialsScaleRadius = lensFlare.radialScreenAttenuationCurve.length > 0 ? lensFlare.radialScreenAttenuationCurve.Evaluate(radius) : 1.0f;
+                float currentIntensity = lensFlare.intensity * radialsScaleRadius * distanceAttenuation;
+                if (currentIntensity <= 0.0f) {
+                    continue;
+                }
+                Texture lensFlareTex = element.lensFlareTexture;
+                float aspectRatio;
+                if(element.flareType == LensFlareType.Image)
+                {
+                    aspectRatio = element.preserveAspectRatio ? ((float)lensFlareTex.height / (float)lensFlareTex.width) : 1.0f;
+                } else {
+                    aspectRatio = 1.0f;
+                }
+                float rotation = element.rotation;
+                Vector2 elementSizeXY;
+                if (element.preserveAspectRatio) {
+                    if (aspectRatio >= 1.0f) {
+                        elementSizeXY = new Vector2(element.sizeXY.x / aspectRatio, element.sizeXY.y);
+                    } else {
+                        elementSizeXY = new Vector2(element.sizeXY.x, element.sizeXY.y * aspectRatio);
+                    }
+                } else {
+                    elementSizeXY = new Vector2(element.sizeXY.x, element.sizeXY.y);
+                }
+                //arbitrary value
+                float scaleSize = 0.1f;
+                Vector2 size = new Vector2(elementSizeXY.x, elementSizeXY.y);
+                float combineScale = scaleSize * scaleAttenuation * element.uniformScale * lensFlare.scale;
+                size *= combineScale;
+                currColor *= element.tint;
+                currColor *= currentIntensity;
+                //NOTE HERE
+                float angularOffset = SystemInfo.graphicsUVStartsAtTop ? element.angularOffset : -element.angularOffset;
+                float globalCos0 = Mathf.Cos(-angularOffset * Mathf.Deg2Rad);
+                float globalSin0 = Mathf.Sin(-angularOffset * Mathf.Deg2Rad);
+                float position = 2.0f * element.position;
+                //set material pass
+                LensFlareBlendMode blendMode = element.blendMode;
+                int materialPass;
+                if (blendMode == LensFlareBlendMode.Additive)
+                {
+                    materialPass = 0;
+                }
+                else if (blendMode == LensFlareBlendMode.Screen)
+                {
+                    materialPass = 1;
+                }
+                else if (blendMode == LensFlareBlendMode.Premultiply)
+                {
+                    materialPass = 2;
+                }
+                else if (blendMode == LensFlareBlendMode.Lerp)
+                {
+                    materialPass = 3;
+                }
+                else
+                {
+                    materialPass = 0;
+                }
+                //set keywords
+                if (element.flareType == LensFlareType.Image)
+                {
+                    buffer.DisableShaderKeyword("FLARE_CIRCLE");
+                    buffer.DisableShaderKeyword("FLARE_POLYGON");
+                }
+                else if (element.flareType == LensFlareType.Circle)
+                {
+                    buffer.EnableShaderKeyword("FLARE_CIRCLE");
+                    buffer.DisableShaderKeyword("FLARE_POLYGON");
+                }
+                else if (element.flareType == LensFlareType.Polygon) 
+                { 
+                    buffer.DisableShaderKeyword("FLARE_CIRCLE");
+                    buffer.EnableShaderKeyword("FLARE_POLYGON");
+                }
+                if(element.flareType == LensFlareType.Circle || element.flareType == LensFlareType.Polygon)
+                {
+                    if (element.inverseSDF)
+                    {
+                        buffer.EnableShaderKeyword("FLARE_INVERSE_SDF");
+                    }
+                    else
+                    {
+                        buffer.DisableShaderKeyword("FLARE_INVERSE_SDF");
+                    }
+                }
+                else
+                {
+                    buffer.DisableShaderKeyword("FLARE_INVERSE_SDF");
+                }
 
 
+            }
+        }
+    }
 }
