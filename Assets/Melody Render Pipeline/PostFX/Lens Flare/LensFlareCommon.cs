@@ -279,7 +279,7 @@ public class LensFlareCommon {
             //falloff value
             float gradientPosition = Mathf.Clamp01(1.0f - 1e-6f);
             //_FlareData3 x: Allow Offscreen, y: Edge Offset, z: Falloff, w: invSideCount
-            buffer.SetGlobalVector(_FlareData3, new Vector4(lensFlare.allowOffScreen ? 1.0f : 0.0f, gradientPosition, Mathf.Exp(Mathf.Lerp(0.0f, 4.0f, 1.0f)), 1.0f / 3.0f));
+            buffer.SetGlobalVector(_FlareData3, new Vector4(lensFlare.allowOffScreen ? 1.0f : -1.0f, gradientPosition, Mathf.Exp(Mathf.Lerp(0.0f, 4.0f, 1.0f)), 1.0f / 3.0f));
 
             float globalCos0 = Mathf.Cos(0.0f);
             float globalSin0 = Mathf.Sin(0.0f);
@@ -441,13 +441,12 @@ public class LensFlareCommon {
                 }
                 Texture lensFlareTex = element.lensFlareTexture;
                 float aspectRatio;
-                if(element.flareType == LensFlareType.Image)
+                if (element.flareType == LensFlareType.Image)
                 {
                     aspectRatio = element.preserveAspectRatio ? ((float)lensFlareTex.height / (float)lensFlareTex.width) : 1.0f;
                 } else {
                     aspectRatio = 1.0f;
                 }
-                float rotation = element.rotation;
                 Vector2 elementSizeXY;
                 if (element.preserveAspectRatio) {
                     if (aspectRatio >= 1.0f) {
@@ -473,59 +472,188 @@ public class LensFlareCommon {
                 //set material pass
                 LensFlareBlendMode blendMode = element.blendMode;
                 int materialPass;
-                if (blendMode == LensFlareBlendMode.Additive)
-                {
+                if (blendMode == LensFlareBlendMode.Additive) {
                     materialPass = 0;
                 }
-                else if (blendMode == LensFlareBlendMode.Screen)
-                {
+                else if (blendMode == LensFlareBlendMode.Screen) {
                     materialPass = 1;
                 }
-                else if (blendMode == LensFlareBlendMode.Premultiply)
-                {
+                else if (blendMode == LensFlareBlendMode.Premultiply) {
                     materialPass = 2;
                 }
-                else if (blendMode == LensFlareBlendMode.Lerp)
-                {
+                else if (blendMode == LensFlareBlendMode.Lerp) {
                     materialPass = 3;
                 }
-                else
-                {
+                else {
                     materialPass = 0;
                 }
                 //set keywords
-                if (element.flareType == LensFlareType.Image)
-                {
+                if (element.flareType == LensFlareType.Image) {
                     buffer.DisableShaderKeyword("FLARE_CIRCLE");
                     buffer.DisableShaderKeyword("FLARE_POLYGON");
                 }
-                else if (element.flareType == LensFlareType.Circle)
-                {
+                else if (element.flareType == LensFlareType.Circle) {
                     buffer.EnableShaderKeyword("FLARE_CIRCLE");
                     buffer.DisableShaderKeyword("FLARE_POLYGON");
                 }
-                else if (element.flareType == LensFlareType.Polygon) 
-                { 
+                else if (element.flareType == LensFlareType.Polygon) {
                     buffer.DisableShaderKeyword("FLARE_CIRCLE");
                     buffer.EnableShaderKeyword("FLARE_POLYGON");
                 }
-                if(element.flareType == LensFlareType.Circle || element.flareType == LensFlareType.Polygon)
-                {
-                    if (element.inverseSDF)
-                    {
+                if (element.flareType == LensFlareType.Circle || element.flareType == LensFlareType.Polygon) {
+                    if (element.inverseSDF) {
                         buffer.EnableShaderKeyword("FLARE_INVERSE_SDF");
                     }
-                    else
-                    {
+                    else {
                         buffer.DisableShaderKeyword("FLARE_INVERSE_SDF");
                     }
                 }
-                else
-                {
+                else {
                     buffer.DisableShaderKeyword("FLARE_INVERSE_SDF");
                 }
 
 
+                if (element.lensFlareTexture != null) {
+                    buffer.SetGlobalTexture(_FlareTex, element.lensFlareTexture);
+                }
+
+                float gradientPosition = Mathf.Clamp01((1.0f - element.edgeOffset) - 1e-6f);
+                if (element.flareType == LensFlareType.Polygon) {
+                    gradientPosition = Mathf.Pow(gradientPosition + 1.0f, 5);
+                }
+                //_FlareData3 //x: Allow Offscreen, y: Edge Offset, z: Falloff, w: invSideCount
+                buffer.SetGlobalVector(_FlareData3, new Vector4(lensFlare.allowOffScreen ? 1.0f : -1.0f, gradientPosition, Mathf.Exp(Mathf.Lerp(0.0f, 4.0f, Mathf.Clamp01(1.0f - element.fallOff))), 1.0f / (float)element.sideCount));
+
+                //local function
+                Vector2 ComputeLocalSize(Vector2 rayOff, Vector2 rayOff0, Vector2 currSize, AnimationCurve distortionCurve) {
+                    Vector2 localRadPos;
+                    float localRadius;
+                    if (!element.distortionRelativeToCenter) {
+                        localRadPos = (rayOff - rayOff0) * 0.5f;
+                        localRadius = Mathf.Clamp01(Mathf.Max(Mathf.Abs(localRadPos.x), Mathf.Abs(localRadPos.y)));
+                    }
+                    else {
+                        localRadPos = screenPos + (rayOff + new Vector2(element.positionOffset.x, -element.positionOffset.y)) * element.translationScale;
+                        localRadius = Mathf.Clamp01(localRadPos.magnitude);
+                    }
+                    float localLerpValue = Mathf.Clamp01(distortionCurve.Evaluate(localRadius));
+                    return new Vector2(Mathf.Lerp(currSize.x, element.targetSizeDistortion.x * combineScale / aspectRatio, localLerpValue), Mathf.Lerp(currSize.y, element.targetSizeDistortion.y * combineScale / aspectRatio, localLerpValue));
+                }
+
+                float SDFSmoothness = element.sdfRoundness;
+                if (element.flareType == LensFlareType.Polygon) {
+                    float invSide = 1.0f / (float)element.sideCount;
+                    float rCos = Mathf.Cos(Mathf.PI * invSide);
+                    float roundValue = rCos * SDFSmoothness;
+                    float r = rCos - roundValue;
+                    float an = 2.0f * Mathf.PI * invSide;
+                    float he = r * Mathf.Tan(0.5f * an);
+                    buffer.SetGlobalVector(_FlareData4, new Vector4(SDFSmoothness, r, an, he));
+                }
+                else {
+                    buffer.SetGlobalVector(_FlareData4, new Vector4(SDFSmoothness, 0.0f, 0.0f, 0.0f));
+                }
+
+                //draw procudural quad
+                if (!element.allowMultipleElement || element.count == 1) {
+                    Vector2 localSize = size;
+                    Vector2 rayOff = GetLensFlareRayOffset(screenPos, position, globalCos0, globalSin0);
+                    if (element.enableRadialDistortion) {
+                        Vector2 rayOff0 = GetLensFlareRayOffset(screenPos, 0.0f, globalCos0, globalSin0);
+                        localSize = ComputeLocalSize(rayOff, rayOff0, localSize, element.distortionCurve);
+                    }
+                    Vector4 flareData0 = GetFlareData0(screenPos, element.translationScale, rayOff, vScreenRatio, element.rotation, position, angularOffset, element.positionOffset, element.autoRotate);
+                    //_FlareData0 x: localCos0, y: localSin0, zw: PositionOffsetXY
+                    buffer.SetGlobalVector(_FlareData0, flareData0);
+                    //_FlareData2 xy: ScreenPos, zw: FlareSize
+                    buffer.SetGlobalVector(_FlareData2, new Vector4(screenPos.x, screenPos.y, localSize.x, localSize.y));
+                    buffer.SetGlobalVector(_FlareColorValue, currColor);
+                    buffer.DrawProcedural(Matrix4x4.identity, lensFlareMaterial, materialPass, MeshTopology.Quads, 4, 1);
+                }
+                else {
+                    //spread flares
+                    float dLength = 2.0f * element.lengthSpread / ((float)(element.count - 1));
+                    if (element.distribution == LensFlareDistribution.Uniform) {
+                        float uniformAngle = 0.0f;
+                        for (int elementIdx = 0; elementIdx < element.count; ++elementIdx) {
+                            Vector2 localSize = size;
+                            Vector2 rayOff = GetLensFlareRayOffset(screenPos, position, globalCos0, globalSin0);
+                            if (element.enableRadialDistortion) {
+                                Vector2 rayOff0 = GetLensFlareRayOffset(screenPos, 0.0f, globalCos0, globalSin0);
+                                localSize = ComputeLocalSize(rayOff, rayOff0, localSize, element.distortionCurve);
+                            }
+                            float timeScale = element.count >= 2 ? ((float)elementIdx) / ((float)(element.count - 1)) : 0.5f;
+                            Color color = element.colorGradient.Evaluate(timeScale);
+                            Vector4 flareData0 = GetFlareData0(screenPos, element.translationScale, rayOff, vScreenRatio, element.rotation + uniformAngle, position, angularOffset, element.positionOffset, element.autoRotate);
+                            //_FlareData0 x: localCos0, y: localSin0, zw: PositionOffsetXY
+                            buffer.SetGlobalVector(_FlareData0, flareData0);
+                            //_FlareData2 xy: ScreenPos, zw: FlareSize
+                            buffer.SetGlobalVector(_FlareData2, new Vector4(screenPos.x, screenPos.y, localSize.x, localSize.y));
+                            buffer.SetGlobalVector(_FlareColorValue, currColor * color);
+                            buffer.DrawProcedural(Matrix4x4.identity, lensFlareMaterial, materialPass, MeshTopology.Quads, 4, 1);
+                            //gradurally
+                            position += dLength;
+                            uniformAngle += element.uniformAngle;
+                        }
+                    }
+                    else if (element.distribution == LensFlareDistribution.Random) {
+                        Random.State backupRandomState = Random.state;
+                        Random.InitState(element.seed);
+                        Vector2 side = new Vector2(globalCos0, globalSin0);
+                        side *= element.positionVariation.y;
+                        float RandomRange(float min, float max) {
+                            return Random.Range(min, max);
+                        }
+                        for (int elementIdx = 0; elementIdx < element.count; ++elementIdx) {
+                            float localIntensity = RandomRange(-1.0f, 1.0f) * element.intensityVariation + 1.0f;
+                            Vector2 localSize = size;
+                            Vector2 rayOff = GetLensFlareRayOffset(screenPos, position, globalCos0, globalSin0);
+                            if (element.enableRadialDistortion) {
+                                Vector2 rayOff0 = GetLensFlareRayOffset(screenPos, 0.0f, globalCos0, globalSin0);
+                                localSize = ComputeLocalSize(rayOff, rayOff0, localSize, element.distortionCurve);
+                            }
+                            localSize += localSize * (RandomRange(-1.0f, 1.0f) * element.scaleVariation);
+                            Color randomColor = element.colorGradient.Evaluate(RandomRange(-1.0f, 1.0f));
+                            Vector2 localPositionOffset = element.positionOffset + RandomRange(-1.0f, 1.0f) * side;
+                            float localRotation = element.rotation + RandomRange(-Mathf.PI, Mathf.PI) * element.rotationVariation;
+                            if(localIntensity > 0.0f) {
+                                Vector4 flareData0 = GetFlareData0(screenPos, element.translationScale, rayOff, vScreenRatio, localRotation, position, angularOffset, localPositionOffset, element.autoRotate);
+                                //_FlareData0 x: localCos0, y: localSin0, zw: PositionOffsetXY
+                                buffer.SetGlobalVector(_FlareData0, flareData0);
+                                //_FlareData2 xy: ScreenPos, zw: FlareSize
+                                buffer.SetGlobalVector(_FlareData2, new Vector4(screenPos.x, screenPos.y, localSize.x, localSize.y));
+                                buffer.SetGlobalVector(_FlareColorValue, currColor * randomColor * localIntensity);
+                                buffer.DrawProcedural(Matrix4x4.identity, lensFlareMaterial, materialPass, MeshTopology.Quads, 4, 1);
+                            }
+                            position += dLength;
+                            position += 0.5f * dLength * RandomRange(-1.0f, 1.0f) * element.positionVariation.x;
+                        }
+                    }
+                    else if (element.distribution == LensFlareDistribution.Curve) {
+                        for (int elementIdx = 0; elementIdx < element.count; ++elementIdx) {
+                            float timeScale = element.count >= 2 ? ((float)elementIdx) / ((float)(element.count - 1)) : 0.5f;
+                            Color color = element.colorGradient.Evaluate(timeScale);
+                            float positionSpacing = element.positionCurve.length > 0 ? element.positionCurve.Evaluate(timeScale) : 1.0f;
+                            float localPos = position + 2.0f * element.lengthSpread * positionSpacing;
+                            Vector2 localSize = size;
+                            Vector2 rayOff = GetLensFlareRayOffset(screenPos, localPos, globalCos0, globalSin0);
+                            if (element.enableRadialDistortion) {
+                                Vector2 rayOff0 = GetLensFlareRayOffset(screenPos, 0.0f, globalCos0, globalSin0);
+                                localSize = ComputeLocalSize(rayOff, rayOff0, localSize, element.distortionCurve);
+                            }
+                            float sizeCurveValue = element.scaleCurve.length > 0 ? element.scaleCurve.Evaluate(timeScale) : 1.0f;
+                            localSize *= sizeCurveValue;
+                            float angleFromCurve = element.uniformAngleCurve.Evaluate(timeScale) * (180.0f - (180.0f / (float)element.count));
+                            Vector4 flareData0 = GetFlareData0(screenPos, element.translationScale, rayOff, vScreenRatio, element.rotation + angleFromCurve, localPos, angularOffset, element.positionOffset, element.autoRotate);
+                            //_FlareData0 x: localCos0, y: localSin0, zw: PositionOffsetXY
+                            buffer.SetGlobalVector(_FlareData0, flareData0);
+                            //_FlareData2 xy: ScreenPos, zw: FlareSize
+                            buffer.SetGlobalVector(_FlareData2, new Vector4(screenPos.x, screenPos.y, localSize.x, localSize.y));
+                            buffer.SetGlobalVector(_FlareColorValue, currColor * color);
+                            buffer.DrawProcedural(Matrix4x4.identity, lensFlareMaterial, materialPass, MeshTopology.Quads, 4, 1);
+                        }
+                    }
+                }
             }
         }
     }

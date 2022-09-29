@@ -48,7 +48,7 @@ public class TemporalAntialiasing : MonoBehaviour {
 
     public void Render(int sourceId) {
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {       
-            if(camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
+            if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
                 return;
             }
             buffer.name = "Temporal Antialiasing";

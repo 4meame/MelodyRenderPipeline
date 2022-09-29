@@ -64,6 +64,7 @@
             #pragma fragment frag
             #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
+            #define FLARE_POLYGON
             #include "LensflareCommon.hlsl"
             ENDHLSL
         }
@@ -85,6 +86,8 @@
             #pragma fragment frag
             #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
+            #define FLARE_CIRCLE
+            #define FLARE_INVERSE_SDF
             #include "LensflareCommon.hlsl"
             ENDHLSL
         }
@@ -106,6 +109,8 @@
             #pragma fragment frag
             #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
+            #define FLARE_POLYGON
+            #define FLARE_INVERSE_SDF
             #include "LensflareCommon.hlsl"
             ENDHLSL
         }
