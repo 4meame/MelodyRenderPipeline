@@ -4,84 +4,109 @@
     //keep the order as the same order of SRPLensFlareType
     SubShader
     {
-        Blend One One
-        ZWrite Off
-        Cull Off
-        ZTest Always
-
-        HLSLINCLUDE
-        #include "../ShaderLibrary/Common.hlsl"
-        #include "LensflareCommon.hlsl"
-        ENDHLSL
-
         //Image
         Pass
         {
             Name "Image"
             Tags{ "LightMode" = "MelodyUnlit"  "RenderQueue" = "Transparent" }
+
+            Blend One One
+            ZWrite Off
+            Cull Off
+            ZTest Always
+
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
+            #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
 
         //Circle
         Pass
         {
-            Name "Circle"
+            Name "Image"
             Tags{ "LightMode" = "MelodyUnlit"  "RenderQueue" = "Transparent" }
+
+            Blend One One
+            ZWrite Off
+            Cull Off
+            ZTest Always
+
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
+            #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
             #define FLARE_CIRCLE
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
 
         //Polygon
         Pass
         {
-            Name "Polygon"
+            Name "Image"
             Tags{ "LightMode" = "MelodyUnlit"  "RenderQueue" = "Transparent" }
+
+            Blend One One
+            ZWrite Off
+            Cull Off
+            ZTest Always
+
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
+            #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
-            #define FLARE_POLYGON
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
 
         //Circle Inverse
         Pass
         {
-            Name "Circle Inverse"
+            Name "Image"
             Tags{ "LightMode" = "MelodyUnlit"  "RenderQueue" = "Transparent" }
+
+            Blend One One
+            ZWrite Off
+            Cull Off
+            ZTest Always
+
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
+            #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
-            #define FLARE_CIRCLE
-            #define FLARE_INVERSE_SDF
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
 
         //Polygon Inverse
         Pass
         {
-            Name "Polygon Inverse"
+            Name "Image"
             Tags{ "LightMode" = "MelodyUnlit"  "RenderQueue" = "Transparent" }
+
+            Blend One One
+            ZWrite Off
+            Cull Off
+            ZTest Always
+
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
+            #include "../ShaderLibrary/Common.hlsl"
             #define FLARE_PREVIEW
-            #define FLARE_POLYGON
-            #define FLARE_INVERSE_SDF
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
     }

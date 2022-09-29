@@ -37,9 +37,8 @@ float4 _FlareData3;
 //x: SDF Roundness, y: Poly Radius, z: PolyParam0, w: PolyParam1
 float4 _FlareData4;
 
-#ifdef FLARE_PREVIEW
+#if defined(FLARE_PREVIEW)
 float4 _FlarePreviewData;
-#define _ScreenSize         _FlarePreviewData.xy;
 #define _FlareScreenRatio   _FlarePreviewData.z;
 #endif
 
@@ -74,12 +73,18 @@ float4 _FlareOcclusionIndex;
 #define _FlareSDFPolyParam1     _FlareData4.w
 
 float2 Rotate(float2 v, float cos0, float sin0) {
-	return float2(v.x * cos0 - v.y * sin0,
-		v.x * sin0 + v.y * cos0);
+	return float2(v.x * cos0 - v.y * sin0, v.x * sin0 + v.y * cos0);
 }
 
 float GetLinearDepthValue(float2 uv) {
-	float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uint2(uv * _ScreenSize), 0).x;
+	//The Sample method accepts a UV coordinate (where the texture covers the [0, 1] range), does mipmap selection based on the UV derivatives, applies addressing modes (clamp, wrap, border) and does filtering (bilinear, trilinear, aniso)
+	//The Load method accepts a texel coordinate in the [0, textureWidth - 1] x [0, textureHeight - 1] range, and the desired mip level, and simply loads a single texel. Coordinates outside the texture's range just return zero, and no filtering is done
+	//When trying to map a texture 1:1 to the screen, it's convenient to combine Load with the SV_Position input semantic in a pixel shader, as they're in the same units.
+#if defined(FLARE_PREVIEW)
+	float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, uint2(uv * _FlarePreviewData.xy), 0).x;
+#else
+	float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, uint2(uv * _CameraBufferSize.zw), 0).x;
+#endif
 	return LinearEyeDepth(depth, _ZBufferParams);
 }
 
@@ -214,7 +219,7 @@ float4 ComputePolygon(float2 uv) {
 }
 
 float4 GetFlareShape(float2 uv) {
-#ifdef FLARE_CIRCLE
+#if defined(FLARE_CIRCLE)
 	return ComputeCircle(uv);
 #elif defined(FLARE_POLYGON)
 	return ComputePolygon(uv);

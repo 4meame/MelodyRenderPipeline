@@ -649,7 +649,6 @@ class LensFlareDataEditor : Editor
             m_PreviewLensFlare.SetVector(k_FlarePreviewData, new Vector4(k_PreviewSize, k_PreviewSize, 1f, 0f));
 
             m_PreviewLensFlare.SetPass((int)type + ((type != LensFlareType.Image && inverseSDFProp.boolValue) ? 2 : 0));
-
             RenderToTexture2D(ref computedTexture);
         }
     }
