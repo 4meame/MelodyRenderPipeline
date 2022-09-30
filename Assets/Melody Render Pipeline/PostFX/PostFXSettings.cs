@@ -196,6 +196,15 @@ public class PostFXSettings : ScriptableObject {
         public float speedDown;
     }
 
+    [System.Serializable]
+    public struct LensFlareSettings {
+        public Shader lensFlareShader;
+        public ComputeShader mergeOcclusion;
+        public enum Mode { None, Manual, Physical }
+        public Mode mode;
+        public bool antiAliasing;
+    }
+
     [SerializeField]
     BloomSettings bloom = default;
     [SerializeField]
@@ -227,6 +236,8 @@ public class PostFXSettings : ScriptableObject {
     MotionBlurSettings motionBlurSetting = new MotionBlurSettings { shutterAngle = 270, sampleCount = 8, frameBlending = 0.5f };
     [SerializeField]
     AutoExposureSettings autoExposureSetting = default;
+    [SerializeField]
+    LensFlareSettings lensFlareSetting = default;
     public BloomSettings Bloom => bloom;
     public ColorAdjustmentSettings ColorAdjustment => colorAdjustment;
     public WhiteBalanceSettings WhiteBalance => whiteBalance;
@@ -239,4 +250,5 @@ public class PostFXSettings : ScriptableObject {
     public LightShaftsSettings LightShaftsSetting => lightShaftsSetting;
     public MotionBlurSettings motionBlurSettings => motionBlurSetting;
     public AutoExposureSettings autoExposureSettings => autoExposureSetting;
+    public LensFlareSettings lensFlareSettings => lensFlareSetting;
 }

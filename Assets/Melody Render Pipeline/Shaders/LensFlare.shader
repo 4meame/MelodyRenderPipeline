@@ -2,11 +2,6 @@
 {
     SubShader
     {
-        HLSLINCLUDE
-        #include "../ShaderLibrary/Common.hlsl"
-        #include "LensflareCommon.hlsl"
-        ENDHLSL
-
        //Additive
        Pass
        {
@@ -24,6 +19,8 @@
            #pragma multi_compile_fragment _ FLARE_CIRCLE FLARE_POLYGON
            #pragma multi_compile_fragment _ FLARE_INVERSE_SDF
            #pragma multi_compile _ FLARE_OCCLUSION
+           #include "../ShaderLibrary/Common.hlsl"
+          #include "LensflareCommon.hlsl"
            ENDHLSL
        }
         //Screen
@@ -44,6 +41,8 @@
             #pragma multi_compile_fragment _ FLARE_CIRCLE FLARE_POLYGON
             #pragma multi_compile_fragment _ FLARE_INVERSE_SDF
             #pragma multi_compile _ FLARE_OCCLUSION
+            #include "../ShaderLibrary/Common.hlsl"
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
 
@@ -65,6 +64,8 @@
             #pragma multi_compile_fragment _ FLARE_CIRCLE FLARE_POLYGON
             #pragma multi_compile_fragment _ FLARE_INVERSE_SDF
             #pragma multi_compile _ FLARE_OCCLUSION
+            #include "../ShaderLibrary/Common.hlsl"
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
 
@@ -86,6 +87,8 @@
             #pragma multi_compile_fragment _ FLARE_CIRCLE FLARE_POLYGON
             #pragma multi_compile_fragment _ FLARE_INVERSE_SDF
             #pragma multi_compile _ FLARE_OCCLUSION
+            #include "../ShaderLibrary/Common.hlsl"
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
 
@@ -102,6 +105,8 @@
             #pragma target 3.5
             #pragma vertex vertOcclusion
             #pragma fragment fragOcclusion
+            #include "../ShaderLibrary/Common.hlsl"
+            #include "LensflareCommon.hlsl"
             ENDHLSL
         }
     }

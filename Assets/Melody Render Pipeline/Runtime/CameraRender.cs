@@ -151,6 +151,9 @@ public partial class CameraRender {
         cameraBufferSettings.ssr.enabled = cameraBufferSettings.ssr.enabled && cameraSettings.allowSSR;
         var renderSSR = cameraBufferSettings.ssr.enabled;
         #endregion
+        #region Lens Flare
+        LensFlareCommon.Initialize();
+        #endregion
 
         //render shadows before setting up regular camera
         buffer.BeginSample(SampleName);
@@ -561,6 +564,9 @@ public partial class CameraRender {
         ssao.CleanUp();
         ssr.CleanUp();
         cloud.CleanUp();
+        #region Lens Flare
+        LensFlareCommon.Dispose();
+        #endregion
     }
 
     //draw depth use "Copy Depth" pass(1)

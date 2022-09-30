@@ -13,7 +13,7 @@ public class LensFlareCommon {
     public static int maxLensFlareWithOcclusionTemporalSample = 8;
     //1 : enable temporal merge, 0 : disable temporal merge
     public static int mergeNeeded = 1;
-    public static RTHandle occlusionRT = null;
+    public static RenderTexture occlusionRT = null;
     static int frameIndex = 0;
 
     private LensFlareCommon() {
@@ -21,14 +21,18 @@ public class LensFlareCommon {
     }
 
     static public void Initialize() {
-        if (occlusionRT == null && mergeNeeded > 0)
+        if (occlusionRT == null && mergeNeeded > 0) {
             //allocating occlusion RT
-            occlusionRT = RTHandles.Alloc(width: maxLensFlareWithOcclusion, height: maxLensFlareWithOcclusionTemporalSample + 1 * mergeNeeded, colorFormat: UnityEngine.Experimental.Rendering.GraphicsFormat.R16_SFloat, enableRandomWrite: true, dimension: TextureDimension.Tex2D);
+            occlusionRT = new RenderTexture(maxLensFlareWithOcclusion, maxLensFlareWithOcclusionTemporalSample + 1 * mergeNeeded, 32);
+            occlusionRT.graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R16_SFloat;
+            occlusionRT.dimension = TextureDimension.Tex2D;
+            occlusionRT.enableRandomWrite = true;
+        }
     }
 
     static public void Dispose() {
-        if (occlusionRT != null) {
-            RTHandles.Release(occlusionRT);
+        if (occlusionRT != null && !Application.isPlaying) {
+            occlusionRT.Release();
             occlusionRT = null;
         }
     }
@@ -147,6 +151,7 @@ public class LensFlareCommon {
     static Vector3 WorldToViewportLocal(bool isCameraRelative, Matrix4x4 viewProjMatrix, Vector3 cameraPosWS, Vector3 positionWS) {
         Vector3 localPositionWS = positionWS;
         if (isCameraRelative) {
+            //force camera pos is world origin, must set ture here, maybe have some mistake
             localPositionWS -= cameraPosWS;
         }
         Vector4 viewportPos4 = viewProjMatrix * localPositionWS;
@@ -178,6 +183,7 @@ public class LensFlareCommon {
 
         Vector2 vScreenRatio;
         if(lensFlares.IsEmpty() || occlusionRT == null) {
+            Debug.LogError("null");
             return;
         }
         //exit in sceneView camera
@@ -229,7 +235,7 @@ public class LensFlareCommon {
             Vector3 positionWS;
             Vector3 viewPortPos;
             bool isLocalLight = false;
-            if (light != null && light.type == LightType.Directional) {
+            if (light.type == LightType.Directional) {
                 //directional light
                 positionWS = -light.transform.forward * camera.farClipPlane;
             } else {
@@ -254,7 +260,7 @@ public class LensFlareCommon {
             float coefDistSample = distanceToObject / lensFlare.maxAttenuationDistance;
             float coefScaleSample = distanceToObject / lensFlare.maxAttenuationScale;
             float distanceAttenuation = isLocalLight && lensFlare.distanceAttenuationCurve.length > 0 ? lensFlare.distanceAttenuationCurve.Evaluate(coefDistSample) : 1.0f;
-            float scaleAttenuation = isLocalLight && lensFlare.scaleAttenuationCurve.length > 0 ? lensFlare.scaleAttenuationCurve.Evaluate(coefScaleSample) : 1.0f;
+            float scaleAttenuation = isLocalLight && lensFlare.scaleAttenuationCurve.length > 1 ? lensFlare.scaleAttenuationCurve.Evaluate(coefScaleSample) : 1.0f;
             //viewport screenPos Z with offset
             Vector3 direction = (camera.transform.position - lensFlare.transform.position).normalized;
             Vector3 screenPosZ = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS + direction * lensFlare.occlusionOffset);
@@ -264,7 +270,7 @@ public class LensFlareCommon {
             Vector2 occlusionRadiusEdgeScreenPos1 = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS + camera.transform.up * adjustedOcclusionRadius);
             float occlusionRadius = (occlusionRadiusEdgeScreenPos1 - occlusionRadiusEdgeScreenPos0).magnitude;
             //_FlareData1 x: OcclusionRadius, y: OcclusionSampleCount, z: ScreenPosZ, w: ScreenRatio
-            buffer.SetGlobalVector(_FlareData1, new Vector4(occlusionRadius, lensFlare.sampleCount, screenPosZ.z, screenRatio));
+            buffer.SetGlobalVector(_FlareData1, new Vector4(occlusionRadius, lensFlare.sampleCount, screenPosZ.z, actualHeight / actualWidth));
             buffer.EnableShaderKeyword("FLARE_COMPUTE_OCCLUSION");
             Vector2 screenPos = new Vector2(2.0f * viewPortPos.x - 1.0f, 1.0f - 2.0f * viewPortPos.y);
             Vector2 radPos = new Vector2(Mathf.Abs(screenPos.x), Mathf.Abs(screenPos.y));
@@ -304,7 +310,7 @@ public class LensFlareCommon {
         Vector3 cameraPosWS, Matrix4x4 viewProjMatrix,
         CommandBuffer buffer,RenderTargetIdentifier colorBuffer,
         System.Func<Light, Camera, Vector3, float> GetLensFlareLightAttenuation,
-        bool taaEnabled, int _FlareOcclusionTex, int _FlareOcclusionIndex, int _FlareTex, int _FlareColorValue, int _FlareData0, int _FlareData1, int _FlareData2, int _FlareData3, int _FlareData4, bool debugView) {
+        bool taaEnabled, int _FlareOcclusionTex, int _FlareOcclusionIndex, int _FlareTex, int _FlareColorValue, int _FlareData0, int _FlareData1, int _FlareData2, int _FlareData3, int _FlareData4) {
 
         Vector2 vScreenRatio;
         if (lensFlares.IsEmpty()) {
@@ -327,10 +333,6 @@ public class LensFlareCommon {
         //RT identifier already set
         buffer.SetRenderTarget(colorBuffer);
         buffer.SetViewport(new Rect() { width = screenSize.x, height = screenSize.y });
-        if (debugView) {
-            //background pitch black to see only the Flares
-            buffer.ClearRenderTarget(false, true, Color.black);
-        }
 
         int occlusionIndex = 0;
         foreach (LensFlareComponent lensFlare in lensFlares.GetData()) {
@@ -353,7 +355,7 @@ public class LensFlareCommon {
             Vector3 positionWS;
             Vector3 viewPortPos;
             bool isLocalLight = false;
-            if (light != null && light.type == LightType.Directional) {
+            if (light.type == LightType.Directional) {
                 //directional light
                 positionWS = -light.transform.forward * camera.farClipPlane;
             } else {
@@ -382,7 +384,7 @@ public class LensFlareCommon {
             float coefDistSample = distanceToObject / lensFlare.maxAttenuationDistance;
             float coefScaleSample = distanceToObject / lensFlare.maxAttenuationScale;
             float distanceAttenuation = isLocalLight && lensFlare.distanceAttenuationCurve.length > 0 ? lensFlare.distanceAttenuationCurve.Evaluate(coefDistSample) : 1.0f;
-            float scaleAttenuation = isLocalLight && lensFlare.scaleAttenuationCurve.length > 0 ? lensFlare.scaleAttenuationCurve.Evaluate(coefScaleSample) : 1.0f;
+            float scaleAttenuation = isLocalLight && lensFlare.scaleAttenuationCurve.length > 1 ? lensFlare.scaleAttenuationCurve.Evaluate(coefScaleSample) : 1.0f;
             //lensflare color
             Color globalColorModulation = Color.white;
             if (light != null) {
@@ -399,7 +401,7 @@ public class LensFlareCommon {
             Vector2 occlusionRadiusEdgeScreenPos1 = WorldToViewport(camera, isLocalLight, isCameraRelative, viewProjMatrix, positionWS + camera.transform.up * adjustedOcclusionRadius);
             float occlusionRadius = (occlusionRadiusEdgeScreenPos1 - occlusionRadiusEdgeScreenPos0).magnitude;
             //_FlareData1 x: OcclusionRadius, y: OcclusionSampleCount, z: ScreenPosZ, w: ScreenRatio
-            buffer.SetGlobalVector(_FlareData1, new Vector4(occlusionRadius, lensFlare.sampleCount, screenPosZ.z, screenRatio));
+            buffer.SetGlobalVector(_FlareData1, new Vector4(occlusionRadius, lensFlare.sampleCount, screenPosZ.z, actualHeight / actualWidth));
             if (lensFlare.useOcclusion) {
                 buffer.EnableShaderKeyword("FLARE_OCCLUSION");
             } else {
