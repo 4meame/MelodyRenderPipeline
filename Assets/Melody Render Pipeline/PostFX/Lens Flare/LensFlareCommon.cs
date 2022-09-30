@@ -235,7 +235,7 @@ public class LensFlareCommon {
             Vector3 positionWS;
             Vector3 viewPortPos;
             bool isLocalLight = false;
-            if (light.type == LightType.Directional) {
+            if (light != null && light.type == LightType.Directional) {
                 //directional light
                 positionWS = -light.transform.forward * camera.farClipPlane;
             } else {
@@ -355,7 +355,7 @@ public class LensFlareCommon {
             Vector3 positionWS;
             Vector3 viewPortPos;
             bool isLocalLight = false;
-            if (light.type == LightType.Directional) {
+            if (light != null && light.type == LightType.Directional) {
                 //directional light
                 positionWS = -light.transform.forward * camera.farClipPlane;
             } else {
@@ -437,7 +437,7 @@ public class LensFlareCommon {
                 // l1 norm (instead of l2 norm), do not know what is it
                 float radius = Mathf.Max(radPos.x, radPos.y);
                 float radialsScaleRadius = lensFlare.radialScreenAttenuationCurve.length > 0 ? lensFlare.radialScreenAttenuationCurve.Evaluate(radius) : 1.0f;
-                float currentIntensity = lensFlare.intensity * radialsScaleRadius * distanceAttenuation;
+                float currentIntensity = lensFlare.intensity * element.localIntensity * radialsScaleRadius * distanceAttenuation;
                 if (currentIntensity <= 0.0f) {
                     continue;
                 }
