@@ -5,6 +5,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Rendering/Atmosphere Scattering/Render Settings")]
 public class AtmosphereScatteringSettings : ScriptableObject {
     public enum Mode {
+        None,
         Common,
         Precompute
     }

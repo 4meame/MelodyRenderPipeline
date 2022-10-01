@@ -120,20 +120,22 @@ public class AtmosphereScattering {
     }
 
     public void PrecomputeAll() {
-        UpdateShaderParameters();
-        if (!precomputeCompleted) {
-            PrecomputeParticleDensity();
-            PrecomputeAtmosphereSky();
-            PrecomputeLightScattering();
-            PrecomputeSunColor();
-            InitRandomVectors();
-            PrecomputeAmbient();
-            ExecuteBuffer();
-            precomputeCompleted = true;
-        }
-        if (settings.mode == Mode.Precompute) {
-            //light Scattering ONLY in precompute mode should be calculate every frame, while common mode DO NOT need this
-            PrecomputeLightScattering();
+        if (settings.mode != Mode.None) {
+            UpdateShaderParameters();
+            if (!precomputeCompleted) {
+                PrecomputeParticleDensity();
+                PrecomputeAtmosphereSky();
+                PrecomputeLightScattering();
+                PrecomputeSunColor();
+                InitRandomVectors();
+                PrecomputeAmbient();
+                ExecuteBuffer();
+                precomputeCompleted = true;
+            }
+            if (settings.mode == Mode.Precompute) {
+                //light Scattering ONLY in precompute mode should be calculate every frame, while common mode DO NOT need this
+                PrecomputeLightScattering();
+            }
         }
     }
 

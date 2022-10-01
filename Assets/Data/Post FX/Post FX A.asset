@@ -93,3 +93,8 @@ MonoBehaviour:
     adaptation: 1
     speedUp: 3
     speedDown: 1
+  lensFlareSetting:
+    lensFlareShader: {fileID: 4800000, guid: 22920c1d1d86e394b8a09b15a538dd7b, type: 3}
+    mergeOcclusion: {fileID: 7200000, guid: 0d0a3f5b9cd287f4598e549236f3e518, type: 3}
+    mode: 1
+    antiAliasing: 1

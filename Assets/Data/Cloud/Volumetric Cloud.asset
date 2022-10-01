@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Volumetric Cloud
   m_EditorClassIdentifier: 
   shader: {fileID: 4800000, guid: e61add218821eec439de1c401c3b69ef, type: 3}
+  enabled: 0
   subPixelSize: 2
   maxIterations: 128
   renderSize: 0
@@ -132,8 +133,11 @@ MonoBehaviour:
   coverageOffsetPerFrame: {x: 0, y: 0}
   baseOffsetPerFrame: {x: 0.000951, y: -0.001, z: 0}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
+  earthCenter: {x: 0, y: -6371000, z: 0}
   earthRadius: 6371000
-  horizonDistance: 35000
+  useCalculatedRadius: 0
+  showCalculatedRadius: 0
+  horizonDistanceOfRadius: 0
   atmosphereStartHeight: 1500
   atmosphereEndHeight: 4000
   cameraPositionScale: {x: 1, y: 1, z: 1}

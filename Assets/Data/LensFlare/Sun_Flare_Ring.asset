@@ -241,7 +241,7 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    seed: -16
+    seed: -14
     colorGradient:
       serializedVersion: 2
       key0: {r: 1, g: 0.6367924, b: 0.6367924, a: 1}
@@ -338,7 +338,7 @@ MonoBehaviour:
     positionOffset: {x: 0, y: 0}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
-    m_LocalIntensity: 0.01
+    m_LocalIntensity: 0.02
     lensFlareTexture: {fileID: 0}
     uniformScale: 5
     sizeXY: {x: 1, y: 1}
@@ -658,7 +658,7 @@ MonoBehaviour:
     positionOffset: {x: 0, y: 0}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
-    m_LocalIntensity: 0.02
+    m_LocalIntensity: 0.1
     lensFlareTexture: {fileID: 0}
     uniformScale: 1
     sizeXY: {x: 1, y: 1}
@@ -669,7 +669,7 @@ MonoBehaviour:
     tint: {r: 0.9172818, g: 0.3443396, b: 1, a: 0.5}
     blendMode: 0
     autoRotate: 0
-    flareType: 1
+    flareType: 2
     modulateByLightColor: 1
     distribution: 2
     lengthSpread: 1
@@ -784,7 +784,7 @@ MonoBehaviour:
     distortionRelativeToCenter: 0
     m_FallOff: 1
     m_EdgeOffset: 0.1
-    m_SideCount: 6
+    m_SideCount: 8
     m_SdfRoundness: 0
     inverseSDF: 0
     uniformAngle: 0
