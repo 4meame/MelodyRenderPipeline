@@ -172,16 +172,16 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    isFoldOpened: 0
+    isFoldOpened: 1
   - visible: 1
     position: 0
-    positionOffset: {x: 0, y: 0.02}
+    positionOffset: {x: 0, y: 0.01}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     m_LocalIntensity: 2.39
     lensFlareTexture: {fileID: 0}
     uniformScale: 1
-    sizeXY: {x: 42.01, y: 0.4}
+    sizeXY: {x: 42.01, y: 0.22}
     allowMultipleElement: 0
     m_Count: 5
     preserveAspectRatio: 0
@@ -332,7 +332,7 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    isFoldOpened: 0
+    isFoldOpened: 1
   - visible: 1
     position: 0
     positionOffset: {x: 0, y: 0}
