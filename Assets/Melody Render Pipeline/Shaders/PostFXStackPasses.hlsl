@@ -198,7 +198,8 @@ float3 ColorGrade(float3 color, bool useACES = false) {
 	color = ColorGradeWhiteBalance(color);
 	color = ColorGradeContrast(color, useACES);
 	color = ColorGradeColorFilter(color);
-	color = ColorGradePosterize(color);
+	//color = ColorGradePosterize(color);
+
 	//sometimes color components will be negative after contrast
 	color = max(color, 0.0);
 	color = ColorGradeSplitToning(color, useACES);
