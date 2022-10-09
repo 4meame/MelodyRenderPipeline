@@ -1,0 +1,75 @@
+﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
+
+#pragma kernel DOFBlurKernel
+
+//each uint holds 2 float point 16bit(x, y) normalized coordiantes
+RWStructuredBuffer<uint> _BokehKernel;
+
+#define SampleCount    _Params1.x
+//polygon with n sides
+#define NGonFactor     _Params1.y
+#define BladeCount     _Params1.z
+#define Rotation       _Params1.w
+#define Anamorphism    _Params2.x
+
+//input
+float2 GetSample(float2 coords) {
+	//returns a sample point for a given coordinates in a normalized square
+	float phi;
+	float r;
+	float a = coords.x * 2.0 - 1.0;
+	float b = coords.y * 2.0 - 1.0;
+	//from "A Low Distortion Map Between Disk and Square" [Shirley97] [Chiu97]
+	//The Concentric Map
+	if (a > -b) {
+		if (a > b) {
+			r = a;
+			phi = (PI / 4.0) * (b / a);
+		}
+		else {
+			r = b;
+			phi = (PI / 4.0) * (2.0 - (a / b));
+		}
+	}
+	else {
+		if (a < b) {
+			r = -a;
+			phi = (PI / 4.0) * (4.0 + (b / a));
+		}
+		else {
+			r = -b;
+			if (b != 0.0) {
+				phi = (PI / 4.0) * (6.0 - (a / b));
+			}
+			else {
+				phi = 0.0;
+			}
+		}
+	}
+	//transform to rotated ngon
+	//from "Cry Engine 3 Graphics Gem"
+	float n = BladeCount;
+	float nt = cos(PI / n);
+	float dt = cos(phi - (Two_PI / n) * floor((n * phi + PI) / Two_PI));
+	float rNGon = r * PositivePow(nt / dt, NGonFactor);
+	float u = rNGon * cos(phi - Rotation);
+	float v = rNGon * sin(phi - Rotation);
+	u *= 1.0 - Anamorphism;
+	v *= 1.0 + Anamorphism;
+	return float2(u, v);
+}
+
+[numthreads(64, 1, 1)]
+void DOFBlurKernel(uint id : SV_DispatchThreadId) {
+	if (id >= uint(Square(SampleCount)))
+		return;
+
+	//1D -> 2D for regular samples
+	uint2 kernelCoords = uint2(id % uint(SampleCount), id / uint(SampleCount));
+	//sample coordinates on a normalized square
+	float2 samplePos = kernelCoords / (SampleCount - 1.0).xx;
+	//grab the sample (range [-1,1])
+	float2 sampleKernel = GetSample(samplePos);
+	//pack 2 float points 16bit in a single uint
+	_BokehKernel[id] = PackKernelCoord(sampleKernel);
+}
