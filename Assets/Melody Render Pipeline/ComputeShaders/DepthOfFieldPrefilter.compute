@@ -1,0 +1,84 @@
+﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
+
+#pragma kernel DOFPrefilter
+
+#pragma multi_compile _ NEAR
+#pragma multi_compile _ FAR
+#pragma multi_compile _ HALF_RES
+
+//input texture
+TEXTURE2D(_InputTexture);
+TEXTURE2D(_InputCoCTexture);
+//output filtered texture(color and coc)
+RWTexture2D<float4> _OutputNearTexture;
+RWTexture2D<float> _OutputNearCoCTexture;
+RWTexture2D<float4> _OutputFarTexture;
+RWTexture2D<float> _OutputFarCoCTexture;
+
+float4 _TargetScale;
+float4 _CoCTargetScale;
+
+[numthreads(8, 8, 1)]
+void DOFPrefilter(uint3 id : SV_DispatchThreadId) {
+	//camera buffer texcel size multi scale factor
+	float2 texelSize = _CameraBufferSize.xy * _TargetScale.x;
+	float2 uv = id.xy / (_CameraBufferSize.zw * _TargetScale.y);
+#if defined(HALF_RES)
+	float3 tapColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).rgb;
+	float tapCoC = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv, 0).x;
+	
+	float nearCoC = saturate(abs(min(tapCoc, 0.0)));
+	float3 nearColorAcc = tapColor;
+	float nearCoCAcc = nearCoC;
+	//premultiply CoC to reduce bleeding of background blur on focused areas
+	float farCoC = saturate(tapCoC);
+	float3 farColorAcc = tapColor * farCoC;
+	float farCoCAcc = farCoC;
+#else
+	// use a rotated grid to minimize artifacts coming from horizontal and vertical boundaries
+	//"High Quality Antialiasing" [Lorach07]
+	const float tapCount = 5;
+	const float2 taps[] = {
+		float2(0.0, 0.0),
+		float2(0.9, -0.4),
+		float2(-0.9, 0.4),
+		float2(0.4, 0.9),
+		float2(-0.4, -0.9)
+	};
+	float3 nearColorAcc = 0.0;
+	float3 farColorAcc = 0.0;
+	float nearCoCAcc = 0.0;
+	float farCoCAcc = 0.0;
+	//avoid bleeding with the rt autosize
+	float2 maxCoordCoC = (1.0 - 0.5 * texelSize) * _CoCTargetScale.xy;
+	[unroll]
+	for (uint i = 0; i < tapCount; i++) {
+		float2 tapCoord = uv + texelSize * taps[i];
+		float3 tapColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, tapCoord, 0).rgb;
+		float tapCoC = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, min(tapCoord * _CoCTargetScale.xy, maxCoordCoC), 0).x;
+		//accumulate color and coc
+		float nearCoC = saturate(abs(min(tapCoC, 0.0)));
+		nearColorAcc += tapColor;
+		nearCoCAcc += nearCoC;
+		//premultiply CoC to reduce bleeding of background blur on focused areas
+		float farCoC = saturate(tapCoC);
+		farColorAcc += tapColor * farCoC;
+		farCoCAcc += farCoC;
+	}
+	float divide = rcp(float(tapCount));
+	nearColorAcc *= divide;
+	nearCoCAcc *= divide;
+	farColorAcc *= divide;
+	farCoCAcc *= divide;
+#endif
+
+#if NEAR
+	_OutputNearTexture[id.xy] = nearColorAcc;
+	_OutputNearCoCTexture[id.xy] = nearCoCAcc;
+#endif
+
+#if FAR
+	_OutputFarTexture[id.xy] = farColorAcc;
+	_OutputFarCoCTexture[id.xy] = farCoCAcc;
+#endif
+}

@@ -99,7 +99,7 @@ VertexOutput vert(VertexInput i) {
 	//OpenGL
 	_Offset_Z = _Offset_Z * 0.01;
 #endif
-#ifdef _OUTLINE_NML
+#if defined(_OUTLINE_NML)
 	o.positionCS = TransformObjectToHClip(lerp(float4(i.positionOS.xyz + i.normalOS * Set_Outline_Width, 1), float4(i.positionOS.xyz + _BakedNormalDir * Set_Outline_Width, 1), _Is_BakedNormal));
 #elif _OUTLINE_POS
 	Set_Outline_Width = Set_Outline_Width * 2;

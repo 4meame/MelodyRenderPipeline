@@ -50,7 +50,7 @@ void MAIN(uint2 groupThreadId : SV_GroupThreadID) {
     if (thread_id == 0u) {
         //float maxValue = FindMaxHistogramValue(_HistogramBuffer);
         float maxValue = float(gs_pyramid[0]);
-#if PROGRESSIVE
+#if defined(PROGRESSIVE)
         float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
         float exposure = GetExposureMultiplier(avgLuminance);
         //pre-apply last frame EV to prevent sudden changes in exposure and calculation leak

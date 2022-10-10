@@ -14,6 +14,10 @@ TEXTURE2D(_CameraDiffuseTexture);
 TEXTURE2D(_CameraSpecularTexture);
 TEXTURE2D(_CameraReflectionsTexture);
 
+//x : 1.0 / width(scaled) 
+//y : 1.0 / height(scaled)
+//z : width(scaled)
+//w : height(scaled)
 float4 _CameraBufferSize;
 
 struct Fragment {

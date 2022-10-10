@@ -129,7 +129,7 @@ float4 ToonLitPassFragment(Varyings input) : SV_TARGET {
 
 	float3 color = ShadeAllLights(surface, light, shadowData, input.baseUV);
 
-#ifdef ToonShaderIsOutline
+#if defined(ToonShaderIsOutline)
 	color = ConvertSurfaceColorToOutlineColor(color);
 #endif
 
