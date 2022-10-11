@@ -1,0 +1,67 @@
+﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
+
+#pragma kernel DOFCoCTileMax
+
+#pragma multi_compile _ NEAR
+#pragma multi_compile _ FAR
+
+#define Size        uint2(_Params1.xy)
+#define TILE_SIZE                   8u
+#define INDIRECT_NEAR_OFFSET        0u
+#define INDIRECT_FAR_OFFSET         3u
+
+//indirect arguments have to be in a RWBuffer,the first three uints are near threadgroups, the last three are far threadgroups
+RWBuffer<uint> _IndirectBuffer;
+TEXTURE2D(_InputNearCoCTexture);
+TEXTURE2D(_InputFarCoCTexture);
+AppendStructuredBuffer<TileData> _NearTileList;
+AppendStructuredBuffer<TileData> _FarTileList;
+
+groupshared float gs_cacheNear[TILE_SIZE * TILE_SIZE];
+groupshared float gs_cacheFar[TILE_SIZE * TILE_SIZE];
+
+[numthreads(TILE_SIZE, TILE_SIZE, 1)]
+void DOFCoCTileMax(uint2 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID) {
+    uint threadIndex = groupThreadId.y * TILE_SIZE + groupThreadId.x;
+    //read input coc texture
+#if defined(NEAR)
+    gs_cacheNear[threadIndex] = _InputNearCoCTexture[min(dispatchThreadId, Size)];
+#endif
+#if defined(FAR)
+    gs_cacheFar[threadIndex] = _InputFarCoCTexture[min(dispatchThreadId, Size)];
+#endif
+    GroupMemoryBarrierWithGroupSync();
+    //parallel reduction - find the max value for this tile
+    [unroll]
+    for (uint i = (TILE_SIZE * TILE_SIZE) / 2u; i > 0u; i >>= 1u) {
+        if (threadIndex < i) {
+#if defined(NEAR)
+            gs_cacheNear[threadIndex] = max(gs_cacheNear[threadIndex], gs_cacheNear[threadIndex + i]);
+#endif
+#if defined(FAR)
+            gs_cacheFar[threadIndex] = max(gs_cacheFar[threadIndex], gs_cacheFar[threadIndex + i]);
+#endif
+        }
+        GroupMemoryBarrierWithGroupSync();
+    }
+
+    //evaluate on group thread 0
+    if (threadIndex == 0u) {
+#if defined(NEAR)
+        if (gs_cacheNear[threadIndex] > 0.0) {
+            //near tile detected
+            TileData tileData = { PackTileCoord(dispatchThreadId) };
+            _NearTileList.Append(tileData);
+            InterlockedAdd(_IndirectBuffer[INDIRECT_NEAR_OFFSET], 1);
+        }
+#endif
+#if defined(FAR)
+        if (gs_cacheFar[threadIndex] > 0.0) {
+            //far tile detected
+            TileData tileData = { PackTileCoord(dispatchThreadId) };
+            _FarTileList.Append(tileData);
+            InterlockedAdd(_IndirectBuffer[INDIRECT_FAR_OFFSET], 1);
+        }
+#endif
+    }
+}

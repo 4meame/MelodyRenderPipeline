@@ -229,6 +229,8 @@ inline float4 EncodeDepthNormal(float depth, float3 normal) {
 }
 
 //Fragment data
+SAMPLER(sampler_trilinear_clamp);
+SAMPLER(sampler_trilinear_repeat);
 SAMPLER(sampler_linear_clamp);
 SAMPLER(sampler_linear_repeat);
 SAMPLER(sampler_point_clamp);

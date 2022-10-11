@@ -3,10 +3,10 @@
 //do scatter-as-gather for near plane
 #pragma kernel DOFNearCoCDilate
 
+#define Size        uint2(_Params1.xy)
+
 TEXTURE2D(_InputCoCTexture);
 RWTexture2D<float> _OutputCoCTexture;
-
-#define Size        uint2(_Params1.xy)
 
 //16x16 pixels with an 8x8 center that we will be blurring writing out. Each uint is two color channels packed together.
 groupshared uint gs_cache[128];

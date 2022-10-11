@@ -10,7 +10,6 @@ RWTexture2D<float3> _InputTexture;;
 #if defined(COPY_MIP0)
 RWTexture2D<float3> _OutputTexture;
 #endif
-
 RWTexture2D<float3> _OutputMip1;
 RWTexture2D<float3> _OutputMip2;
 RWTexture2D<float3> _OutputMip3;

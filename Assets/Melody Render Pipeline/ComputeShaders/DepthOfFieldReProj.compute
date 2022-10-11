@@ -4,21 +4,21 @@
 
 #pragma multi_compile _ MAX_BLENDING
 
+#define MotionBlending              _Params1.x
+#define ScreenToTargetScaleHistory  _Params1.yz
+
 //input texture
 TEXTURE2D(_InputCoCTexture);
 TEXTURE2D(_InputHistoryCoCTexture);
 //output reprojected texture(coc)
 RWTexture2D<float> _OutputCoCTexture;
-
 float2 _Jitter;
 
-#define MotionBlending              _Params1.x
-#define ScreenToTargetScaleHistory  _Params1.yz
-
 [numthreads(8, 8, 1)]
-void DOFCoCReProj(uint3 id : SV_DispatchThreadId) {
-	float2 uv = id.xy / _CameraBufferSize.zw;
+void DOFCoCReProj(uint3 dispatchThreadId : SV_DispatchThreadId) {
+	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
 	float2 texelSize = _CameraBufferSize.xy;
+	//TODO : Maybe replace some SAMPLE to LOAD https://gamedev.stackexchange.com/questions/65845/difference-between-texture-load-and-texture-sample-methods-in-directx/65853
 	float coc1 = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv - float2(1.0, 0.0) * texelSize, 0).x;
 	float coc2 = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv - float2(0.0, 1.0) * texelSize, 0).x;
 	float coc3 = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv + float2(0.0, 1.0) * texelSize, 0).x;
@@ -36,7 +36,7 @@ void DOFCoCReProj(uint3 id : SV_DispatchThreadId) {
 	closest = coc4 < closest.z ? float3(1.0, 0.0, coc4) : closest;
 	//sample history buffer with the movtion vector at the closest point
 	float2 motionVectorUV = uv + closest.xy * texelSize;
-	//NOTE HERE : maybe last frame motion vecotr
+	//NOTE HERE : maybe last frame motion vector
 	float2 motionVector = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorTexture, sampler_point_clamp, motionVectorUV, 0).rg;
 #if defined(MAX_BLENDING)
 	float cocHistory = SAMPLE_TEXTURE2D_LOD(_InputHistoryCoCTexture, sampler_point_clamp, uv - motionVector, 0).x;
@@ -53,5 +53,5 @@ void DOFCoCReProj(uint3 id : SV_DispatchThreadId) {
 	cocHistory = clamp(cocHistory, cocMin, cocMax);
 	float outputCoC = lerp(coc0, cocHistory, MotionBlending);
 
-	_OutputCoCTexture[id.xy] = outputCoC;
+	_OutputCoCTexture[dispatchThreadId.xy] = outputCoC;
 }

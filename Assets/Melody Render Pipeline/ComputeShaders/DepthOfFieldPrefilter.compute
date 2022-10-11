@@ -4,26 +4,25 @@
 
 #pragma multi_compile _ NEAR
 #pragma multi_compile _ FAR
-#pragma multi_compile _ HALF_RES
+#pragma multi_compile _ FULL_RES
 
 //input texture
 TEXTURE2D(_InputTexture);
 TEXTURE2D(_InputCoCTexture);
 //output filtered texture(color and coc)
-RWTexture2D<float4> _OutputNearTexture;
+RWTexture2D<float3> _OutputNearTexture;
 RWTexture2D<float> _OutputNearCoCTexture;
-RWTexture2D<float4> _OutputFarTexture;
+RWTexture2D<float3> _OutputFarTexture;
 RWTexture2D<float> _OutputFarCoCTexture;
-
 float4 _TargetScale;
 float4 _CoCTargetScale;
 
 [numthreads(8, 8, 1)]
-void DOFPrefilter(uint3 id : SV_DispatchThreadId) {
+void DOFPrefilter(uint3 dispatchThreadId : SV_DispatchThreadId) {
 	//camera buffer texcel size multi scale factor
 	float2 texelSize = _CameraBufferSize.xy * _TargetScale.x;
-	float2 uv = id.xy / (_CameraBufferSize.zw * _TargetScale.y);
-#if defined(HALF_RES)
+	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw * _TargetScale.y);
+#if defined(FULL_RES)
 	float3 tapColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).rgb;
 	float tapCoC = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv, 0).x;
 	
@@ -72,13 +71,13 @@ void DOFPrefilter(uint3 id : SV_DispatchThreadId) {
 	farCoCAcc *= divide;
 #endif
 
-#if NEAR
-	_OutputNearTexture[id.xy] = nearColorAcc;
-	_OutputNearCoCTexture[id.xy] = nearCoCAcc;
+#if defined(NEAR)
+	_OutputNearTexture[dispatchThreadId.xy] = nearColorAcc;
+	_OutputNearCoCTexture[dispatchThreadId.xy] = nearCoCAcc;
 #endif
 
-#if FAR
-	_OutputFarTexture[id.xy] = farColorAcc;
-	_OutputFarCoCTexture[id.xy] = farCoCAcc;
+#if defined(FAR)
+	_OutputFarTexture[dispatchThreadId.xy] = farColorAcc;
+	_OutputFarCoCTexture[dispatchThreadId.xy] = farCoCAcc;
 #endif
 }

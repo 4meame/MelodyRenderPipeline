@@ -17,4 +17,17 @@ float2 UnpackKernelCoord(StructuredBuffer<uint> kernel, uint id) {
     return float2(f16tof32(coord), f16tof32(coord >> 16));
 }
 
+struct TileData {
+    uint position;
+};
+
+uint PackTileCoord(uint2 coord) {
+    return (coord.x << 16u) | coord.y;
+}
+
+uint2 UnpackTileCoord(uint position) {
+    return uint2((position >> 16u) & 0xffff, position & 0xffff);
+}
+
+
 #endif

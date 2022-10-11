@@ -2,15 +2,15 @@
 
 #pragma kernel DOFBlurKernel
 
-//each uint holds 2 float point 16bit(x, y) normalized coordiantes
-RWStructuredBuffer<uint> _BokehKernel;
-
 #define SampleCount    _Params1.x
 //polygon with n sides
 #define NGonFactor     _Params1.y
 #define BladeCount     _Params1.z
 #define Rotation       _Params1.w
 #define Anamorphism    _Params2.x
+
+//each uint holds 2 float point 16bit(x, y) normalized coordiantes
+RWStructuredBuffer<uint> _BokehKernel;
 
 //input is coordinates on a normalized square; returns sample coordinates in range [-1,1]
 float2 GetSample(float2 coords) {
@@ -60,16 +60,16 @@ float2 GetSample(float2 coords) {
 }
 
 [numthreads(64, 1, 1)]
-void DOFBlurKernel(uint id : SV_DispatchThreadId) {
-	if (id >= uint(Square(SampleCount)))
+void DOFBlurKernel(uint dispatchThreadId : SV_DispatchThreadId) {
+	if (dispatchThreadId >= uint(Square(SampleCount)))
 		return;
 
 	//1D -> 2D for regular samples
-	uint2 kernelCoords = uint2(id % uint(SampleCount), id / uint(SampleCount));
+	uint2 kernelCoords = uint2(dispatchThreadId % uint(SampleCount), dispatchThreadId / uint(SampleCount));
 	//sample coordinates on a normalized square
 	float2 samplePos = kernelCoords / (SampleCount - 1.0).xx;
 	//grab the sample (range [-1,1])
 	float2 sampleKernel = GetSample(samplePos);
 	//pack 2 float points 16bit in a single uint
-	_BokehKernel[id] = PackKernelCoord(sampleKernel);
+	_BokehKernel[dispatchThreadId] = PackKernelCoord(sampleKernel);
 }
