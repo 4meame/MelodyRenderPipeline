@@ -247,7 +247,7 @@ public partial class CameraRender {
         DrawGizmosBeforeFX();
         lensFlare.DoLensFlare(colorAttachmentId);
         taa.Render(colorAttachmentId);
-        if (postFXSettings.motionBlurSettings.enable) {
+        if (postFXSettings != null && postFXSettings.motionBlurSettings.enable) {
             motionBlur.DoMotionBlur(colorAttachmentId);
             motionBlur.Combine(colorAttachmentId);
         }

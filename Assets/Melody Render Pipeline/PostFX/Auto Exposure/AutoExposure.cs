@@ -32,10 +32,6 @@ public class AutoExposure {
         this.bufferSize = bufferSize;
         //apply to proper camera
         this.settings = camera.cameraType <= CameraType.SceneView ? settings : null;
-        cs = settings.autoExposureSettings.autoExposure;
-        if (logHistogram == null) {
-            logHistogram = new LogHistogram(buffer, settings.autoExposureSettings.logHistogram);
-        }
     }
 
     void CheckTexture(int id) {
@@ -94,6 +90,10 @@ public class AutoExposure {
         }
         buffer.SetGlobalFloat("_AutoExposure", 1);
 
+        cs = settings.autoExposureSettings.autoExposure;
+        if (logHistogram == null) {
+            logHistogram = new LogHistogram(buffer, settings.autoExposureSettings.logHistogram);
+        }
         switch (settings.autoExposureSettings.meteringMask) {
             case AutoExposureSettings.MeteringMask.None:
                 buffer.SetGlobalInt("_MeteringMask", 0);
