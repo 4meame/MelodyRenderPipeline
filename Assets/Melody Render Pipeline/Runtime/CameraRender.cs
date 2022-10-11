@@ -18,10 +18,13 @@ public partial class CameraRender {
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
     VolumetricCloud cloud = new VolumetricCloud();
+    LensFlare lensFlare = new LensFlare();
+    AutoExposure autoExposure = new AutoExposure();
     ScreenSpaceAmbientOcclusion ssao = new ScreenSpaceAmbientOcclusion();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
     MotionVectorRender motionVector = new MotionVectorRender();
     TemporalAntialiasing taa = new TemporalAntialiasing();
+    MotionBlur motionBlur = new MotionBlur();
     SSPlanarReflection sspr = new SSPlanarReflection();
     PostFXStack postFXStack = new PostFXStack();
     //intermediate frame buffer for the camera, to provide a source texture for the FX stack
@@ -178,10 +181,13 @@ public partial class CameraRender {
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
         taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, useHDR, copyTextureSupported);
+        motionBlur.Setup(context, camera, bufferSize, postFXSettings, useHDR);
         //sspr Objects
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
+        lensFlare.Setup(context, camera, bufferSize, postFXSettings);
+        autoExposure.Setup(context, camera, bufferSize, postFXSettings);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
@@ -223,6 +229,8 @@ public partial class CameraRender {
         ssao.Combine(colorAttachmentId);
         ssr.Combine(colorAttachmentId);
 
+        //I want do auto exposure before cloud rendering
+        autoExposure.DoAutoExposure(colorAttachmentId);
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
         }
@@ -234,9 +242,15 @@ public partial class CameraRender {
             ExecuteBuffer();
             atmosphere.RenderFog(colorAttachmentId);
         }
+
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
+        lensFlare.DoLensFlare(colorAttachmentId);
         taa.Render(colorAttachmentId);
+        if (postFXSettings.motionBlurSettings.enable) {
+            motionBlur.DoMotionBlur(colorAttachmentId);
+            motionBlur.Combine(colorAttachmentId);
+        }
         if (postFXStack.IsActive) {
             postFXStack.Render(colorAttachmentId);
         } else if (useIntermediateBuffer) {

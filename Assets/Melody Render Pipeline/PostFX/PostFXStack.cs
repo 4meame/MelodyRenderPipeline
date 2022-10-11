@@ -113,28 +113,6 @@ public class PostFXStack {
     int lightShaftsExposure = Shader.PropertyToID("_ShaftsExposure");
     int bloomTintAndThreshold = Shader.PropertyToID("_BloomTintAndThreshold");
     #endregion
-    #region Motion Blur
-    ReconstructionFilter reconstructionFilter;
-    FrameBlendingFilter frameBlendingFilter;
-    int motionResultId = Shader.PropertyToID("_MotionResult");
-    #endregion
-    #region Auto Exposure
-    AutoExposure autoExposure;
-    LogHistogram logHistogram;
-    int autoEVId = Shader.PropertyToID("_AutoEV");
-    #endregion
-    #region Lens Flare
-    int flareOcclusionTex = Shader.PropertyToID("_FlareOcclusionTex");
-    int lensFlareOcclusion = Shader.PropertyToID("_LensFlareOcclusion");
-    int flareTex = Shader.PropertyToID("_FlareTex");
-    int flareColorValue = Shader.PropertyToID("_FlareColorValue");
-    int flareData0 = Shader.PropertyToID("_FlareData0");
-    int flareData1 = Shader.PropertyToID("_FlareData1");
-    int flareData2 = Shader.PropertyToID("_FlareData2");
-    int flareData3 = Shader.PropertyToID("_FlareData3");
-    int flareData4 = Shader.PropertyToID("_FlareData4");
-    int flareOcclusionIndex = Shader.PropertyToID("_FlareOcclusionIndex");
-    #endregion
 
     public void Setup(ScriptableRenderContext context, Camera camera, Lighting lighting, Vector2Int bufferSize, PostFXSettings settings, bool useHDR, int colorLUTResolution, CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.RescalingMode bicubicRescaling, CameraBufferSettings.FXAA fxaa, bool keepAlhpa) {
         this.context = context;
@@ -156,18 +134,10 @@ public class PostFXStack {
         //buffer.Blit(sourceId, BuiltinRenderTextureType.CameraTarget);
         //Draw(sourceId, BuiltinRenderTextureType.CameraTarget, Pass.Copy);
 
-        DoLensFlare(sourceId);
-        DoAutoExposure(sourceId);
         if (DoBloom(sourceId)) {
             DoColorGradingAndToneMappingAndFxaa(bloomResultId);
             buffer.ReleaseTemporaryRT(bloomResultId);
         } else {
-            #region Motion Blur
-            if (settings.motionBlurSettings.enable) {
-                //updating current result to source
-                sourceId = motionResultId;
-            }
-            #endregion
             #region Light Shafts
             if (settings.LightShaftsSetting.enable) {
                 //updating outline result to source
@@ -217,13 +187,6 @@ public class PostFXStack {
 
     #region Bloom
     bool DoBloom(int sourceId) {
-        #region Motion Blur
-        if (settings.motionBlurSettings.enable) {
-            DoMotionBlur(sourceId);
-            //updating current result to source
-            sourceId = motionResultId;
-        }
-        #endregion
         #region Light Shafts
         if (settings.LightShaftsSetting.enable) {
             DoLightShafts(sourceId);
@@ -543,143 +506,5 @@ public class PostFXStack {
         buffer.EndSample("Light Shafts");
     }
     #endregion
-    #region Motion Blur
-    void DoMotionBlur(int from) {
-        if (reconstructionFilter == null) {
-            reconstructionFilter = new ReconstructionFilter(buffer);
-        }
-        if (frameBlendingFilter == null) {
-            frameBlendingFilter = new FrameBlendingFilter(buffer);
-        }
-        buffer.BeginSample("Motion Blur");
-        RenderTextureFormat format = useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
-        buffer.GetTemporaryRT(motionResultId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, format);
-        if (settings.motionBlurSettings.shutterAngle > 0 && settings.motionBlurSettings.frameBlending > 0) {
-            //reconstruction and frame blending
-            var tempId = Shader.PropertyToID("tempBuffer");
-            buffer.GetTemporaryRT(tempId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, format);
-            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, from, tempId, bufferSize.x, bufferSize.y);
-            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, tempId, motionResultId);
-            frameBlendingFilter.PushFrame(tempId, bufferSize.x, bufferSize.y);
-            buffer.ReleaseTemporaryRT(tempId);
-        } else if (settings.motionBlurSettings.shutterAngle > 0) {
-            //reconstruction only
-            reconstructionFilter.ProcessImage(settings.motionBlurSettings.shutterAngle, settings.motionBlurSettings.sampleCount, from, motionResultId, bufferSize.x, bufferSize.y);
-        } else if (settings.motionBlurSettings.frameBlending > 0) {
-            //frame blending only
-            frameBlendingFilter.BlendFrames(settings.motionBlurSettings.frameBlending, from, motionResultId);
-            frameBlendingFilter.PushFrame(from, bufferSize.x, bufferSize.y);
-        } else {
-            //nothing to do!
-        }
-        buffer.EndSample("Motion Blur");
-    }
-    #endregion
-    #region Auto Exposure
-    void DoAutoExposure(int from) {
-        if(settings.autoExposureSettings.metering == AutoExposureSettings.MeteringMode.None) {
-            //set buffer keyword
-            buffer.SetGlobalFloat("_AutoExposure", 0);
-            return;
-        }
-        buffer.SetGlobalFloat("_AutoExposure", 1);
 
-        if (autoExposure == null) {
-            autoExposure = new AutoExposure(buffer, settings.autoExposureSettings.autoExposure);
-        }
-        if(logHistogram == null) {
-            logHistogram = new LogHistogram(buffer, settings.autoExposureSettings.logHistogram);
-        }
-        switch (settings.autoExposureSettings.meteringMask) {
-            case AutoExposureSettings.MeteringMask.None:
-                buffer.SetGlobalInt("_MeteringMask", 0);
-                break;
-            case AutoExposureSettings.MeteringMask.Vignette:
-                buffer.SetGlobalInt("_MeteringMask", 1);
-                break;
-            case AutoExposureSettings.MeteringMask.Custom:
-                buffer.SetGlobalInt("_MeteringMask", 2);
-                break;
-            default:
-                break;
-        }
-        buffer.BeginSample("Auto Exposure");
-        logHistogram.GenerateHistorgram(bufferSize.x, bufferSize.y, from);
-        //make sure filtering values are correct to avoid apocalyptic consequences
-        float lowPercent = settings.autoExposureSettings.lowPercent;
-        float highPercent = settings.autoExposureSettings.highPercent;
-        const float minDelta = 1e-2f;
-        highPercent = Mathf.Clamp(highPercent, 1f + minDelta, 99f);
-        lowPercent = Mathf.Clamp(lowPercent, 1f, highPercent - minDelta);
-        //clamp min/max adaptation values as well
-        float minLum = settings.autoExposureSettings.minEV;
-        float maxLum = settings.autoExposureSettings.maxEV;
-        Vector4 exposureParams = new Vector4(lowPercent, highPercent, minLum, maxLum);
-        Vector4 adaptationParams = new Vector4(settings.autoExposureSettings.speedDown, settings.autoExposureSettings.speedUp, settings.autoExposureSettings.compensation, Time.deltaTime);
-        Vector4 scaleOffsetRes = logHistogram.GetHistogramScaleOffsetRes(bufferSize.x, bufferSize.y);
-        autoExposure.AutoExposureLookUp(exposureParams, adaptationParams, scaleOffsetRes, logHistogram.data, settings.autoExposureSettings.adaptation == AutoExposureSettings.AdaptationMode.Fixed ? true : false);     
-        buffer.EndSample("Auto Exposure");
-    }
-    #endregion
-    #region Lens Flare
-    void DoLensFlare(int sourceId) {
-        if(settings.lensFlareSettings.mode != LensFlareSettings.Mode.None && !LensFlareCommon.Instance.IsEmpty()) {
-            LensFlareParameters parameters = PrepareLensFlareParameters();
-            float width = LensFlareCommon.maxLensFlareWithOcclusion;
-            float height = LensFlareCommon.maxLensFlareWithOcclusionTemporalSample;
-            bool forceCameraOrigin = true;
-            Vector3 cameraPosWS = camera.transform.position;
-            //from hdrp
-            var proj = camera.projectionMatrix;
-            var view = camera.worldToCameraMatrix;
-            var gpuNonJitteredProj = GL.GetGPUProjectionMatrix(proj, true);
-            Matrix4x4 viewProjMatrix = gpuNonJitteredProj * view;
-            bool taaEnable = settings.lensFlareSettings.antiAliasing;
-            buffer.BeginSample("Lens Flare");
-            LensFlareCommon.ComputeOcclusion(parameters.lensFlareMaterial, parameters.lensFlares, camera, width, height, forceCameraOrigin, cameraPosWS, viewProjMatrix, buffer, taaEnable, flareOcclusionTex, flareOcclusionIndex, flareTex, flareColorValue, flareData0, flareData1, flareData2, flareData3, flareData4);
-            if (taaEnable) {
-                
-                buffer.SetComputeTextureParam(parameters.lensFlareMergeOcclusion, parameters.mergeOcclusionKernel, lensFlareOcclusion, LensFlareCommon.occlusionRT);
-                buffer.DispatchCompute(parameters.lensFlareMergeOcclusion, parameters.mergeOcclusionKernel, 16, 1, 1);
-            }
-            width = bufferSize.x;
-            height = bufferSize.y;
-            LensFlareCommon.DoLensFlareCommon(parameters.lensFlareMaterial, parameters.lensFlares, camera, width, height, forceCameraOrigin, cameraPosWS, viewProjMatrix, buffer, sourceId, (a, b, c) => { return GetLensFlareLightAttenuation(a, b, c); }, taaEnable, flareOcclusionTex, flareOcclusionIndex, flareTex, flareColorValue, flareData0, flareData1, flareData2, flareData3, flareData4);
-            buffer.EndSample("Lens Flare");
-        }
-    }
-
-    struct LensFlareParameters {
-        public Material lensFlareMaterial;
-        public ComputeShader lensFlareMergeOcclusion;
-        public int mergeOcclusionKernel;
-        public LensFlareCommon lensFlares;
-    }
-
-    LensFlareParameters PrepareLensFlareParameters() {
-        LensFlareParameters parameters;
-        parameters.lensFlares = LensFlareCommon.Instance;
-        parameters.lensFlareMaterial = CoreUtils.CreateEngineMaterial(settings.lensFlareSettings.lensFlareShader);
-        parameters.lensFlareMergeOcclusion = settings.lensFlareSettings.mergeOcclusion;
-        parameters.mergeOcclusionKernel = settings.lensFlareSettings.mergeOcclusion.FindKernel("MergeOcclusion");
-        return parameters;
-    }
-
-    float GetLensFlareLightAttenuation(Light light, Camera camera, Vector3 eyeToLight) {
-        if(light.TryGetComponent<Light>(out var lightData)) {
-            switch (lightData.type)
-            {
-                case LightType.Spot:
-                    return LensFlareCommon.ShapeAttenuationSpotConeLight(lightData.transform.forward, eyeToLight, light.spotAngle, lightData.innerSpotAngle / 100f);
-                case LightType.Directional:
-                    return LensFlareCommon.ShapeAttenuationDirectionLight(lightData.transform.forward, eyeToLight);
-                case LightType.Point:
-                    return LensFlareCommon.ShapeAttenuationPointLight();
-                case LightType.Area:
-                    break;
-            }
-        }
-        return 1.0f;
-    }
-    #endregion
 }

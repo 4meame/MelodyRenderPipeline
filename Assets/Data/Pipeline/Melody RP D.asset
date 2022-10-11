@@ -74,7 +74,7 @@ MonoBehaviour:
       ScreenLRStretchThreshold: 1
       TintColor: {r: 1.7411011, g: 1.7411011, b: 1.7411011, a: 1}
     ssr:
-      enabled: 0
+      enabled: 1
       computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
       sSRType: 1
       downSample: 1
@@ -114,7 +114,7 @@ MonoBehaviour:
       aOType: 3
       filterType: 0
       debugType: 0
-      enabled: 0
+      enabled: 1
       computeShader: {fileID: 7200000, guid: 292fa2e92df0b4640a68ab2c61571f6e, type: 3}
       randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
       downSample: 2

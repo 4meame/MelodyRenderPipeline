@@ -9,4 +9,8 @@ public class MelodyRenderPipelineCamera : MonoBehaviour {
 
     //?? ---> settings == null ? settings = new CameraSettings() : settings
     public CameraSettings Settings => settings ?? (settings = new CameraSettings());
+
+    [SerializeField]
+    PhyscialCameraSettings physcialSettings = default;
+    public PhyscialCameraSettings PhyscialSettings => physcialSettings ?? (physcialSettings = new PhyscialCameraSettings());
 }

@@ -21,7 +21,7 @@ MonoBehaviour:
     thresholdKnee: 0.508
     fadeFireflies: 1
     mode: 0
-    intensity: 0.3
+    intensity: 0.5
     scatter: 0.542
     ignoreRenderScale: 1
   colorAdjustment:
@@ -29,7 +29,7 @@ MonoBehaviour:
     constrat: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 12
+    saturation: 0
   whiteBalance:
     Temperature: 0
     Tint: 0
@@ -65,7 +65,7 @@ MonoBehaviour:
     depthNormalThresholdScale: 15.22
   lightShaftsSetting:
     mode: 1
-    enable: 1
+    enable: 0
     Downsample: 4
     lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
     radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}
@@ -82,13 +82,13 @@ MonoBehaviour:
   autoExposureSetting:
     autoExposure: {fileID: 7200000, guid: 9ab31004dd070044dad9f84fe059d67a, type: 3}
     logHistogram: {fileID: 7200000, guid: a13a6250b9b3e714fb4ba6e365397836, type: 3}
-    metering: 0
+    metering: 1
     meteringMask: 1
     mask: {fileID: 0}
     minEV: -10
     maxEV: 10
-    lowPercent: 19.4
-    highPercent: 81.3
+    lowPercent: 30
+    highPercent: 99
     compensation: 0
     adaptation: 1
     speedUp: 3
