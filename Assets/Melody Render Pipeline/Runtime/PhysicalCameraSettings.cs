@@ -19,7 +19,7 @@ public class PhyscialCameraSettings {
 	public Vector2 shift = Vector2.zero;
 	[Range(0, 32.0f)]
 	public float fStop = 3.0f;
-	public float focalDistance = 10.0f;
+	public float focusDistance = 10.0f;
 	[Header("Aperture Shape")]
 	public int bladeCount = 8;
 	public Vector2 curvature = new Vector2(2.0f, 11.0f);
