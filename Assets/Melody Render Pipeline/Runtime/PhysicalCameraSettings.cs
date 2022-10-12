@@ -7,20 +7,22 @@ using UnityEngine;
 [Serializable]
 public class PhyscialCameraSettings {
 	public enum SensorType { Custom }
-	public enum GateFit { Vertical, Horizontal, Fill, Overscan, None}
 	[Header("Camera Body")]
 	public SensorType sensorType = SensorType.Custom;
 	public Vector2 sensorSize = new Vector2(70.0f, 51.0f);
 	public int ISO = 200;
 	public float shutterSpeed = 0.005f;
-	public GateFit gateFit = GateFit.Horizontal;
+	public Camera.GateFitMode gateFit = Camera.GateFitMode.Horizontal;
 	[Header("Lens")]
+	[Min(0.1117f)]
 	public float focalLength = 20.0f;
 	public Vector2 shift = Vector2.zero;
-	[Range(0, 32.0f)]
+	[Range(0.7f, 32.0f)]
 	public float fStop = 3.0f;
+	[Min(0.1f)]
 	public float focusDistance = 10.0f;
 	[Header("Aperture Shape")]
+	[Range(0, 11)]
 	public int bladeCount = 8;
 	public Vector2 curvature = new Vector2(2.0f, 11.0f);
 	[Range(0, 1.0f)]

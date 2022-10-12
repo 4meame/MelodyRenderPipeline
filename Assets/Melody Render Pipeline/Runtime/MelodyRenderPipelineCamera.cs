@@ -6,7 +6,6 @@ using UnityEngine;
 public class MelodyRenderPipelineCamera : MonoBehaviour {
     [SerializeField]
     CameraSettings settings = default;
-
     //?? ---> settings == null ? settings = new CameraSettings() : settings
     public CameraSettings Settings => settings ?? (settings = new CameraSettings());
 

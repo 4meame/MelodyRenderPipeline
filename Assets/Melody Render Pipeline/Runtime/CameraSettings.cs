@@ -24,6 +24,7 @@ public class CameraSettings {
 	public bool allowSSR = false;
 	public bool allowCloud = true;
 	public bool allowAtmosFog = true;
+	public bool allowPhyscialCamera = false;
 	public RenderScaleMode renderScaleMode = RenderScaleMode.Inherit;
 	[Range(0.1f, 2f)]
 	public float renderScale = 1f;

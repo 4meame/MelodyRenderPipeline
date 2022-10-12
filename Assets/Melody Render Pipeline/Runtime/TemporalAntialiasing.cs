@@ -18,7 +18,9 @@ public class TemporalAntialiasing : MonoBehaviour {
     Camera camera;
     Vector2Int bufferSize;
     CameraBufferSettings.TAA taa;
+    PhyscialCameraSettings physcialCamera;
     bool useHDR;
+    bool usePhyscialCamera;
     bool copyTextureSupported;
     bool isFirstFrame = true;
     Material taaMaterial;
@@ -36,12 +38,14 @@ public class TemporalAntialiasing : MonoBehaviour {
     //for reprojection
     private Matrix4x4 nonJitteredVP;
     private Matrix4x4 previousVP;
-    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.TAA taa, bool useHDR, bool copyTextureSupported) {
+    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, CameraBufferSettings.TAA taa, PhyscialCameraSettings physcialCamera, bool useHDR, bool usePhyscialCamera, bool copyTextureSupported) {
         this.context = context;
         this.camera = camera;
         this.bufferSize = bufferSize;
         this.taa = taa;
+        this.physcialCamera = physcialCamera;
         this.useHDR = useHDR;
+        this.usePhyscialCamera = usePhyscialCamera;
         this.copyTextureSupported = copyTextureSupported;
         taaMaterial = new Material(Shader.Find("Hidden/Melody RP/TemporalAntialiasing"));
     }
@@ -75,6 +79,15 @@ public class TemporalAntialiasing : MonoBehaviour {
             indexWrite = (++indexWrite) % 2;
             buffer.SetGlobalVector("_LastJitter", jitter);
             camera.ResetProjectionMatrix();
+            if (camera.cameraType == CameraType.Game || camera.cameraType == CameraType.SceneView) {
+                if (usePhyscialCamera) {
+                    camera.usePhysicalProperties = true;
+                    camera.gateFit = physcialCamera.gateFit;
+                    camera.sensorSize = physcialCamera.sensorSize;
+                    camera.lensShift = physcialCamera.shift;
+                    camera.focalLength = physcialCamera.focalLength;
+                }
+            }
             ConfigureJitteredProjectionMatrix(camera, ref jitter);
             buffer.SetGlobalVector("_Jitter", jitter);
             const float kMotionAmplification_Blending = 100f * 60f;

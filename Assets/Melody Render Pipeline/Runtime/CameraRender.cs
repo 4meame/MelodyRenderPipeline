@@ -80,6 +80,7 @@ public partial class CameraRender {
     #endregion
     static int motionVectorTextureId = Shader.PropertyToID("_CameraMotionVectorTexture");
     static CameraSettings defaultCameraSettings = new CameraSettings();
+    static PhyscialCameraSettings defaultPhyscialCameraSettings = new PhyscialCameraSettings();
     //WebGL 2.0 support
     static bool copyTextureSupported = false;
 
@@ -91,7 +92,7 @@ public partial class CameraRender {
 
         var crpCamera = camera.GetComponent<MelodyRenderPipelineCamera>();
         CameraSettings cameraSettings = crpCamera ? crpCamera.Settings : defaultCameraSettings;
-
+        PhyscialCameraSettings physcialCameraSettings = crpCamera ? crpCamera.PhyscialSettings : defaultPhyscialCameraSettings;
 
         if (cameraSettings.overridePostFX) {
             postFXSettings = cameraSettings.postFXSettings;
@@ -108,6 +109,15 @@ public partial class CameraRender {
 
         if (!Cull(shadowSettings.maxDistance)) {
             return;
+        }
+        if (camera.cameraType == CameraType.Game || camera.cameraType == CameraType.SceneView) {
+            if (cameraSettings.allowPhyscialCamera) {
+                camera.usePhysicalProperties = true;
+                camera.gateFit = physcialCameraSettings.gateFit;
+                camera.sensorSize = physcialCameraSettings.sensorSize;
+                camera.lensShift = physcialCameraSettings.shift;
+                camera.focalLength = physcialCameraSettings.focalLength;
+            }
         }
         if (camera.cameraType == CameraType.Reflection)
         {
@@ -180,7 +190,7 @@ public partial class CameraRender {
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
-        taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, useHDR, copyTextureSupported);
+        taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, physcialCameraSettings, useHDR, cameraSettings.allowPhyscialCamera, copyTextureSupported);
         motionBlur.Setup(context, camera, bufferSize, postFXSettings, useHDR);
         //sspr Objects
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
