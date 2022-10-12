@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using static PostFXSettings;
 
+//TODO: update physical based method and sort constructure
 public class AutoExposure {
     const int numAutoExposureTexture = 2;
     const string bufferName = "Auto Exposure";

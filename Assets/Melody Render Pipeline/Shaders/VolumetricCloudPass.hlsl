@@ -445,7 +445,7 @@ float4 DebugFragment(Varyings input) : SV_TARGET {
       return SAMPLE_TEXTURE2D_LOD(_CurrFrame, sampler_CurrFrame, input.screenUV, 0);
 }
 
-//TODO : Downsample and apply Erosion Operator
+//TODO: Downsample and apply Erosion Operator
 float4 PreDepthFragment(Varyings input) : SV_TARGET{
 	float4 color = 1;
 	float3  rayDirection = normalize(input.cameraRay);
