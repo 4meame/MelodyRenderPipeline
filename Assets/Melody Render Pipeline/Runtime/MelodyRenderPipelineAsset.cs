@@ -27,6 +27,8 @@ public class MelodyRenderPipelineAsset : RenderPipelineAsset {
     ColorLUTResolution colorLUTResolution = ColorLUTResolution._32;
     [SerializeField]
     Shader cameraRendererShader = default;
+    //TODO: use global pipeline resources SO to collect all shaders,textures,material and so on
+    //MelodyRenderPipelineResources pipelineResources;
     protected override RenderPipeline CreatePipeline() {
         return new MelodyRenderPipeline(useDynamicBachting, useInstancing, useSRPBatcher, useLightsPerObject, shadows, atmosphere, cloud, postFXSettings, cameraBufferSettings, (int)colorLUTResolution, cameraRendererShader);
     }

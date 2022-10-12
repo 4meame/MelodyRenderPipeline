@@ -197,6 +197,45 @@ public class PostFXSettings : ScriptableObject {
     }
 
     [System.Serializable]
+    public struct DepthOfFieldSettings {
+        public ComputeShader dofKernel;
+        public ComputeShader dofCoc;
+        public ComputeShader dofReproj;
+        public ComputeShader dofPrefitler;
+        public ComputeShader dofMipGen;
+        public ComputeShader dofTileMax;
+        public ComputeShader dofDilate;
+        public ComputeShader dofGather;
+        public ComputeShader dofCombine;
+        public enum FocusMode { None, Manual, Physical }
+        public FocusMode focusMode;
+        public enum FocusDistanceMode { Post, Camera }
+        public FocusDistanceMode focusDistanceMode;
+        public enum Resolution { Full = 1, Half = 2 }
+        public Resolution resolution;
+        [Min(0.1f)]
+        public float focusDistance;
+        [Min(0)]
+        public float nearRangeStart;
+        [Min(0)]
+        public float nearRangeEnd;
+        [Min(0)]
+        public float farRangeStart;
+        [Min(0)]
+        public float farRangeEnd;
+        [Range(3, 8)]
+        public int nearBlurSampleCount;
+        [Range(0, 8f)]
+        public float nearBlurMaxRadius;
+        [Range(3, 16f)]
+        public int farBlurSampleCount;
+        [Range(0, 16f)]
+        public float farBlurMaxRadius;
+        public ComputeShader dofAdvanced;
+        public bool useAdvanced;
+    }
+
+    [System.Serializable]
     public struct LensFlareSettings {
         public Shader lensFlareShader;
         public ComputeShader mergeOcclusion;
@@ -237,6 +276,8 @@ public class PostFXSettings : ScriptableObject {
     [SerializeField]
     AutoExposureSettings autoExposureSetting = default;
     [SerializeField]
+    DepthOfFieldSettings depthOfFieldSetting = default;
+    [SerializeField]
     LensFlareSettings lensFlareSetting = default;
     public BloomSettings Bloom => bloom;
     public ColorAdjustmentSettings ColorAdjustment => colorAdjustment;
@@ -250,5 +291,6 @@ public class PostFXSettings : ScriptableObject {
     public LightShaftsSettings LightShaftsSetting => lightShaftsSetting;
     public MotionBlurSettings motionBlurSettings => motionBlurSetting;
     public AutoExposureSettings autoExposureSettings => autoExposureSetting;
+    public DepthOfFieldSettings depthOfFieldSettings => depthOfFieldSetting;
     public LensFlareSettings lensFlareSettings => lensFlareSetting;
 }
