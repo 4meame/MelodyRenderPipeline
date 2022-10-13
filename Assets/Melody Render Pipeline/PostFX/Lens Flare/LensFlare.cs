@@ -9,7 +9,7 @@ public class LensFlare {
     CommandBuffer buffer = new CommandBuffer { name = bufferName };
     ScriptableRenderContext context;
     Camera camera;
-    PostFXSettings settings;
+    LensFlareSettings settings;
     Vector2Int bufferSize;
 
     int flareOcclusionTex = Shader.PropertyToID("_FlareOcclusionTex");
@@ -28,14 +28,14 @@ public class LensFlare {
         this.camera = camera;
         this.bufferSize = bufferSize;
         //apply to proper camera
-        this.settings = camera.cameraType <= CameraType.SceneView ? settings : null;
+        this.settings = camera.cameraType <= CameraType.SceneView ? (settings ? settings.lensFlareSettings : default) : default;
     }
 
     public void DoLensFlare(int sourceId) {
-        if(settings == null) {
+        if(settings.mode == LensFlareSettings.Mode.None) {
             return;
         }
-        if (settings.lensFlareSettings.mode != LensFlareSettings.Mode.None && !LensFlareCommon.Instance.IsEmpty()) {
+        if (settings.mode != LensFlareSettings.Mode.None && !LensFlareCommon.Instance.IsEmpty()) {
             LensFlareParameters parameters = PrepareLensFlareParameters();
             float width = LensFlareCommon.maxLensFlareWithOcclusion;
             float height = LensFlareCommon.maxLensFlareWithOcclusionTemporalSample;
@@ -46,7 +46,7 @@ public class LensFlare {
             var view = camera.worldToCameraMatrix;
             var gpuNonJitteredProj = GL.GetGPUProjectionMatrix(proj, true);
             Matrix4x4 viewProjMatrix = gpuNonJitteredProj * view;
-            bool taaEnable = settings.lensFlareSettings.antiAliasing;
+            bool taaEnable = settings.antiAliasing;
             LensFlareCommon.ComputeOcclusion(parameters.lensFlareMaterial, parameters.lensFlares, camera, width, height, forceCameraOrigin, cameraPosWS, viewProjMatrix, buffer, taaEnable, flareOcclusionTex, flareOcclusionIndex, flareTex, flareColorValue, flareData0, flareData1, flareData2, flareData3, flareData4);
             if (taaEnable) {
                 buffer.SetComputeTextureParam(parameters.lensFlareMergeOcclusion, parameters.mergeOcclusionKernel, lensFlareOcclusion, LensFlareCommon.occlusionRT);
@@ -69,9 +69,9 @@ public class LensFlare {
     LensFlareParameters PrepareLensFlareParameters() {
         LensFlareParameters parameters;
         parameters.lensFlares = LensFlareCommon.Instance;
-        parameters.lensFlareMaterial = CoreUtils.CreateEngineMaterial(settings.lensFlareSettings.lensFlareShader);
-        parameters.lensFlareMergeOcclusion = settings.lensFlareSettings.mergeOcclusion;
-        parameters.mergeOcclusionKernel = settings.lensFlareSettings.mergeOcclusion.FindKernel("MergeOcclusion");
+        parameters.lensFlareMaterial = CoreUtils.CreateEngineMaterial(settings.lensFlareShader);
+        parameters.lensFlareMergeOcclusion = settings.mergeOcclusion;
+        parameters.mergeOcclusionKernel = settings.mergeOcclusion.FindKernel("MergeOcclusion");
         return parameters;
     }
 

@@ -161,7 +161,8 @@ public class PostFXSettings : ScriptableObject {
 
     [System.Serializable]
     public struct MotionBlurSettings {
-        public bool enable;
+        public enum Mode { None, Physical }
+        public Mode mode;
         [Range(0, 360)]
         public float shutterAngle;
         [Range(0, 64)]
@@ -272,7 +273,7 @@ public class PostFXSettings : ScriptableObject {
     [SerializeField]
     LightShaftsSettings lightShaftsSetting = default;
     [SerializeField]
-    MotionBlurSettings motionBlurSetting = new MotionBlurSettings { shutterAngle = 270, sampleCount = 8, frameBlending = 0.5f };
+    MotionBlurSettings motionBlurSetting = default;
     [SerializeField]
     AutoExposureSettings autoExposureSetting = default;
     [SerializeField]

@@ -11,7 +11,7 @@ public class AutoExposure {
     CommandBuffer buffer = new CommandBuffer { name = bufferName };
     ScriptableRenderContext context;
     Camera camera;
-    PostFXSettings settings;
+    AutoExposureSettings settings;
     Vector2Int bufferSize;
     ComputeShader cs;
     RenderTexture[] autoExposurePool;
@@ -32,7 +32,7 @@ public class AutoExposure {
         this.camera = camera;
         this.bufferSize = bufferSize;
         //apply to proper camera
-        this.settings = camera.cameraType <= CameraType.SceneView ? settings : null;
+        this.settings = camera.cameraType <= CameraType.SceneView ? (settings ? settings.autoExposureSettings : default) : default;
     }
 
     void CheckTexture(int id) {
@@ -81,21 +81,18 @@ public class AutoExposure {
     }
 
     public void DoAutoExposure(int from) {
-        if(settings == null) {
-            return;
-        }
-        if (settings.autoExposureSettings.metering == AutoExposureSettings.MeteringMode.None) {
+        if (settings.metering == AutoExposureSettings.MeteringMode.None) {
             //set buffer keyword
             buffer.SetGlobalFloat("_AutoExposure", 0);
             return;
         }
         buffer.SetGlobalFloat("_AutoExposure", 1);
 
-        cs = settings.autoExposureSettings.autoExposure;
+        cs = settings.autoExposure;
         if (logHistogram == null) {
-            logHistogram = new LogHistogram(buffer, settings.autoExposureSettings.logHistogram);
+            logHistogram = new LogHistogram(buffer, settings.logHistogram);
         }
-        switch (settings.autoExposureSettings.meteringMask) {
+        switch (settings.meteringMask) {
             case AutoExposureSettings.MeteringMask.None:
                 buffer.SetGlobalInt("_MeteringMask", 0);
                 break;
@@ -111,18 +108,18 @@ public class AutoExposure {
 
         logHistogram.GenerateHistorgram(bufferSize.x, bufferSize.y, from);
         //make sure filtering values are correct to avoid apocalyptic consequences
-        float lowPercent = settings.autoExposureSettings.lowPercent;
-        float highPercent = settings.autoExposureSettings.highPercent;
+        float lowPercent = settings.lowPercent;
+        float highPercent = settings.highPercent;
         const float minDelta = 1e-2f;
         highPercent = Mathf.Clamp(highPercent, 1f + minDelta, 99f);
         lowPercent = Mathf.Clamp(lowPercent, 1f, highPercent - minDelta);
         //clamp min/max adaptation values as well
-        float minLum = settings.autoExposureSettings.minEV;
-        float maxLum = settings.autoExposureSettings.maxEV;
+        float minLum = settings.minEV;
+        float maxLum = settings.maxEV;
         Vector4 exposureParams = new Vector4(lowPercent, highPercent, minLum, maxLum);
-        Vector4 adaptationParams = new Vector4(settings.autoExposureSettings.speedDown, settings.autoExposureSettings.speedUp, settings.autoExposureSettings.compensation, Time.deltaTime);
+        Vector4 adaptationParams = new Vector4(settings.speedDown, settings.speedUp, settings.compensation, Time.deltaTime);
         Vector4 scaleOffsetRes = logHistogram.GetHistogramScaleOffsetRes(bufferSize.x, bufferSize.y);
-        AutoExposureLookUp(exposureParams, adaptationParams, scaleOffsetRes, logHistogram.data, settings.autoExposureSettings.adaptation == AutoExposureSettings.AdaptationMode.Fixed ? true : false);
+        AutoExposureLookUp(exposureParams, adaptationParams, scaleOffsetRes, logHistogram.data, settings.adaptation == AutoExposureSettings.AdaptationMode.Fixed ? true : false);
         ExecuteBuffer();
     }
 

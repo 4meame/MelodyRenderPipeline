@@ -257,11 +257,10 @@ public partial class CameraRender {
         DrawGizmosBeforeFX();
         lensFlare.DoLensFlare(colorAttachmentId);
         taa.Render(colorAttachmentId);
-        if (postFXSettings != null && postFXSettings.motionBlurSettings.enable) {
+        if (postFXStack.IsActive) {
             motionBlur.DoMotionBlur(colorAttachmentId);
             motionBlur.Combine(colorAttachmentId);
-        }
-        if (postFXStack.IsActive) {
+            //do post stack
             postFXStack.Render(colorAttachmentId);
         } else if (useIntermediateBuffer) {
             buffer.name = "Final Draw";
