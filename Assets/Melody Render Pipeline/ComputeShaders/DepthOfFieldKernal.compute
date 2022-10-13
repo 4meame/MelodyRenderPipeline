@@ -1,6 +1,6 @@
 ﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
 
-#pragma kernel DOFBlurKernel
+#pragma kernel DOFBokehKernel
 
 #define SampleCount    _Params1.x
 //polygon with n sides
@@ -60,7 +60,7 @@ float2 GetSample(float2 coords) {
 }
 
 [numthreads(64, 1, 1)]
-void DOFBlurKernel(uint dispatchThreadId : SV_DispatchThreadId) {
+void DOFBokehKernel(uint dispatchThreadId : SV_DispatchThreadId) {
 	if (dispatchThreadId >= uint(Square(SampleCount)))
 		return;
 

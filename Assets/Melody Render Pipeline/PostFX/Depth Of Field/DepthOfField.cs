@@ -9,7 +9,8 @@ public class DepthOfField {
     CommandBuffer buffer = new CommandBuffer { name = bufferName };
     ScriptableRenderContext context;
     Camera camera;
-    PostFXSettings settings;
+    PhyscialCameraSettings physcialCamera;
+    DepthOfFieldSettings settings;
     Vector2Int bufferSize;
 
     RenderTexture pingNear;
@@ -25,6 +26,16 @@ public class DepthOfField {
     RenderTexture dilationPingPong;
     RenderTexture prevCoCHistroy;
     RenderTexture nextCoCHistory;
+    int targetScaleId = Shader.PropertyToID("_TargetScale");
+
+    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, PostFXSettings settings, PhyscialCameraSettings physcialCamera) {
+        this.context = context;
+        this.camera = camera;
+        this.physcialCamera = physcialCamera;
+        this.bufferSize = bufferSize;
+        //apply to proper camera
+        this.settings = camera.cameraType <= CameraType.SceneView ? (settings ? settings.depthOfFieldSettings : default) : default;
+    }
 
     struct DepthOfFieldParameters {
         public ComputeShader dofKernelCS;
@@ -36,12 +47,13 @@ public class DepthOfField {
         public ComputeShader dofPrefilterCS;
         public int dofPrefilterKernel;
         public ComputeShader dofMipGenCS;
-        public int dofMipGenKernel;
+        public int dofMipColorkernel;
+        public int dofMipCoCkernel;
         public ComputeShader dofDilateCS;
         public int dofDilateKernel;
         public ComputeShader dofTileMaxCS;
-        public int dofClearIndirectAvgsKernal;
         public int dofTileMaxKernel;
+        public int dofClearIndirectAvgsKernal;
         public ComputeShader dofGatherCS;
         public int dofGatherNearKernel;
         public int dofGatherFarKernel;
@@ -50,9 +62,9 @@ public class DepthOfField {
         public int dofCombineFarKernel;
         //advanced DOF
         public ComputeShader dofAdvancedCS;
+        public Vector2Int threadGroup8;
 
         public DepthOfFieldSettings.FocusMode focusMode;
-        public DepthOfFieldSettings.FocusDistanceMode focusDistanceMode;
         public DepthOfFieldSettings.Resolution resolution;
         public Vector2 viewportSize;
         public float focusDistance;
@@ -62,6 +74,10 @@ public class DepthOfField {
         public float nearFocusEnd;
         public float farFocusStart;
         public float farFocusEnd;
+        public int nearSampleCount;
+        public float nearMaxBlur;
+        public int farSampleCount;
+        public float farMaxBlur;
         //physical camera params
         public float physicalCameraAperture;
         public Vector2 physicalCameraCurvature;
@@ -72,6 +88,72 @@ public class DepthOfField {
 
     DepthOfFieldParameters PrepareDOFParameters() {
         DepthOfFieldParameters parameters = new DepthOfFieldParameters();
+        //prepare compute shader info
+        parameters.dofKernelCS = settings.dofKernel;
+        parameters.dofKernelKernel = parameters.dofKernelCS.FindKernel("DOFBokehKernel");
+        parameters.dofCoCCS = settings.dofCoc;
+        if(settings.focusMode == DepthOfFieldSettings.FocusMode.Manual) {
+            parameters.dofCoCKernel = parameters.dofCoCCS.FindKernel("DOFCoCManual");
+        } else {
+            parameters.dofCoCKernel = parameters.dofCoCCS.FindKernel("DOFCoCPhysical");
+        }
+        parameters.dofCoCReprojectCS = settings.dofReproj;
+        parameters.dofCoCReprojectKernel = parameters.dofCoCReprojectCS.FindKernel("DOFCoCReProj");
+        parameters.dofPrefilterCS = settings.dofPrefitler;
+        parameters.dofPrefilterKernel = parameters.dofPrefilterCS.FindKernel("DOFPrefilter");
+        parameters.dofMipGenCS = settings.dofMipGen;
+        if (settings.useAdvanced) {
+        } else {
+            parameters.dofMipColorkernel = parameters.dofMipGenCS.FindKernel("DOFFarLayerMipColor");
+            parameters.dofMipCoCkernel = parameters.dofMipGenCS.FindKernel("DOFFarLayerMipCoC");
+        }
+        parameters.dofDilateCS = settings.dofDilate;
+        parameters.dofDilateKernel = parameters.dofDilateCS.FindKernel("DOFNearCoCDilate");
+        parameters.dofTileMaxCS = settings.dofTileMax;
+        parameters.dofTileMaxKernel = parameters.dofTileMaxCS.FindKernel("DOFCoCTileMax");
+        parameters.dofClearIndirectAvgsKernal = parameters.dofTileMaxCS.FindKernel("ClearIndirect");
+        parameters.dofGatherCS = settings.dofGather;
+        parameters.dofGatherNearKernel = parameters.dofGatherCS.FindKernel("DOFGatherNear");
+        parameters.dofGatherFarKernel = parameters.dofGatherCS.FindKernel("DOFGatherFar");
+        parameters.dofCombineCS = settings.dofCombine;
+        parameters.dofCombineNearKernel = parameters.dofCombineCS.FindKernel("DOFCombineNear");
+        parameters.dofCombineFarKernel = parameters.dofCombineCS.FindKernel("DOFPreCombineFar");
+        //compute rt info
+        parameters.viewportSize = bufferSize;
+        parameters.resolution = settings.resolution;
+        float scale = settings.useAdvanced ? 1f : 1f / (float)parameters.resolution;
+        float resolutionScale = (bufferSize.y / 1080f) * (scale * 2f);
+        int targetWidth = Mathf.RoundToInt(bufferSize.x * scale);
+        int targetHeight = Mathf.RoundToInt(bufferSize.y * scale);
+        int threadGroup8X = (targetWidth + 7) / 8;
+        int threadGroup8Y = (targetHeight + 7) / 8;
+        parameters.threadGroup8 = new Vector2Int(threadGroup8X, threadGroup8Y);
+        //sample varibles
+        int farSamples = Mathf.CeilToInt(settings.farBlurSampleCount * resolutionScale);
+        int nearSamples = Mathf.CeilToInt(settings.nearBlurSampleCount * resolutionScale);
+        parameters.nearMaxBlur = settings.nearBlurMaxRadius;
+        parameters.farMaxBlur = settings.farBlurMaxRadius;
+        //want at least 3 samples for both far and near
+        parameters.nearSampleCount = Mathf.Max(3, nearSamples);
+        parameters.farSampleCount = Mathf.Max(3, farSamples);
+        parameters.nearFocusStart = settings.nearRangeStart;
+        parameters.nearFocusEnd = settings.nearRangeEnd;
+        parameters.farFocusStart = settings.farRangeStart;
+        parameters.farFocusEnd = settings.farRangeEnd;
+        //physical parameters
+        parameters.physicalCameraAperture = physcialCamera.fStop;
+        parameters.physicalCameraCurvature = physcialCamera.curvature;
+        parameters.physicalCameraBarrelClipping = physcialCamera.barrelClipping;
+        parameters.physicalCameraBladeCount = physcialCamera.bladeCount;
+        parameters.physicalCameraAnamorphism = physcialCamera.anamorphism;
+        if(settings.focusDistanceMode == DepthOfFieldSettings.FocusDistanceMode.Camera) {
+            parameters.focusDistance = physcialCamera.focusDistance;
+        } else {
+            parameters.focusDistance = settings.focusDistance;
+        }
+        //keywords
+
+
 
         return parameters;
     }
@@ -117,9 +199,29 @@ public class DepthOfField {
         //magic numbers
         float anamorphism = dofParameters.physicalCameraAnamorphism / 4f;
         float barrelClipping = dofParameters.physicalCameraBarrelClipping / 3f;
+        //get dof rt scale
         GetDoFResolutionScale(dofParameters, out float scale, out float resolutionScale);
         var screenScale = new Vector2(scale, scale);
+        //rt width and height
         int targetWidth = Mathf.RoundToInt(dofParameters.viewportSize.x * scale);
         int targetHeight = Mathf.RoundToInt(dofParameters.viewportSize.y * scale);
+        buffer.SetGlobalVector(targetScaleId, new Vector4((float)dofParameters.resolution, scale, 0.0f, 0.0f));
+        int farSamples = dofParameters.farSampleCount;
+        int nearSamples = dofParameters.nearSampleCount;
+        //scale sample radius with scale
+        float farMaxBlur = dofParameters.farMaxBlur * resolutionScale;
+        float nearMaxBlur = dofParameters.nearMaxBlur * resolutionScale;
+        //init cs and kernel
+        ComputeShader cs;
+        int kernel;
+        buffer.BeginSample("DepthOfFieldKernel");
+        cs = dofParameters.dofKernelCS;
+        kernel = dofParameters.dofKernelKernel;
+
+        buffer.EndSample("DepthOfFieldKernel");
+    }
+
+    public void DoDepthOfField() {
+
     }
 }

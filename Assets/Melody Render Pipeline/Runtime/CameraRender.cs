@@ -18,14 +18,15 @@ public partial class CameraRender {
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
     VolumetricCloud cloud = new VolumetricCloud();
-    LensFlare lensFlare = new LensFlare();
-    AutoExposure autoExposure = new AutoExposure();
     ScreenSpaceAmbientOcclusion ssao = new ScreenSpaceAmbientOcclusion();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
+    AutoExposure autoExposure = new AutoExposure();
     MotionVectorRender motionVector = new MotionVectorRender();
     TemporalAntialiasing taa = new TemporalAntialiasing();
     MotionBlur motionBlur = new MotionBlur();
     SSPlanarReflection sspr = new SSPlanarReflection();
+    LensFlare lensFlare = new LensFlare();
+    DepthOfField dof = new DepthOfField();
     PostFXStack postFXStack = new PostFXStack();
     //intermediate frame buffer for the camera, to provide a source texture for the FX stack
     //static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
@@ -190,6 +191,7 @@ public partial class CameraRender {
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
+        autoExposure.Setup(context, camera, bufferSize, postFXSettings);
         taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, physcialCameraSettings, useHDR, cameraSettings.allowPhyscialCamera, copyTextureSupported);
         motionBlur.Setup(context, camera, bufferSize, postFXSettings, useHDR);
         //sspr Objects
@@ -197,7 +199,7 @@ public partial class CameraRender {
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
         lensFlare.Setup(context, camera, bufferSize, postFXSettings);
-        autoExposure.Setup(context, camera, bufferSize, postFXSettings);
+        dof.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();

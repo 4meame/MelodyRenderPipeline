@@ -66,10 +66,10 @@ void DOFCoCTileMax(uint2 dispatchThreadId : SV_DispatchThreadID, uint2 groupThre
     }
 }
 
-#pragma kernel KClear
+#pragma kernel ClearIndirect
 
 [numthreads(2, 1, 1)]
-void KClear(uint dispatchThreadId : SV_DispatchThreadID) {
+void ClearIndirect(uint dispatchThreadId : SV_DispatchThreadID) {
     //threadGroupCountX
     _IndirectBuffer[dispatchThreadId * 3] = 0;
     //threadGroupCountY
