@@ -121,6 +121,7 @@ public class AutoExposure {
         Vector4 scaleOffsetRes = logHistogram.GetHistogramScaleOffsetRes(bufferSize.x, bufferSize.y);
         AutoExposureLookUp(exposureParams, adaptationParams, scaleOffsetRes, logHistogram.data, settings.adaptation == AutoExposureSettings.AdaptationMode.Fixed ? true : false);
         ExecuteBuffer();
+        logHistogram.Release();
     }
 
     void ExecuteBuffer() {

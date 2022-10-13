@@ -25,8 +25,7 @@ void DOFPrefilter(uint3 dispatchThreadId : SV_DispatchThreadId) {
 #if defined(FULL_RES)
 	float3 tapColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).rgb;
 	float tapCoC = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv, 0).x;
-	
-	float nearCoC = saturate(abs(min(tapCoc, 0.0)));
+	float nearCoC = saturate(abs(min(tapCoC, 0.0)));
 	float3 nearColorAcc = tapColor;
 	float nearCoCAcc = nearCoC;
 	//premultiply CoC to reduce bleeding of background blur on focused areas

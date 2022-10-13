@@ -199,7 +199,7 @@ public partial class CameraRender {
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
         cloud.Setup(context, camera, cloudSettings, useHDR);
         lensFlare.Setup(context, camera, bufferSize, postFXSettings);
-        dof.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings);
+        dof.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings, useHDR);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
@@ -258,6 +258,7 @@ public partial class CameraRender {
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         lensFlare.DoLensFlare(colorAttachmentId);
+        dof.DoDepthOfField();
         taa.Render(colorAttachmentId);
         if (postFXStack.IsActive) {
             motionBlur.DoMotionBlur(colorAttachmentId);

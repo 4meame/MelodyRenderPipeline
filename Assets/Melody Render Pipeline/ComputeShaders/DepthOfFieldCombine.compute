@@ -26,8 +26,7 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID) {
 	float3 nearColor = SAMPLE_TEXTURE2D_LOD(_InputNearTexture, sampler_linear_clamp, uv, 0).xyz;
 	float alpha = SAMPLE_TEXTURE2D_LOD(_InputNearAlphaTexture, sampler_linear_clamp, uv, 0).x;
 	finalColor = lerp(baseColor, nearColor, alpha);
-#endif
-#if defined(FAR)
+#elif defined(FAR)
 	float3 baseColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).xyz;
 	float3 farColor = SAMPLE_TEXTURE2D_LOD(_InputFarTexture, sampler_linear_clamp, uv, 0).xyz;
 	float3 dstColor = 0.0;

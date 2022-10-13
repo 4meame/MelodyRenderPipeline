@@ -1,0 +1,55 @@
+﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
+
+#pragma kernel DOFCoCManual
+#pragma kernel DOFCoCPhysical
+
+#define FIX_NEAR_BLEND 0
+#define FocusDist       _Params1.x
+#define MaxCoC          _Params1.y
+#define NearStart       _Params1.x
+#define NearEnd         _Params1.y
+#define FarStart        _Params1.z
+#define FarEnd          _Params1.w
+
+RWTexture2D<float> _OutputCoCTexture;
+
+float GetFixedNearBlend(float linearEyeDepth) {
+#if FIX_NEAR_BLEND
+	//we can't rely on the actual CoC to blur the foreground as we have a fixed number of samples
+	//so an object close to the camera would appear less blurry than another further away with the same CoC
+	return 1.0 - saturate(linearEyeDepth / (NearEnd * NearEnd));
+#else
+	return 1.0;
+#endif
+}
+
+//manual CoC using near & far planes
+//this will accentuate rendering artifacts if used incorrectly
+[numthreads(8, 8, 1)]
+void DOFCoCManual(uint3 dispatchThreadId : SV_DispatchThreadId) {
+	//coc use full resolution
+	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
+	float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r;
+	float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
+	float nearBlend = GetFixedNearBlend(linearEyeDepth);
+	//coc = (depth - focus) / range
+	float nearCoC = (linearEyeDepth - NearEnd) / (NearStart - NearEnd);
+	nearCoC = saturate(nearCoC * nearBlend);
+	float farCoC = (linearEyeDepth - FarEnd) / (FarStart - FarEnd);
+	farCoC = saturate(farCoC);
+	_OutputCoCTexture[dispatchThreadId.xy] = -nearCoC + farCoC;
+}
+
+[numthreads(8, 8, 1)]
+void DOFCoCPhysical(uint3 dispatchThreadId : SV_DispatchThreadId) {
+	//coc use full resolution
+	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
+	float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r;
+	float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
+	//from "A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
+	float coc = (1.0 - FocusDist / max(linearEyeDepth, 1e-6f)) * MaxCoC;
+	float nearBlend = GetFixedNearBlend(linearEyeDepth);
+	float nearCoC = clamp(coc * nearBlend, -1.0, 0.0);
+	float farCoC = saturate(coc);
+	_OutputCoCTexture[dispatchThreadId.xy] = nearCoC + farCoC;
+}
