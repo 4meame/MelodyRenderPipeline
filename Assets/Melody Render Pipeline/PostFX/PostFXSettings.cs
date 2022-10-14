@@ -214,6 +214,7 @@ public class PostFXSettings : ScriptableObject {
         public FocusDistanceMode focusDistanceMode;
         public enum Resolution { Full = 1, Half = 2 }
         public Resolution resolution;
+        public bool taaEnabled;
         [Min(0.1f)]
         public float focusDistance;
         [Min(0)]

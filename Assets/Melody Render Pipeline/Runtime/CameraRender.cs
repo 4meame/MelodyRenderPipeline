@@ -258,8 +258,8 @@ public partial class CameraRender {
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         lensFlare.DoLensFlare(colorAttachmentId);
-        dof.DoDepthOfField();
         taa.Render(colorAttachmentId);
+        dof.DoDepthOfField(colorAttachmentId);
         if (postFXStack.IsActive) {
             motionBlur.DoMotionBlur(colorAttachmentId);
             motionBlur.Combine(colorAttachmentId);

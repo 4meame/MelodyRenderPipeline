@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using static PostFXSettings;
 
-public class DepthOfField {
+public class DepthOfField : MonoBehaviour {
     const string bufferName = "Depth Of Field";
     CommandBuffer buffer = new CommandBuffer { name = bufferName };
     ScriptableRenderContext context;
@@ -33,9 +34,22 @@ public class DepthOfField {
     RenderTexture prevCoCHistroy;
     RenderTexture nextCoCHistory;
     int targetScaleId = Shader.PropertyToID("_TargetScale");
+    int cocTargetScaleId = Shader.PropertyToID("_CoCTargetScale");
     int params1Id = Shader.PropertyToID("_Params1");
     int params2Id = Shader.PropertyToID("_Params2");
     int bokehKernelId = Shader.PropertyToID("_BokehKernel");
+    int inputCoCTextureId = Shader.PropertyToID("_InputCoCTexture");
+    int inputCoCHistoryTextureId = Shader.PropertyToID("_InputHistoryCoCTexture");
+    int outputCoCTextureId = Shader.PropertyToID("_OutputCoCTexture");
+    int inputTextureId = Shader.PropertyToID("_InputTexture");
+    int outputNearCoCTextureId = Shader.PropertyToID("_OutputNearCoCTexture");
+    int outputNearTextureId = Shader.PropertyToID("_OutputNearTexture");
+    int outputFarCoCTextureId = Shader.PropertyToID("_OutputFarCoCTexture");
+    int outputFarTextureId = Shader.PropertyToID("_OutputFarTexture");
+    int outputMip1Id = Shader.PropertyToID("_OutputMip1");
+    int outputMip2Id = Shader.PropertyToID("_OutputMip2");
+    int outputMip3Id = Shader.PropertyToID("_OutputMip3");
+    int outputMip4Id = Shader.PropertyToID("_OutputMip4");
 
     public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, PostFXSettings settings, PhyscialCameraSettings physcialCamera, bool useHDR) {
         this.context = context;
@@ -70,6 +84,7 @@ public class DepthOfField {
         public ComputeShader dofCombineCS;
         public int dofCombineNearKernel;
         public int dofCombineFarKernel;
+        public bool taaEnabled;
         //advanced DOF
         public bool useAdaneced;
         public ComputeShader dofAdvancedCS;
@@ -77,7 +92,7 @@ public class DepthOfField {
 
         public DepthOfFieldSettings.FocusMode focusMode;
         public DepthOfFieldSettings.Resolution resolution;
-        public Vector2 viewportSize;
+        public Vector2Int viewportSize;
         public float focusDistance;
         public bool nearLayerActive;
         public bool farLayerActive;
@@ -163,9 +178,14 @@ public class DepthOfField {
             parameters.focusDistance = settings.focusDistance;
         }
 
-        bool nearLayerActive = parameters.nearLayerActive;
-        bool farLayerActive = parameters.farLayerActive;
-        bool bothLayersActive = nearLayerActive && farLayerActive;
+        if(parameters.nearMaxBlur > 0f && parameters.nearFocusEnd > parameters.nearFocusStart) {
+            parameters.nearLayerActive = true;
+        }
+        if (parameters.farMaxBlur > 0f && parameters.farFocusEnd > parameters.farFocusStart) {
+            parameters.farLayerActive = true;
+        }
+        bool bothLayersActive = parameters.nearLayerActive && parameters.farLayerActive;
+        parameters.taaEnabled = settings.taaEnabled;
         parameters.useAdaneced = settings.useAdvanced;
         //keywords, unity supports compute shader keywords from 2020.0.1
 #if UNITY_2020_1_OR_NEWER
@@ -178,12 +198,12 @@ public class DepthOfField {
         if (parameters.resolution == DepthOfFieldSettings.Resolution.Full) {
             parameters.dofPrefilterCS.EnableKeyword("FULL_RES");
         }
-        if (bothLayersActive || nearLayerActive) {
+        if (bothLayersActive || parameters.nearLayerActive) {
             parameters.dofPrefilterCS.EnableKeyword("NEAR");
             parameters.dofTileMaxCS.EnableKeyword("NEAR");
             parameters.dofCombineCS.EnableKeyword("NEAR");
         }
-        if (bothLayersActive || !nearLayerActive) {
+        if (bothLayersActive || parameters.farLayerActive) {
             parameters.dofPrefilterCS.EnableKeyword("FAR");
             parameters.dofTileMaxCS.EnableKeyword("FAR");
             parameters.dofCombineCS.EnableKeyword("FAR");
@@ -220,8 +240,8 @@ public class DepthOfField {
         return Mathf.CeilToInt((nearMaxBlur * dofScale + 2) / 4f);
     }
 
-    void DepthOfFieldPass(in DepthOfFieldParameters dofParameters, CommandBuffer buffer, ComputeBuffer nearBokehKernel, ComputeBuffer farBokehKernel) {
-        bool nearLayerAcitve = dofParameters.nearLayerActive;
+    void DepthOfFieldPass(in DepthOfFieldParameters dofParameters, CommandBuffer buffer, int sourceId, ComputeBuffer nearBokehKernel, ComputeBuffer farBokehKernel) {
+        bool nearLayerActive = dofParameters.nearLayerActive;
         bool farLayerActive = dofParameters.farLayerActive;
         const uint indirectNearOffset = 0u * sizeof(uint);
         const uint indirectFarOffset = 3u * sizeof(uint);
@@ -255,31 +275,140 @@ public class DepthOfField {
         ComputeShader cs;
         int kernel;
         //generate bokeh kernel
+        //given that we allow full customization of near & far planes we'll need a separate kernel for each layer
         buffer.BeginSample("DepthOfFieldKernel");
         cs = dofParameters.dofKernelCS;
         kernel = dofParameters.dofKernelKernel;
-        if (nearLayerAcitve) {
-            buffer.SetComputeVectorParam(cs, params1Id, new Vector4(nearSamples, ngonFactor, bladeCount, rotation));
-            buffer.SetComputeVectorParam(cs,params2Id, new Vector4(anamorphism, 0f, 0f, 0f));
-            buffer.SetComputeBufferParam(cs, kernel, bokehKernelId, nearBokehKernel);
+        if (nearLayerActive) {
+            cs.SetVector(params1Id, new Vector4(nearSamples, ngonFactor, bladeCount, rotation));
+            cs.SetVector(params2Id, new Vector4(anamorphism, 0f, 0f, 0f));
+            cs.SetBuffer(kernel, bokehKernelId, nearBokehKernel);
             buffer.DispatchCompute(cs, kernel, Mathf.CeilToInt((nearSamples * nearSamples) / 64f), 1, 1);
         }
         if (farLayerActive) {
-            buffer.SetComputeVectorParam(cs, params1Id, new Vector4(farSamples, ngonFactor, bladeCount, rotation));
-            buffer.SetComputeVectorParam(cs, params2Id, new Vector4(anamorphism, 0f, 0f, 0f));
-            buffer.SetComputeBufferParam(cs, kernel, bokehKernelId, farBokehKernel);
+            cs.SetVector(params1Id, new Vector4(farSamples, ngonFactor, bladeCount, rotation));
+            cs.SetVector(params2Id, new Vector4(anamorphism, 0f, 0f, 0f));
+            cs.SetBuffer(kernel, bokehKernelId, farBokehKernel);
             buffer.DispatchCompute(cs, kernel, Mathf.CeilToInt((farSamples * farSamples) / 64f), 1, 1);
         }
         buffer.EndSample("DepthOfFieldKernel");
+        //compute CoC in full resolution for temporal reprojtion and combine
+        //CoC is stored in a R16 ranged [-1, 1] RT as it makes RT management easier and temporal re-projection cheaper; later transformed into individual targets for near & far layers
+        buffer.BeginSample("DepthOfFieldCoC");
+        cs = dofParameters.dofCoCCS;
+        kernel = dofParameters.dofCoCKernel;
+        if (dofParameters.focusMode == DepthOfFieldSettings.FocusMode.Physical) {
+            //"A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
+            float F = physcialCamera.focalLength / 1000f;
+            float A = physcialCamera.focalLength / dofParameters.physicalCameraAperture;
+            float P = dofParameters.focusDistance;
+            float maxCoC = (A * F) / Mathf.Max((P - F), 1e-6f);
+            cs.SetVector(params1Id, new Vector4(P, maxCoC, 0f, 0f));
+        }
+        else {
+            float nearEnd = dofParameters.nearFocusEnd;
+            float nearStart = Mathf.Min(dofParameters.nearFocusStart, nearEnd - 1e-5f);
+            float farStart = Mathf.Max(dofParameters.farFocusStart, nearEnd);
+            float farEnd = Mathf.Max(dofParameters.farFocusEnd, farStart + 1e-5f);
+            cs.SetVector(params1Id, new Vector4(nearStart, nearEnd, farStart, farEnd));
+        }
+        cs.SetTexture(kernel, outputCoCTextureId, fullResCoC);
+        buffer.DispatchCompute(cs, kernel, (dofParameters.viewportSize.x + 7) / 8, (dofParameters.viewportSize.y + 7) / 8, 1);
+        if (dofParameters.taaEnabled){
+            cs = dofParameters.dofCoCReprojectCS;
+            kernel = dofParameters.dofCoCReprojectKernel;
+            cs.SetVector(params1Id, new Vector4(0.9f, 1f, 1f, 0f));
+            cs.SetTexture(kernel, inputCoCTextureId, fullResCoC);
+            cs.SetTexture(kernel, inputCoCHistoryTextureId, prevCoCHistroy);
+            cs.SetTexture(kernel, outputCoCTextureId, nextCoCHistory);
+            buffer.DispatchCompute(cs, kernel, (dofParameters.viewportSize.x + 7) / 8, (dofParameters.viewportSize.y + 7) / 8, 1);
+            //TODO: ping-pong buffer
+            
+            fullResCoC = nextCoCHistory;
+        }
+        buffer.EndSample("DepthOfFieldCoC");
+        //downsample and prefilter CoC and layers
+        //only need to pre-multiply the CoC for the far layer; if only near is being,rendered we can use the downsampled color target as-is
+        buffer.BeginSample("DepthOfFieldPrefilter");
+        cs = dofParameters.dofPrefilterCS;
+        kernel = dofParameters.dofPrefilterKernel;
+        buffer.SetComputeTextureParam(cs, kernel, inputTextureId, sourceId);
+        cs.SetTexture(kernel, inputCoCTextureId, fullResCoC);
+        cs.SetVector(cocTargetScaleId, new Vector4(1f, 1f, 0f, 0f));
+        if (nearLayerActive) {
+            cs.SetTexture(kernel, outputNearCoCTextureId, nearCoC);
+            cs.SetTexture(kernel, outputNearTextureId, pingNear);
+        }
+        if (farLayerActive) {
+            cs.SetTexture(kernel, outputFarCoCTextureId, farCoC);
+            cs.SetTexture(kernel, outputFarTextureId, pingFar);
+        }
+        buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
+        buffer.EndSample("DepthOfFieldPrefilter");
+        if (dofParameters.farLayerActive) {
+            //mips generation far layer
+            //only do this for the far layer because the near layer can't really usevery wide radi
+            buffer.BeginSample("DepthOfFieldMipsGen");
+            int tx = ((targetWidth >> 1) + 7) / 8;
+            int ty = ((targetHeight >> 1) + 7) / 8;
+            cs = dofParameters.dofMipGenCS;
+            kernel = dofParameters.dofMipColorkernel;
+            cs.SetTexture(kernel, inputTextureId, pingFar, 0);
+            cs.SetTexture(kernel, outputMip1Id, pingFar, 1);
+            cs.SetTexture(kernel, outputMip2Id, pingFar, 2);
+            cs.SetTexture(kernel, outputMip3Id, pingFar, 3);
+            cs.SetTexture(kernel, outputMip4Id, pingFar, 4);
+            buffer.DispatchCompute(cs, kernel, tx, ty, 1);
+            kernel = dofParameters.dofMipCoCkernel;
+            cs.SetTexture(kernel, inputTextureId, farCoC, 0);
+            cs.SetTexture(kernel, outputMip1Id, farCoC, 1);
+            cs.SetTexture(kernel, outputMip2Id, farCoC, 2);
+            cs.SetTexture(kernel, outputMip3Id, farCoC, 3);
+            cs.SetTexture(kernel, outputMip4Id, farCoC, 4);
+            buffer.DispatchCompute(cs, kernel, tx, ty, 1);
+            buffer.EndSample("DepthOfFieldMipsGen");
+        }
+        if (dofParameters.nearLayerActive) {
+            //dilate the near layer
+            buffer.BeginSample("DepthOfFieldDilate");
+            cs = dofParameters.dofDilateCS;
+            kernel = dofParameters.dofDilateKernel ;
+            cs.SetVector(params1Id, new Vector4(targetWidth - 1, targetHeight - 1, 0f, 0f));
+            int passCount = GetDoFDilationPassCount(scale, nearMaxBlur);
+            cs.SetTexture(kernel, inputCoCTextureId, nearCoC);
+            cs.SetTexture(kernel, outputCoCTextureId, dilatedNearCoC);
+            buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
+            if(passCount > 1) {
+                //ping-pong
+                
+                var src = dilatedNearCoC;
+                var dst = dilationPingPong;
+                for (int i = 0; i < passCount; i++) {
+                    cs.SetTexture(kernel, inputCoCTextureId, src);
+                    cs.SetTexture(kernel, outputCoCTextureId, dst);
+                    buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
+                    Swap(ref src, ref dst);
+                }
+                dilatedNearCoC = src;
+            }
+            buffer.EndSample("DepthOfFieldDilate");
+        }
     }
 
-    public void DoDepthOfField() {
+    public void DoDepthOfField(int sourceId) {
         if(settings.focusMode == DepthOfFieldSettings.FocusMode.None) {
             return;
         }
+
         DepthOfFieldParameters dofParameters = PrepareDOFParameters();
         InitRenderTextureAndComputeBuffer(dofParameters);
+        if (settings.useAdvanced) {
 
+        } else {
+            DepthOfFieldPass(dofParameters, buffer, sourceId, nearBokehKernel, farBokehKernel);
+        }
+
+        ExecuteBuffer();
     }
 
     void InitRenderTextureAndComputeBuffer(DepthOfFieldParameters parameters) {
@@ -304,8 +433,8 @@ public class DepthOfField {
             farBokehTileList.name = "Far Bokeh Tile List";
         }
 
-        RenderTextureFormat format = useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
-        RenderTextureFormat cocFormat = RenderTextureFormat.R16;
+        GraphicsFormat format = useHDR ? GraphicsFormat.R16G16B16A16_SFloat : GraphicsFormat.B10G11R11_UFloatPack32;
+        GraphicsFormat cocFormat = GraphicsFormat.R16_SFloat;
         GetDoFResolutionScale(parameters, out float scale, out float resolutionScale);
         var screenScale = new Vector2(scale, scale);
         if (parameters.useAdaneced) {
@@ -315,15 +444,15 @@ public class DepthOfField {
             //near plane rt
             if (parameters.nearLayerActive) {
                 RenderTexture.ReleaseTemporary(pingNear);
-                pingNear = GetTemporaryRenderTexture(bufferSize * screenScale, 0, format, true, "Ping Near");
+                GetTemporaryRenderTexture(out pingNear, bufferSize * screenScale, 0, format, true, false, "Ping Near");
                 RenderTexture.ReleaseTemporary(pongNear);
-                pongNear = GetTemporaryRenderTexture(bufferSize * screenScale, 0, format, true, "Pong Near");
+                GetTemporaryRenderTexture(out pongNear, bufferSize * screenScale, 0, format, true, false, "Pong Near");
                 RenderTexture.ReleaseTemporary(nearCoC);
-                nearCoC = GetTemporaryRenderTexture(bufferSize * screenScale, 0, cocFormat, true, "Near CoC");
+                GetTemporaryRenderTexture(out nearCoC, bufferSize * screenScale, 0, cocFormat, true, false,"Near CoC");
                 RenderTexture.ReleaseTemporary(nearAlpha);
-                nearAlpha = GetTemporaryRenderTexture(bufferSize * screenScale, 0, cocFormat, true, "Near Alpha");
+                GetTemporaryRenderTexture(out nearAlpha, bufferSize * screenScale, 0, cocFormat, true, false, "Near Alpha");
                 RenderTexture.ReleaseTemporary(dilatedNearCoC);
-                dilatedNearCoC = GetTemporaryRenderTexture(bufferSize * screenScale, 0, cocFormat, true, "Near Alpha");
+                GetTemporaryRenderTexture(out dilatedNearCoC, bufferSize * screenScale, 0, cocFormat, true, false, "Dilated Near CoC");
             } else {
                 pingNear = null;
                 pongNear = null;
@@ -332,27 +461,34 @@ public class DepthOfField {
                 dilatedNearCoC = null;
             }
             //far plane rt
-            if (parameters.nearLayerActive) {
+            if (parameters.farLayerActive) {
                 RenderTexture.ReleaseTemporary(pingFar);
-                pingFar = GetTemporaryRenderTexture(bufferSize * screenScale, 0, format, true, "Ping Far");
-                pingFar.useMipMap = true;
+                GetTemporaryRenderTexture(out pingFar, bufferSize * screenScale, 0, format, true, true, "Ping Far");
                 RenderTexture.ReleaseTemporary(pongFar);
-                pongFar = GetTemporaryRenderTexture(bufferSize * screenScale, 0, format, true, "Pong Far");
+                GetTemporaryRenderTexture(out pongFar, bufferSize * screenScale, 0, format, false, false, "Pong Far");
                 RenderTexture.ReleaseTemporary(farCoC);
-                farCoC = GetTemporaryRenderTexture(bufferSize * screenScale, 0, cocFormat, true, "Far CoC");
-                farCoC.useMipMap = true;
+                GetTemporaryRenderTexture(out farCoC, bufferSize * screenScale, 0, cocFormat, true, true, "Far CoC");
             } else {
                 pingFar = null;
                 pongFar = null;
                 farCoC = null;
             }
             //coc rt
+            RenderTexture.ReleaseTemporary(fullResCoC);
+            GetTemporaryRenderTexture(out fullResCoC, bufferSize, 0, cocFormat, true, false, "Full res CoC");
+            RenderTexture.ReleaseTemporary(prevCoCHistroy);
+            GetTemporaryRenderTexture(out prevCoCHistroy, bufferSize, 0, cocFormat, false, false, "Prev CoC");
+            RenderTexture.ReleaseTemporary(nextCoCHistory);
+            GetTemporaryRenderTexture(out nextCoCHistory, bufferSize, 0, cocFormat, true, false, "Next CoC");
+
             float actualNearMaxBlur = parameters.nearMaxBlur * resolutionScale;
             int passCount = GetDoFDilationPassCount(scale, actualNearMaxBlur);
-            dilationPingPong = null;
             if(passCount > 1) {
                 RenderTexture.ReleaseTemporary(dilationPingPong);
-                dilationPingPong = GetTemporaryRenderTexture(bufferSize * screenScale, 0, cocFormat, true, "Dilation ping pong CoC");
+                GetTemporaryRenderTexture(out dilationPingPong, bufferSize * screenScale, 0, cocFormat, true, false, "Dilation ping pong CoC");
+            }
+            else {
+                dilationPingPong = null;
             }
             //mip gen rt
             var mipScale = scale;
@@ -360,17 +496,50 @@ public class DepthOfField {
                 mipScale *= 0.5f;
                 var size = new Vector2(Mathf.RoundToInt(bufferSize.x * mipScale), Mathf.RoundToInt(bufferSize.y * mipScale));
                 RenderTexture.ReleaseTemporary(mips[i]);
-                mips[i] = GetTemporaryRenderTexture(size, 0, format, true, "CoC Mip");
+                GetTemporaryRenderTexture(out mips[i], size, 0, format, true, false, "CoC Mip");
             }
         }
     }
 
-    RenderTexture GetTemporaryRenderTexture(Vector2 rtSize,int depth, RenderTextureFormat format, bool enableRW, string name) {
-        RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)rtSize.x, (int)rtSize.y, format, depth);
-        descriptor.enableRandomWrite = enableRW;
-        RenderTexture rt = RenderTexture.GetTemporary(descriptor);
-        rt.name = name;
-        return rt;
+    private void OnDisable() {
+        ReleaseComputeBuffer();
     }
 
+    void ReleaseComputeBuffer() {
+        if (nearBokehKernel != null) {
+            nearBokehKernel.Release();
+        }
+        if (farBokehKernel != null) {
+            farBokehKernel.Release();
+        }
+        if (bokehIndirectCmd != null) {
+            bokehIndirectCmd.Release();
+        }
+        if (nearBokehTileList != null) {
+            nearBokehTileList.Release();
+        }
+        if (farBokehTileList != null) {
+            farBokehTileList.Release();
+        }
+    }
+
+    void ExecuteBuffer() {
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
+    }
+
+    void GetTemporaryRenderTexture(out RenderTexture rt, Vector2 rtSize, int depth, GraphicsFormat format, bool enableRW, bool useMip, string name) {
+        RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)rtSize.x, (int)rtSize.y, format, depth);
+        descriptor.dimension = TextureDimension.Tex2D;
+        descriptor.enableRandomWrite = enableRW;
+        descriptor.useMipMap = useMip;
+        rt = RenderTexture.GetTemporary(descriptor);
+        //rt.name = name;
+    }
+
+    static void Swap<T>(ref T a, ref T b) {
+        var tmp = a;
+        a = b;
+        b = tmp;
+    }
 }

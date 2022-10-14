@@ -5,7 +5,6 @@
 #pragma multi_compile _ MAX_BLENDING
 
 #define MotionBlending              _Params1.x
-#define ScreenToTargetScaleHistory  _Params1.yz
 
 //input texture
 TEXTURE2D(_InputCoCTexture);
