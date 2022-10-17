@@ -25,8 +25,9 @@ uint PackTileCoord(uint2 coord) {
     return (coord.x << 16u) | coord.y;
 }
 
-uint2 UnpackTileCoord(uint position) {
-    return uint2((position >> 16u) & 0xffff, position & 0xffff);
+uint2 UnpackTileCoord(TileData tile) {
+    uint pos = tile.position;
+    return uint2((pos >> 16u) & 0xffff, pos & 0xffff);
 }
 
 

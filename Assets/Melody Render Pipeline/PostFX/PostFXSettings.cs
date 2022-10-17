@@ -205,8 +205,10 @@ public class PostFXSettings : ScriptableObject {
         public ComputeShader dofPrefitler;
         public ComputeShader dofMipGen;
         public ComputeShader dofTileMax;
+        public ComputeShader dofClear;
         public ComputeShader dofDilate;
         public ComputeShader dofGather;
+        public ComputeShader dofPreCombine;
         public ComputeShader dofCombine;
         public enum FocusMode { None, Manual, Physical }
         public FocusMode focusMode;

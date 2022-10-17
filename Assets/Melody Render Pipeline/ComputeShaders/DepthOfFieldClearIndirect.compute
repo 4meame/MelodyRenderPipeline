@@ -1,0 +1,16 @@
+﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
+
+#pragma kernel ClearIndirect
+
+//indirect arguments have to be in a RWBuffer,the first three uints are near threadgroups, the last three are far threadgroups
+RWBuffer<uint> _IndirectBuffer;
+
+[numthreads(2, 1, 1)]
+void ClearIndirect(uint dispatchThreadId : SV_DispatchThreadID) {
+    //threadGroupCountX
+    _IndirectBuffer[dispatchThreadId * 3] = 0;
+    //threadGroupCountY
+    _IndirectBuffer[dispatchThreadId * 3 + 1] = 1;
+    //threadGroupCountZ
+    _IndirectBuffer[dispatchThreadId * 3 + 2] = 1;
+}

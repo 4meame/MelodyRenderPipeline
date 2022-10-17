@@ -1,7 +1,6 @@
 ﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
 
-#pragma kernel DOFPreCombineFar MAIN=DOFPreCombineFar  NEAR
-#pragma kernel DOFCombineNear  MAIN=DOFCombineNear FAR
+#pragma kernel DOFCombine
 
 #pragma multi_compile _ NEAR
 #pragma multi_compile _ FAR
@@ -17,20 +16,14 @@ RWTexture2D<float3> _OutputTexture;
 float4 _TargetScale;
 
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
-void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID) {
+void DOFCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
 	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw * _TargetScale.y);
 	float2 texelSize = _CameraBufferSize.xy * _TargetScale.x;
-	float3 finalColor = 0.0;
-#if defined(NEAR)
-	float3 baseColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).xyz;
-	float3 nearColor = SAMPLE_TEXTURE2D_LOD(_InputNearTexture, sampler_linear_clamp, uv, 0).xyz;
-	float alpha = SAMPLE_TEXTURE2D_LOD(_InputNearAlphaTexture, sampler_linear_clamp, uv, 0).x;
-	finalColor = lerp(baseColor, nearColor, alpha);
-#elif defined(FAR)
-	float3 baseColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).xyz;
-	float3 farColor = SAMPLE_TEXTURE2D_LOD(_InputFarTexture, sampler_linear_clamp, uv, 0).xyz;
+	float3 outColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).xyz;
+#if defined(FAR)
 	float3 dstColor = 0.0;
 	float3 dstAlpha = 1.0;
+	float3 farColor = SAMPLE_TEXTURE2D_LOD(_InputFarTexture, sampler_linear_clamp, uv, 0).xyz;
 	float coc = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv, 0).x;
 	if (coc > 0.0) {
 		//no-linear blend from "CryEngine 3 Graphics Gems" [Sousa13]
@@ -38,7 +31,12 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID) {
 		dstColor = farColor * saturate(blend);
 		dstAlpha = saturate(1.0 - blend);
 	}
-	finalColor = baseColor * dstAlpha + dstColor;
+	outColor = outColor * dstAlpha + dstColor;
 #endif
-	_OutputTexture[dispatchThreadId.xy] = finalColor;
+#if defined(NEAR)
+	float3 nearColor = SAMPLE_TEXTURE2D_LOD(_InputNearTexture, sampler_linear_clamp, uv, 0).xyz;
+	float alpha = SAMPLE_TEXTURE2D_LOD(_InputNearAlphaTexture, sampler_linear_clamp, uv, 0).x;
+	outColor = lerp(outColor, nearColor, alpha);
+#endif
+	_OutputTexture[dispatchThreadId.xy] = outColor;
 }
