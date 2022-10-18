@@ -28,6 +28,7 @@ public class PhyscialCameraSettings {
 	[Header("Aperture Shape")]
 	[Range(MinBladeCount, MaxBladeCount)]
 	public int bladeCount = 8;
+	[Min(MinAperture)]
 	public Vector2 curvature = new Vector2( 2.0f, 11.0f);
 	[Range(0, 1.0f)]
 	public float barrelClipping = 0.25f;

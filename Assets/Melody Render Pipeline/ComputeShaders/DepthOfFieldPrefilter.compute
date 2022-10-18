@@ -21,7 +21,7 @@ float4 _CoCTargetScale;
 void DOFPrefilter(uint3 dispatchThreadId : SV_DispatchThreadId) {
 	//camera buffer texcel size multi scale factor
 	float2 texelSize = _CameraBufferSize.xy * _TargetScale.x;
-	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw * _TargetScale.y);
+	float2 uv = dispatchThreadId.xy / ((_CameraBufferSize.zw - 1) * _TargetScale.y);
 #if defined(FULL_RES)
 	float3 tapColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).rgb;
 	float tapCoC = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv, 0).x;

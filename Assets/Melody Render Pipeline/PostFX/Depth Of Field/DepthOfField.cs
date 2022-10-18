@@ -20,18 +20,7 @@ public class DepthOfField : MonoBehaviour {
     ComputeBuffer bokehIndirectCmd;
     ComputeBuffer nearBokehTileList;
     ComputeBuffer farBokehTileList;
-    //RenderTexture pingNear;
-    //RenderTexture pongNear;
-    //RenderTexture nearAlpha;
-    //RenderTexture nearCoC;
-    //RenderTexture dilatedNearCoC;
-    //RenderTexture pingFar;
-    //RenderTexture pongFar;
-    //RenderTexture farCoC;
-    //RenderTexture fullResCoC;
-    //RenderTexture dilationPingPong;
-    //RenderTexture prevCoCHistory;
-    //RenderTexture nextCoCHistory;
+    //rendertexture id
     int pingNearId = Shader.PropertyToID("Ping Near");
     int pongNearId = Shader.PropertyToID("Pong Near");
     int nearAlphaId = Shader.PropertyToID("Near Alpha");
@@ -45,7 +34,7 @@ public class DepthOfField : MonoBehaviour {
     int prevCoCHistoryId = Shader.PropertyToID("Prev CoC");
     int nextCoCHistoryId = Shader.PropertyToID("Next CoC");
     int resultId = Shader.PropertyToID("DOF Result");
-
+    //shader property id
     int targetScaleId = Shader.PropertyToID("_TargetScale");
     int cocTargetScaleId = Shader.PropertyToID("_CoCTargetScale");
     int params1Id = Shader.PropertyToID("_Params1");
@@ -228,6 +217,7 @@ public class DepthOfField : MonoBehaviour {
 
         if (parameters.resolution == DepthOfFieldSettings.Resolution.Full) {
             parameters.dofPrefilterCS.EnableKeyword("FULL_RES");
+            parameters.dofCombineCS.EnableKeyword("FULL_RES");
         }
         if (bothLayersActive || parameters.nearLayerActive) {
             parameters.dofPrefilterCS.EnableKeyword("NEAR");
@@ -371,7 +361,7 @@ public class DepthOfField : MonoBehaviour {
         buffer.EndSample("DepthOfFieldCoC");
 
         //downsample and prefilter CoC and layers
-        //only need to pre-multiply the CoC for the far layer; if only near is being,rendered we can use the downsampled color target as-is
+        //only need to pre-multiply the CoC for the far layer; if only near is being rendered we can use the downsampled color target as-is
         buffer.BeginSample("DepthOfFieldPrefilter");
         cs = dofParameters.dofPrefilterCS;
         kernel = dofParameters.dofPrefilterKernel;
@@ -423,11 +413,13 @@ public class DepthOfField : MonoBehaviour {
             buffer.SetComputeTextureParam(cs, kernel, inputCoCTextureId, nearCoC);
             buffer.SetComputeTextureParam(cs, kernel, outputCoCTextureId, dilatedNearCoC);
             buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
-            if (passCount > 1) {
+            if (passCount > 1)
+            {
                 //ping-pong       
                 var src = dilatedNearCoC;
                 var dst = dilationPingPong;
-                for (int i = 0; i < passCount; i++) {
+                for (int i = 0; i < passCount; i++)
+                {
                     buffer.SetComputeTextureParam(cs, kernel, inputCoCTextureId, src);
                     buffer.SetComputeTextureParam(cs, kernel, outputCoCTextureId, dst);
                     buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
@@ -490,7 +482,6 @@ public class DepthOfField : MonoBehaviour {
                 buffer.SetComputeTextureParam(cs, kernel, inputCoCTextureId, farCoC);
                 buffer.SetComputeTextureParam(cs, kernel, outputTextureId, pongNear);
                 buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
-                Swap(ref pingNear, ref pongNear);
                 buffer.EndSample("DepthOfFieldPreCombineFar");
             }
         }
@@ -544,9 +535,13 @@ public class DepthOfField : MonoBehaviour {
         if (settings.useAdvanced) {
 
         } else {
+            //rest compute buffer
             nearBokehTileList.SetCounterValue(0u);
             farBokehTileList.SetCounterValue(0u);
+            //get history coc
+            buffer.CopyTexture(nextCoCHistoryId, prevCoCHistoryId);
             DepthOfFieldPass(dofParameters, buffer, sourceId, resultId, nearBokehKernel, farBokehKernel, pingNearId, pongNearId, nearAlphaId, nearCoCId, dilatedNearCoCId, pingFarId, pongFarId, farCoCId, fullResCoCId, dilationPingPongId, prevCoCHistoryId, nextCoCHistoryId);
+
         }
         buffer.Blit(resultId, sourceId);
         ExecuteBuffer();

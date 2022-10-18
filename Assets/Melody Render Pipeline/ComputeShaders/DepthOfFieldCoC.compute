@@ -27,7 +27,8 @@ float GetFixedNearBlend(float linearEyeDepth) {
 [numthreads(8, 8, 1)]
 void DOFCoCPhysical(uint3 dispatchThreadId : SV_DispatchThreadId) {
 	//coc use full resolution
-	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
+	//NOTE HERE : minus 1 cause id range from "O"!!
+	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw - 1);
 	float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r;
 	float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
 	//from "A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
@@ -43,7 +44,7 @@ void DOFCoCPhysical(uint3 dispatchThreadId : SV_DispatchThreadId) {
 [numthreads(8, 8, 1)]
 void DOFCoCManual(uint3 dispatchThreadId : SV_DispatchThreadId) {
 	//coc use full resolution
-	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
+	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw - 1);
 	float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r;
 	float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
 	float nearBlend = GetFixedNearBlend(linearEyeDepth);

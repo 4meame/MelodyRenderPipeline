@@ -1,9 +1,11 @@
 ﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 
 #pragma kernel DOFCombine
 
 #pragma multi_compile _ NEAR
 #pragma multi_compile _ FAR
+#pragma multi_compile _ FULL_RES
 
 #define GROUP_SIZE 8
 
@@ -17,14 +19,20 @@ float4 _TargetScale;
 
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
 void DOFCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
-	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw * _TargetScale.y);
-	float2 texelSize = _CameraBufferSize.xy * _TargetScale.x;
+	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw - 1);
 	float3 outColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).xyz;
+	float4 bicubicWnd = float4((_CameraBufferSize.zw - 1) * _TargetScale.y, 1.0 / ((_CameraBufferSize.zw - 1) * _TargetScale.y));
+	float2 maxCoord = (1 - bicubicWnd.zw);
+	uv = min(uv, maxCoord);
 #if defined(FAR)
 	float3 dstColor = 0.0;
 	float3 dstAlpha = 1.0;
-	float3 farColor = SAMPLE_TEXTURE2D_LOD(_InputFarTexture, sampler_linear_clamp, uv, 0).xyz;
 	float coc = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv, 0).x;
+#if defined(FULL_RES)
+	float3 farColor = SAMPLE_TEXTURE2D_LOD(_InputFarTexture, sampler_linear_clamp, uv, 0).xyz;
+#else
+	float3 farColor = SampleTexture2DBicubic(TEXTURE2D_ARGS(_InputFarTexture, sampler_linear_clamp), uv, bicubicWnd, maxCoord, 0).xyz;
+#endif
 	if (coc > 0.0) {
 		//no-linear blend from "CryEngine 3 Graphics Gems" [Sousa13]
 		float blend = sqrt(coc * Two_PI * 2.0);
@@ -34,8 +42,13 @@ void DOFCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
 	outColor = outColor * dstAlpha + dstColor;
 #endif
 #if defined(NEAR)
+#if defined(FULL_RES)
 	float3 nearColor = SAMPLE_TEXTURE2D_LOD(_InputNearTexture, sampler_linear_clamp, uv, 0).xyz;
 	float alpha = SAMPLE_TEXTURE2D_LOD(_InputNearAlphaTexture, sampler_linear_clamp, uv, 0).x;
+#else
+	float3 nearColor = SampleTexture2DBicubic(TEXTURE2D_ARGS(_InputNearTexture, sampler_linear_clamp), uv, bicubicWnd, maxCoord, 0).xyz;
+	float alpha = SampleTexture2DBicubic(TEXTURE2D_ARGS(_InputNearAlphaTexture, sampler_linear_clamp), uv, bicubicWnd, maxCoord, 0).x;
+#endif
 	outColor = lerp(outColor, nearColor, alpha);
 #endif
 	_OutputTexture[dispatchThreadId.xy] = outColor;

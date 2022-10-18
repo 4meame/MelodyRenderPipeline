@@ -44,11 +44,11 @@ void MAIN(uint groupThreadId : SV_GroupThreadID) {
 	//compute the actual pixel coordinate we're working
 	uint2 dispatchThreadId = gs_tileCoord + uint2(groupThreadId % GROUP_RES, groupThreadId / GROUP_RES);
 	//discard out of bounds
-	if (any(dispatchThreadId >= (uint2)(_CameraBufferSize.zw * _TargetScale.y))) {
+	if (any(dispatchThreadId >= (uint2)((_CameraBufferSize.zw - 1) * _TargetScale.y))) {
 		return;
 	}
 	//NOTE HERE: need more accurate uv
-	float2 uv = dispatchThreadId / (_CameraBufferSize.zw * _TargetScale.y);
+	float2 uv = dispatchThreadId / ((_CameraBufferSize.zw - 1) * _TargetScale.y);
 	float2 texelSize = _CameraBufferSize.xy * _TargetScale.x;
 	float2 barrelUV = (uv * 2.0 - 1.0) * BarrelClipping;
 	//current pixel CoC
@@ -76,7 +76,7 @@ void MAIN(uint groupThreadId : SV_GroupThreadID) {
 	[loop]
 	for (uint i = 0; i < (uint)totalSampleCount; i++) {
 		float2 sampTap = UnpackKernelCoord(_BokehKernel, i);
-		//Unity Tech think this barrel clipping / optical vignetting trick isn't correct as we're symetrically shifting samples instead of actually clipping them but due to the low number of samples
+		//Unity Tech think this barrel clipping / optical vignetting trick isn't correct as they're symetrically shifting samples instead of actually clipping them but due to the low number of samples
 		//they can't do a proper implementation so this will do for now and it looks close-enough at low clipping values
 		float clipping = 1.0 - abs(dot(sampTap, barrelUV));
 		sampTap = sampTap * sampDist * clipping + uv;

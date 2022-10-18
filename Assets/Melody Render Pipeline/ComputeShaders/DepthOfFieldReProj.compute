@@ -15,7 +15,7 @@ float2 _Jitter;
 
 [numthreads(8, 8, 1)]
 void DOFCoCReProj(uint3 dispatchThreadId : SV_DispatchThreadId) {
-	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
+	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw - 1);
 	float2 texelSize = _CameraBufferSize.xy;
 	//TODO: Maybe replace some SAMPLE to LOAD https://gamedev.stackexchange.com/questions/65845/difference-between-texture-load-and-texture-sample-methods-in-directx/65853
 	float coc1 = SAMPLE_TEXTURE2D_LOD(_InputCoCTexture, sampler_linear_clamp, uv - float2(1.0, 0.0) * texelSize, 0).x;
