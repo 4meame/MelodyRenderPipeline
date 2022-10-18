@@ -21,7 +21,7 @@ float4 _TargetScale;
 void DOFCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
 	float2 uv = dispatchThreadId.xy / (_CameraBufferSize.zw - 1);
 	float3 outColor = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_linear_clamp, uv, 0).xyz;
-	float4 bicubicWnd = float4((_CameraBufferSize.zw - 1) * _TargetScale.y, 1.0 / ((_CameraBufferSize.zw - 1) * _TargetScale.y));
+	float4 bicubicWnd = float4(_CameraBufferSize.zw * _TargetScale.y, 1.0 / (_CameraBufferSize.zw * _TargetScale.y));
 	float2 maxCoord = (1 - bicubicWnd.zw);
 	uv = min(uv, maxCoord);
 #if defined(FAR)
