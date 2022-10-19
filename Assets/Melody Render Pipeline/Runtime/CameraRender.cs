@@ -259,10 +259,10 @@ public partial class CameraRender {
         DrawGizmosBeforeFX();
         taa.Render(colorAttachmentId);
         dof.DoDepthOfField(colorAttachmentId);
+        motionBlur.DoMotionBlur(colorAttachmentId);
+        motionBlur.Combine(colorAttachmentId);
         lensFlare.DoLensFlare(colorAttachmentId);
         if (postFXStack.IsActive) {
-            motionBlur.DoMotionBlur(colorAttachmentId);
-            motionBlur.Combine(colorAttachmentId);
             //do post stack
             postFXStack.Render(colorAttachmentId);
         } else if (useIntermediateBuffer) {

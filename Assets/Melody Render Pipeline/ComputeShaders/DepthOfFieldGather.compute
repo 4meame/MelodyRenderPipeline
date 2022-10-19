@@ -48,8 +48,11 @@ void MAIN(uint groupThreadId : SV_GroupThreadID) {
 		return;
 	}
 	//NOTE HERE: need more accurate uv
-	float2 uv = dispatchThreadId / ((_CameraBufferSize.zw - 1) * _TargetScale.y);
-	float2 texelSize = _CameraBufferSize.xy * _TargetScale.x;
+	//float2 uv = dispatchThreadId / ((_CameraBufferSize.zw - 1) * _TargetScale.y);
+	float2 texelSize = 1 / ((_CameraBufferSize.zw - 1) * _TargetScale.y);
+	//in case of compute shader an extra half offset is added to the screenPos to shift the integer position to pixel center
+	float2 uv = dispatchThreadId + float2(1, 1);
+	uv *= texelSize;
 	float2 barrelUV = (uv * 2.0 - 1.0) * BarrelClipping;
 	//current pixel CoC
 #if defined(NEAR)
