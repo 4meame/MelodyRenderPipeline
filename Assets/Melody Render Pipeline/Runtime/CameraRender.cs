@@ -193,7 +193,7 @@ public partial class CameraRender {
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
         autoExposure.Setup(context, camera, bufferSize, postFXSettings);
         taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, physcialCameraSettings, useHDR, cameraSettings.allowPhyscialCamera, copyTextureSupported);
-        motionBlur.Setup(context, camera, bufferSize, postFXSettings, useHDR);
+        motionBlur.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings, useHDR);
         //sspr Objects
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);

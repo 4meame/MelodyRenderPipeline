@@ -293,16 +293,19 @@ public class ScreenSpaceReflection : MonoBehaviour {
             //SceneColor and HierarchicalDepth RT
             RenderTexture.ReleaseTemporary(SSR_SceneColor_RT);
             SSR_SceneColor_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            //fix : "setting mipmap mode of already created render texture is not supported"
+            RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0);
+            descriptor.colorFormat = RenderTextureFormat.RHalf;
+            descriptor.sRGB = false;
+            descriptor.useMipMap = true;
+            descriptor.autoGenerateMips = true;
             RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
-            SSR_HierarchicalDepth_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
+            SSR_HierarchicalDepth_RT = RenderTexture.GetTemporary(descriptor);
             SSR_HierarchicalDepth_RT.filterMode = FilterMode.Point;
-            SSR_HierarchicalDepth_RT.useMipMap = true;
-            SSR_HierarchicalDepth_RT.autoGenerateMips = true;
             RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_BackUp_RT);
-            SSR_HierarchicalDepth_BackUp_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
+            descriptor.autoGenerateMips = false;
+            SSR_HierarchicalDepth_BackUp_RT = RenderTexture.GetTemporary(descriptor);
             SSR_HierarchicalDepth_BackUp_RT.filterMode = FilterMode.Point;
-            SSR_HierarchicalDepth_BackUp_RT.useMipMap = true;
-            SSR_HierarchicalDepth_BackUp_RT.autoGenerateMips = false;
             //RayMarching and RayMask RT
             RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[0]);
             SSR_TraceMask_RT[0] = RenderTexture.GetTemporary((int)cameraBufferSize.x / (int)settings.rayCastSize, (int)cameraBufferSize.y / (int)settings.rayCastSize, 0, RenderTextureFormat.ARGBHalf);
