@@ -102,13 +102,14 @@ public class DepthOfField : MonoBehaviour {
         public int dofCombineKernel;
         public bool taaEnabled;
         //advanced DOF
-        public bool useAdaneced;
+        public bool useAdvanced;
         public ComputeShader dofAdvancedCS;
-        public Vector2Int threadGroup8;
+        public int advDofCoCKernal;
 
         public DepthOfFieldSettings.FocusMode focusMode;
         public DepthOfFieldSettings.Resolution resolution;
         public Vector2Int viewportSize;
+        public Vector2Int threadGroup8;
         public float focusDistance;
         public bool nearLayerActive;
         public bool farLayerActive;
@@ -135,10 +136,8 @@ public class DepthOfField : MonoBehaviour {
         parameters.dofKernelKernel = parameters.dofKernelCS.FindKernel("DOFBokehKernel");
         parameters.dofCoCCS = settings.dofCoc;
         if (settings.focusMode == DepthOfFieldSettings.FocusMode.Manual) {
-            parameters.focusMode = DepthOfFieldSettings.FocusMode.Manual;
             parameters.dofCoCKernel = parameters.dofCoCCS.FindKernel("DOFCoCManual");
         } else {
-            parameters.focusMode = DepthOfFieldSettings.FocusMode.Physical;
             parameters.dofCoCKernel = parameters.dofCoCCS.FindKernel("DOFCoCPhysical");
         }
         parameters.dofCoCReprojectCS = settings.dofReproj;
@@ -164,6 +163,13 @@ public class DepthOfField : MonoBehaviour {
         parameters.dofPreCombineKernel = parameters.dofPreCombineCS.FindKernel("DOFPreCombine");
         parameters.dofCombineCS = settings.dofCombine;
         parameters.dofCombineKernel = parameters.dofCombineCS.FindKernel("DOFCombine");
+        //advanced dof compute
+        parameters.dofAdvancedCS = settings.dofAdvanced;
+        if (settings.focusMode == DepthOfFieldSettings.FocusMode.Manual) {
+            parameters.advDofCoCKernal = parameters.dofAdvancedCS.FindKernel("CircleOfConfusionManual");
+        } else {
+            parameters.advDofCoCKernal = parameters.dofAdvancedCS.FindKernel("CircleOfConfusionPhysical");
+        }
         //compute rt info
         parameters.viewportSize = bufferSize;
         parameters.resolution = settings.resolution;
@@ -192,12 +198,16 @@ public class DepthOfField : MonoBehaviour {
         parameters.physicalCameraBarrelClipping = physcialCamera.barrelClipping;
         parameters.physicalCameraBladeCount = physcialCamera.bladeCount;
         parameters.physicalCameraAnamorphism = physcialCamera.anamorphism;
+        if (settings.focusMode == DepthOfFieldSettings.FocusMode.Manual) {
+            parameters.focusMode = DepthOfFieldSettings.FocusMode.Manual;
+        } else {
+            parameters.focusMode = DepthOfFieldSettings.FocusMode.Physical;
+        }
         if (settings.focusDistanceMode == DepthOfFieldSettings.FocusDistanceMode.Camera) {
             parameters.focusDistance = physcialCamera.focusDistance;
         } else {
             parameters.focusDistance = settings.focusDistance;
         }
-
         if (parameters.nearMaxBlur > 0f && parameters.nearFocusEnd > parameters.nearFocusStart) {
             parameters.nearLayerActive = true;
         }
@@ -206,7 +216,7 @@ public class DepthOfField : MonoBehaviour {
         }
         bool bothLayersActive = parameters.nearLayerActive && parameters.farLayerActive;
         parameters.taaEnabled = settings.taaEnabled;
-        parameters.useAdaneced = settings.useAdvanced;
+        parameters.useAdvanced = settings.useAdvanced;
         //keywords, unity supports compute shader keywords from 2020.0.1
 #if UNITY_2020_1_OR_NEWER
         parameters.dofCoCReprojectCS.shaderKeywords = null;
@@ -322,7 +332,6 @@ public class DepthOfField : MonoBehaviour {
             buffer.SetComputeBufferParam(cs, kernel, bokehKernelId, farBokehKernel);
             buffer.DispatchCompute(cs, kernel, Mathf.CeilToInt((farSamples * farSamples) / 64f), 1, 1);
         }
-
         buffer.EndSample("DepthOfFieldKernel");
 
         //compute CoC in full resolution for temporal reprojtion and combine
@@ -331,11 +340,18 @@ public class DepthOfField : MonoBehaviour {
         cs = dofParameters.dofCoCCS;
         kernel = dofParameters.dofCoCKernel;
         if (dofParameters.focusMode == DepthOfFieldSettings.FocusMode.Physical) {
+            //the sensor scale is used to convert the CoC size from mm to screen pixels
+            float sensorScale;
             //"A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
             float F = physcialCamera.focalLength / 1000f;
             float A = physcialCamera.focalLength / dofParameters.physicalCameraAperture;
             float P = dofParameters.focusDistance;
-            float maxCoC = (A * F) / Mathf.Max((P - F), 1e-6f);
+            if (physcialCamera.gateFit == Camera.GateFitMode.Horizontal) {
+                sensorScale = (0.5f / physcialCamera.sensorSize.x) * dofParameters.viewportSize.x;
+            } else {
+                sensorScale = (0.5f / physcialCamera.sensorSize.y) * dofParameters.viewportSize.y;
+            }
+            float maxCoC = sensorScale * (A * F) / Mathf.Max((P - F), 1e-6f);
             buffer.SetComputeVectorParam(cs, params1Id, new Vector4(P, maxCoC, 0f, 0f));
         }
         else {
@@ -413,13 +429,11 @@ public class DepthOfField : MonoBehaviour {
             buffer.SetComputeTextureParam(cs, kernel, inputCoCTextureId, nearCoC);
             buffer.SetComputeTextureParam(cs, kernel, outputCoCTextureId, dilatedNearCoC);
             buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
-            if (passCount > 1)
-            {
+            if (passCount > 1) {
                 //ping-pong       
                 var src = dilatedNearCoC;
                 var dst = dilationPingPong;
-                for (int i = 0; i < passCount; i++)
-                {
+                for (int i = 0; i < passCount; i++) {
                     buffer.SetComputeTextureParam(cs, kernel, inputCoCTextureId, src);
                     buffer.SetComputeTextureParam(cs, kernel, outputCoCTextureId, dst);
                     buffer.DispatchCompute(cs, kernel, dofParameters.threadGroup8.x, dofParameters.threadGroup8.y, 1);
@@ -525,6 +539,75 @@ public class DepthOfField : MonoBehaviour {
         buffer.EndSample("DepthOfFieldCombine");
     }
 
+    void DepthOfFieldAdvancedPass(in DepthOfFieldParameters dofParameters, CommandBuffer buffer, int sourceId, int resultId,
+        RenderTargetIdentifier fullResCoC,
+        RenderTargetIdentifier prevCoCHistory, RenderTargetIdentifier nextCoCHistory
+        ) {
+        //currently Physically Based DoF is performed at "full" resolution (ie does not utilize DepthOfFieldResolution)
+        //to produce similar results when switching between various resolutions, or dynamic resolution, must incorporate resolution independence, fitted with a 1920x1080 reference resolution.
+        var scale = dofParameters.viewportSize / new Vector2(1920f, 1080f);
+        float resolutionScale = Mathf.Min(scale.x, scale.y) * 2f;
+        float farMaxBlur = resolutionScale * dofParameters.farMaxBlur;
+        float nearMaxBlur = resolutionScale * dofParameters.nearMaxBlur;
+        bool usePhysicalCamera = dofParameters.focusMode == DepthOfFieldSettings.FocusMode.Physical;
+        //map the old "max radius" parameters to a bigger range when driving the dof from physical camera settings, so we can work on more challenging scenes, [0, 16] --> [0, 64], ? really
+        float radiusMultiplier = usePhysicalCamera ? 4.0f : 1.0f;
+        Vector2 cocLimit = new Vector2(Mathf.Max(radiusMultiplier * farMaxBlur, 0.01f), Mathf.Max(radiusMultiplier * nearMaxBlur, 0.01f));
+        float maxCoc = Mathf.Max(cocLimit.x, cocLimit.y);
+        ComputeShader cs;
+        int kernel;
+        //calculate CoC
+        buffer.BeginSample("DepthOfFieldCoC");
+        cs = dofParameters.dofAdvancedCS;
+        kernel = dofParameters.advDofCoCKernal;
+        if(dofParameters.focusMode == DepthOfFieldSettings.FocusMode.Physical) {
+            //the sensor scale is used to convert the CoC size from mm to screen pixels
+            float sensorScale;
+            //"A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
+            float F = physcialCamera.focalLength / 1000f;
+            float A = physcialCamera.focalLength / dofParameters.physicalCameraAperture;
+            float P = dofParameters.focusDistance;
+            if (physcialCamera.gateFit == Camera.GateFitMode.Horizontal) {
+                sensorScale = (0.5f / physcialCamera.sensorSize.x) * dofParameters.viewportSize.x;
+            } else {
+                sensorScale = (0.5f / physcialCamera.sensorSize.y) * dofParameters.viewportSize.y;
+            }
+            float maxFaxCoC = sensorScale * (A * F) / Mathf.Max((P - F), 1e-6f);
+            //scale and bias factors for directyly computing CoC size with a single mad
+            float cocBias = maxFaxCoC * (1f - P / camera.farClipPlane);
+            float cocScale = maxFaxCoC * P * (camera.farClipPlane - camera.nearClipPlane) / (camera.farClipPlane * camera.nearClipPlane);
+            buffer.SetComputeFloatParam(cs, "_FarMaxRadius", cocLimit.x);
+            buffer.SetComputeFloatParam(cs, "_NearMaxRadius", cocLimit.y);
+            buffer.SetComputeFloatParam(cs, "_CoCBias", cocBias);
+            buffer.SetComputeFloatParam(cs, "_CoCScale", cocScale);
+        } else {
+            float nearEnd = dofParameters.nearFocusEnd;
+            float nearStart = Mathf.Min(dofParameters.nearFocusStart, nearEnd - 1e-5f);
+            float farStart = Mathf.Max(dofParameters.farFocusStart, nearEnd);
+            float farEnd = Mathf.Max(dofParameters.farFocusEnd, farStart + 1e-5f);
+            buffer.SetComputeFloatParam(cs, "_FarStart", farStart);
+            buffer.SetComputeFloatParam(cs, "_NearEnd", nearEnd);
+            buffer.SetComputeFloatParam(cs, "_FarRange", 1.0f / (farEnd - farStart));
+            buffer.SetComputeFloatParam(cs, "_NearRange", 1.0f / (nearStart - nearEnd));
+            buffer.SetComputeFloatParam(cs, "_FarMaxRadius", cocLimit.x);
+            buffer.SetComputeFloatParam(cs, "_NearMaxRadius", cocLimit.y);
+        }
+        buffer.SetComputeTextureParam(cs, kernel, "_FullResCoCTexture", fullResCoC);
+        buffer.DispatchCompute(cs, kernel, (dofParameters.viewportSize.x + 7) / 8, (dofParameters.viewportSize.y + 7) / 8, 1);
+        if (dofParameters.taaEnabled) {
+            cs = dofParameters.dofCoCReprojectCS;
+            kernel = dofParameters.dofCoCReprojectKernel;
+            buffer.SetComputeVectorParam(cs, params1Id, new Vector4(0.9f, 1f, 1f, 0f));
+            buffer.SetComputeTextureParam(cs, kernel, inputCoCTextureId, fullResCoC);
+            buffer.SetComputeTextureParam(cs, kernel, inputCoCHistoryTextureId, prevCoCHistory);
+            buffer.SetComputeTextureParam(cs, kernel, outputCoCTextureId, nextCoCHistory);
+            buffer.DispatchCompute(cs, kernel, (dofParameters.viewportSize.x + 7) / 8, (dofParameters.viewportSize.y + 7) / 8, 1);
+            //TODO: ping-pong buffer  
+            fullResCoC = nextCoCHistory;
+        }
+        buffer.EndSample("DepthOfFieldCoC");
+    }
+
     public void DoDepthOfField(int sourceId) {
         if (settings.focusMode == DepthOfFieldSettings.FocusMode.None || camera.cameraType == CameraType.SceneView) {
             return;
@@ -532,8 +615,10 @@ public class DepthOfField : MonoBehaviour {
 
         DepthOfFieldParameters dofParameters = PrepareDOFParameters();
         InitRenderTextureAndComputeBuffer(buffer, dofParameters);
-        if (settings.useAdvanced) {
-
+        if (dofParameters.useAdvanced) {
+            //get history coc
+            buffer.CopyTexture(nextCoCHistoryId, prevCoCHistoryId);
+            DepthOfFieldAdvancedPass(dofParameters, buffer, sourceId, resultId, fullResCoCId, prevCoCHistoryId, nextCoCHistoryId);
         } else {
             //rest compute buffer
             nearBokehTileList.SetCounterValue(0u);
@@ -573,8 +658,9 @@ public class DepthOfField : MonoBehaviour {
         GraphicsFormat cocFormat = GraphicsFormat.R16_SFloat;
         GetDoFResolutionScale(parameters, out float scale, out float resolutionScale);
         var screenScale = new Vector2(scale, scale);
-        if (parameters.useAdaneced) {
-
+        if (parameters.useAdvanced) {
+            //coc rt
+            GetTemporaryRenderTexture(buffer, fullResCoCId, bufferSize, 0, cocFormat, true, false, "Full res CoC");
         }
         else{
             //near plane rt

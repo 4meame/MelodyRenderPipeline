@@ -1,55 +1,46 @@
 ﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
 
-#pragma kernel DOFCoCManual
-#pragma kernel DOFCoCPhysical
+#pragma kernel CircleOfConfusionPhysical
+#pragma kernel CircleOfConfusionManual
+//const
+float _FarStart;
+float _NearEnd;
+float _FarRange;
+float _NearRange;
+float _FarMaxRadius;
+float _NearMaxRadius;
+float _CoCBias;
+float _CoCScale;
+RWTexture2D<float> _FullResCoCTexture;
 
-#define FIX_NEAR_BLEND 0
-#define FocusDist       _Params1.x
-#define MaxCoC          _Params1.y
-#define NearStart       _Params1.x
-#define NearEnd         _Params1.y
-#define FarStart        _Params1.z
-#define FarEnd          _Params1.w
-
-RWTexture2D<float> _OutputCoCTexture;
-
-float GetFixedNearBlend(float linearEyeDepth) {
-#if FIX_NEAR_BLEND
-	//we can't rely on the actual CoC to blur the foreground as we have a fixed number of samples
-	//so an object close to the camera would appear less blurry than another further away with the same CoC
-	return 1.0 - saturate(linearEyeDepth / (NearEnd * NearEnd));
-#else
-	return 1.0;
-#endif
-}
-
-//manual CoC using near & far planes
-//this will accentuate rendering artifacts if used incorrectly
 [numthreads(8, 8, 1)]
-void DOFCoCManual(uint3 dispatchThreadId : SV_DispatchThreadId) {
-	//coc use full resolution
-	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
-	float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r;
-	float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
-	float nearBlend = GetFixedNearBlend(linearEyeDepth);
-	//coc = (depth - focus) / range
-	float nearCoC = (linearEyeDepth - NearEnd) / (NearStart - NearEnd);
-	nearCoC = saturate(nearCoC * nearBlend);
-	float farCoC = (linearEyeDepth - FarEnd) / (FarStart - FarEnd);
-	farCoC = saturate(farCoC);
-	_OutputCoCTexture[dispatchThreadId.xy] = -nearCoC + farCoC;
+void CircleOfConfusionPhysical(uint3 dispatchThreadId : SV_DispatchThreadID) {
+    float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, dispatchThreadId.xy, 0).r;
+    //NOTE : the linearization of the depth is encoded directly in the MAD parameters
+    float CoC = _CoCBias - _CoCScale * depth;
+    if (CoC > 0) {
+        const float maxFarCoC = _FarMaxRadius;
+        //CoC clamping for the far field
+        CoC = min(CoC, maxFarCoC);
+    } else {
+        const float maxNearCoC = _NearMaxRadius;
+        //CoC clamping for the near field
+        CoC = max(CoC, -maxNearCoC);
+    }
+    _FullResCoCTexture[dispatchThreadId.xy] = CoC;
 }
 
 [numthreads(8, 8, 1)]
-void DOFCoCPhysical(uint3 dispatchThreadId : SV_DispatchThreadId) {
-	//coc use full resolution
-	float2 uv = dispatchThreadId.xy / _CameraBufferSize.zw;
-	float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r;
-	float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
-	//from "A Lens and Aperture Camera Model for Synthetic Image Generation" [Potmesil81]
-	float coc = (1.0 - FocusDist / max(linearEyeDepth, 1e-6f)) * MaxCoC;
-	float nearBlend = GetFixedNearBlend(linearEyeDepth);
-	float nearCoC = clamp(coc * nearBlend, -1.0, 0.0);
-	float farCoC = saturate(coc);
-	_OutputCoCTexture[dispatchThreadId.xy] = nearCoC + farCoC;
+void CircleOfConfusionManual(uint3 dispatchThreadId : SV_DispatchThreadID) {
+    float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, dispatchThreadId.xy, 0).r;
+    //NOTE : we can avoid explicit linearization by merging it with the other computations
+    float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
+    float CoC = 0;
+    if (linearEyeDepth > _FarStart) {
+        CoC = _FarMaxRadius * saturate((linearEyeDepth - _FarStart) * _FarRange);
+    }
+    else if (linearEyeDepth < _NearEnd) {
+        CoC = -_NearMaxRadius * saturate((linearEyeDepth - _NearEnd) * _NearRange);
+    }
+    _FullResCoCTexture[dispatchThreadId.xy] = CoC;
 }
