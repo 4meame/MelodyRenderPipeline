@@ -1,4 +1,5 @@
 ﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
+#include "../Shaders/DepthOfFieldUtils.hlsl"
 
 #pragma kernel CircleOfConfusionPhysical
 #pragma kernel CircleOfConfusionManual
@@ -48,7 +49,6 @@ void CircleOfConfusionManual(uint3 dispatchThreadId : SV_DispatchThreadID) {
 #pragma kernel CircleOfConfusionMinMax
 #pragma kernel CircleOfConfusionDilate
 //min-max tile size
-#define TILE_RES  8u
 TEXTURE2D(_RawCoCTexture);
 RWTexture2D<float4> _MinMaxCoCTexture;
 RWTexture2D<float4> _DilateCoCTexture;

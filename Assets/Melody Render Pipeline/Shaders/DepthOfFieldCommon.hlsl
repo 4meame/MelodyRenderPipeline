@@ -6,6 +6,7 @@
 //common parameters
 float4 _Params1;
 float4 _Params2;
+float4 _Params3;
 
 //pack methods
 uint PackKernelCoord(float2 coords) {
@@ -29,7 +30,5 @@ uint2 UnpackTileCoord(TileData tile) {
     uint pos = tile.position;
     return uint2((pos >> 16u) & 0xffff, pos & 0xffff);
 }
-
-
 
 #endif

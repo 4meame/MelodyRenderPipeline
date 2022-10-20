@@ -697,7 +697,7 @@ public class DepthOfField : MonoBehaviour {
             DepthOfFieldPass(dofParameters, buffer, sourceId, resultId, nearBokehKernel, farBokehKernel, pingNearId, pongNearId, nearAlphaId, nearCoCId, dilatedNearCoCId, pingFarId, pongFarId, farCoCId, fullResCoCId, dilationPingPongId, prevCoCHistoryId, nextCoCHistoryId);
 
         }
-        buffer.Blit(dilatedCoCId, sourceId);
+        buffer.Blit(resultId, sourceId);
         ExecuteBuffer();
     }
 
