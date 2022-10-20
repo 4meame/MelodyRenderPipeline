@@ -34,6 +34,11 @@ public class DepthOfField : MonoBehaviour {
     int prevCoCHistoryId = Shader.PropertyToID("Prev CoC");
     int nextCoCHistoryId = Shader.PropertyToID("Next CoC");
     int resultId = Shader.PropertyToID("DOF Result");
+    int sourceColorId = Shader.PropertyToID("Source Color");
+    int colorMipId = Shader.PropertyToID("Color Mip Chain");
+    int CoCMipId = Shader.PropertyToID("CoC Mip Chain");
+    int minMaxCoCId = Shader.PropertyToID("CoC Min Max");
+    int dilatedCoCId = Shader.PropertyToID("CoC Dilated");
     //shader property id
     int targetScaleId = Shader.PropertyToID("_TargetScale");
     int cocTargetScaleId = Shader.PropertyToID("_CoCTargetScale");
@@ -85,7 +90,7 @@ public class DepthOfField : MonoBehaviour {
         public ComputeShader dofPrefilterCS;
         public int dofPrefilterKernel;
         public ComputeShader dofMipGenCS;
-        public int dofMipColorkernel;
+        public int dofMipColorKernel;
         public int dofMipCoCkernel;
         public ComputeShader dofDilateCS;
         public int dofDilateKernel;
@@ -105,6 +110,9 @@ public class DepthOfField : MonoBehaviour {
         public bool useAdvanced;
         public ComputeShader dofAdvancedCS;
         public int advDofCoCKernal;
+        public int dofCoCMinMaxKernel;
+        public int minMaxCoCTileSize;
+        public int dofCoCMinMaxDilateKernel;
 
         public DepthOfFieldSettings.FocusMode focusMode;
         public DepthOfFieldSettings.Resolution resolution;
@@ -146,8 +154,10 @@ public class DepthOfField : MonoBehaviour {
         parameters.dofPrefilterKernel = parameters.dofPrefilterCS.FindKernel("DOFPrefilter");
         parameters.dofMipGenCS = settings.dofMipGen;
         if (settings.useAdvanced) {
+            parameters.dofMipColorKernel = parameters.dofMipGenCS.FindKernel("DOFMipColorMip0");
+            parameters.dofMipCoCkernel = parameters.dofMipGenCS.FindKernel("DOFMipCoCMip0");
         } else {
-            parameters.dofMipColorkernel = parameters.dofMipGenCS.FindKernel("DOFFarLayerMipColor");
+            parameters.dofMipColorKernel = parameters.dofMipGenCS.FindKernel("DOFFarLayerMipColor");
             parameters.dofMipCoCkernel = parameters.dofMipGenCS.FindKernel("DOFFarLayerMipCoC");
         }
         parameters.dofDilateCS = settings.dofDilate;
@@ -170,6 +180,8 @@ public class DepthOfField : MonoBehaviour {
         } else {
             parameters.advDofCoCKernal = parameters.dofAdvancedCS.FindKernel("CircleOfConfusionPhysical");
         }
+        parameters.dofCoCMinMaxKernel = parameters.dofAdvancedCS.FindKernel("CircleOfConfusionMinMax");
+        parameters.dofCoCMinMaxDilateKernel = parameters.dofAdvancedCS.FindKernel("CircleOfConfusionDilate");
         //compute rt info
         parameters.viewportSize = bufferSize;
         parameters.resolution = settings.resolution;
@@ -180,6 +192,7 @@ public class DepthOfField : MonoBehaviour {
         int threadGroup8X = (targetWidth + 7) / 8;
         int threadGroup8Y = (targetHeight + 7) / 8;
         parameters.threadGroup8 = new Vector2Int(threadGroup8X, threadGroup8Y);
+        parameters.minMaxCoCTileSize = 8;
         //sample varibles
         int farSamples = Mathf.CeilToInt(settings.farBlurSampleCount * resolutionScale);
         int nearSamples = Mathf.CeilToInt(settings.nearBlurSampleCount * resolutionScale);
@@ -402,7 +415,7 @@ public class DepthOfField : MonoBehaviour {
             int tx = ((targetWidth >> 1) + 7) / 8;
             int ty = ((targetHeight >> 1) + 7) / 8;
             cs = dofParameters.dofMipGenCS;
-            kernel = dofParameters.dofMipColorkernel;
+            kernel = dofParameters.dofMipColorKernel;
             buffer.SetComputeTextureParam(cs, kernel, inputTextureId, pingFar, 0);
             buffer.SetComputeTextureParam(cs, kernel, outputMip1Id, pingFar, 1);
             buffer.SetComputeTextureParam(cs, kernel, outputMip2Id, pingFar, 2);
@@ -541,7 +554,9 @@ public class DepthOfField : MonoBehaviour {
 
     void DepthOfFieldAdvancedPass(in DepthOfFieldParameters dofParameters, CommandBuffer buffer, int sourceId, int resultId,
         RenderTargetIdentifier fullResCoC,
-        RenderTargetIdentifier prevCoCHistory, RenderTargetIdentifier nextCoCHistory
+        RenderTargetIdentifier prevCoCHistory, RenderTargetIdentifier nextCoCHistory,
+        RenderTargetIdentifier minMaxCoC, RenderTargetIdentifier dilatedCoC,
+        RenderTargetIdentifier sourceColor, RenderTargetIdentifier sourceMip, RenderTargetIdentifier CoCMip
         ) {
         //currently Physically Based DoF is performed at "full" resolution (ie does not utilize DepthOfFieldResolution)
         //to produce similar results when switching between various resolutions, or dynamic resolution, must incorporate resolution independence, fitted with a 1920x1080 reference resolution.
@@ -560,6 +575,7 @@ public class DepthOfField : MonoBehaviour {
         buffer.BeginSample("DepthOfFieldCoC");
         cs = dofParameters.dofAdvancedCS;
         kernel = dofParameters.advDofCoCKernal;
+        int tx, ty;
         if(dofParameters.focusMode == DepthOfFieldSettings.FocusMode.Physical) {
             //the sensor scale is used to convert the CoC size from mm to screen pixels
             float sensorScale;
@@ -606,6 +622,59 @@ public class DepthOfField : MonoBehaviour {
             fullResCoC = nextCoCHistory;
         }
         buffer.EndSample("DepthOfFieldCoC");
+
+        buffer.BeginSample("DepthOfFieldMipChain");
+        //color mip chain
+        cs = dofParameters.dofMipGenCS;
+        kernel = dofParameters.dofMipColorKernel;
+        buffer.CopyTexture(sourceId, sourceColor);
+        buffer.SetComputeTextureParam(cs, kernel, "_InputTexture", sourceColor, 0);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputTexture", sourceMip, 0);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip1", sourceMip, 1);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip2", sourceMip, 2);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip3", sourceMip, 3);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip4", sourceMip, 4);
+        tx = ((dofParameters.viewportSize.x >> 1) + 7) / 8;
+        ty = ((dofParameters.viewportSize.y >> 1) + 7) / 8;
+        buffer.DispatchCompute(cs, kernel, tx, ty, 1);
+        //coc mip chain
+        kernel = dofParameters.dofMipCoCkernel;
+        buffer.SetComputeTextureParam(cs, kernel, "_InputTexture", fullResCoC, 0);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputTexture", CoCMip, 0);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip1", CoCMip, 1);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip2", CoCMip, 2);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip3", CoCMip, 3);
+        buffer.SetComputeTextureParam(cs, kernel, "_OutputMip4", CoCMip, 4);
+        buffer.DispatchCompute(cs, kernel, tx, ty, 1);
+        buffer.EndSample("DepthOfFieldMipChain");
+
+        //coc flatten
+        buffer.BeginSample("DepthOfFieldFlatten");
+        cs = dofParameters.dofAdvancedCS;
+        kernel = dofParameters.dofCoCMinMaxKernel;
+        int tileSize = dofParameters.minMaxCoCTileSize;
+        tx = ((dofParameters.viewportSize.x / tileSize) + 7) / 8;
+        ty = ((dofParameters.viewportSize.y / tileSize) + 7) / 8;
+        buffer.SetComputeTextureParam(cs, kernel, "_RawCoCTexture", fullResCoC, 0);
+        buffer.SetComputeTextureParam(cs, kernel, "_MinMaxCoCTexture", minMaxCoC, 0);
+        buffer.DispatchCompute(cs, kernel, tx, ty, 1);
+        buffer.EndSample("DepthOfFieldFlatten");
+
+        //coc dilate
+        buffer.BeginSample("DepthOfFieldDilate");
+        cs = dofParameters.dofAdvancedCS;
+        kernel = dofParameters.dofCoCMinMaxDilateKernel;
+        int iterations = (int)Mathf.Max(Mathf.Ceil(cocLimit.y / dofParameters.minMaxCoCTileSize), 1.0f);
+        for (int pass = 0; pass < iterations + 1; ++pass) {
+            buffer.SetComputeTextureParam(cs, kernel, "_RawCoCTexture", minMaxCoC, 0);
+            buffer.SetComputeTextureParam(cs, kernel, "_DilateCoCTexture", dilatedCoC, 0);
+            buffer.DispatchCompute(cs, kernel, tx, ty, 1);
+            Swap(ref minMaxCoC, ref dilatedCoC);
+        }
+        buffer.EndSample("DepthOfFieldDilate");
+
+        //coc gather
+
     }
 
     public void DoDepthOfField(int sourceId) {
@@ -618,7 +687,7 @@ public class DepthOfField : MonoBehaviour {
         if (dofParameters.useAdvanced) {
             //get history coc
             buffer.CopyTexture(nextCoCHistoryId, prevCoCHistoryId);
-            DepthOfFieldAdvancedPass(dofParameters, buffer, sourceId, resultId, fullResCoCId, prevCoCHistoryId, nextCoCHistoryId);
+            DepthOfFieldAdvancedPass(dofParameters, buffer, sourceId, resultId, fullResCoCId, prevCoCHistoryId, nextCoCHistoryId, minMaxCoCId, dilatedCoCId ,sourceColorId, colorMipId, CoCMipId);
         } else {
             //rest compute buffer
             nearBokehTileList.SetCounterValue(0u);
@@ -628,7 +697,7 @@ public class DepthOfField : MonoBehaviour {
             DepthOfFieldPass(dofParameters, buffer, sourceId, resultId, nearBokehKernel, farBokehKernel, pingNearId, pongNearId, nearAlphaId, nearCoCId, dilatedNearCoCId, pingFarId, pongFarId, farCoCId, fullResCoCId, dilationPingPongId, prevCoCHistoryId, nextCoCHistoryId);
 
         }
-        buffer.Blit(resultId, sourceId);
+        buffer.Blit(dilatedCoCId, sourceId);
         ExecuteBuffer();
     }
 
@@ -656,11 +725,20 @@ public class DepthOfField : MonoBehaviour {
 
         GraphicsFormat format = GraphicsFormat.B10G11R11_UFloatPack32;
         GraphicsFormat cocFormat = GraphicsFormat.R16_SFloat;
+        GraphicsFormat cocMinMaxFormat = GraphicsFormat.R16G16B16A16_SFloat;
         GetDoFResolutionScale(parameters, out float scale, out float resolutionScale);
         var screenScale = new Vector2(scale, scale);
         if (parameters.useAdvanced) {
             //coc rt
             GetTemporaryRenderTexture(buffer, fullResCoCId, bufferSize, 0, cocFormat, true, false, "Full res CoC");
+            GetTemporaryRenderTexture(buffer, prevCoCHistoryId, bufferSize, 0, cocFormat, false, false, "Prev CoC");
+            GetTemporaryRenderTexture(buffer, nextCoCHistoryId, bufferSize, 0, cocFormat, true, false, "Next CoC");
+            GetTemporaryRenderTexture(buffer, minMaxCoCId, (bufferSize + new Vector2Int(7, 7)) / 8, 0, cocMinMaxFormat, true, false, "CoC Min Max");
+            GetTemporaryRenderTexture(buffer, dilatedCoCId, (bufferSize + new Vector2Int(7, 7)) / 8, 0, cocMinMaxFormat, true, false, "CoC Dilated");
+            //mip chain rt
+            GetTemporaryRenderTexture(buffer, sourceColorId, bufferSize, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default, true, false, "Source Color");
+            GetTemporaryRenderTexture(buffer, colorMipId, bufferSize, 0, format, true, true, "Color Mip Chain");
+            GetTemporaryRenderTexture(buffer, CoCMipId, bufferSize, 0, cocFormat, true, true, "CoC Mip Chain");
         }
         else{
             //near plane rt
@@ -732,6 +810,14 @@ public class DepthOfField : MonoBehaviour {
     }
 
     void GetTemporaryRenderTexture(CommandBuffer buffer, int id, Vector2 rtSize, int depth, GraphicsFormat format, bool enableRW, bool useMip, string name) {
+        RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)rtSize.x, (int)rtSize.y, format, depth);
+        descriptor.dimension = TextureDimension.Tex2D;
+        descriptor.enableRandomWrite = enableRW;
+        descriptor.useMipMap = useMip;
+        buffer.GetTemporaryRT(id, descriptor);
+    }
+
+    void GetTemporaryRenderTexture(CommandBuffer buffer, int id, Vector2 rtSize, int depth, RenderTextureFormat format, bool enableRW, bool useMip, string name) {
         RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)rtSize.x, (int)rtSize.y, format, depth);
         descriptor.dimension = TextureDimension.Tex2D;
         descriptor.enableRandomWrite = enableRW;

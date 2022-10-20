@@ -5,8 +5,9 @@
 #pragma kernel DOFFarLayerMipColor MAIN=DOFFarLayerMipColor
 #pragma kernel DOFFarLayerMipCoC MAIN=DOFFarLayerMipCoC
 #pragma kernel DOFMipColorMip0 MAIN=DOFMipColorMip0 COPY_MIP0
+#pragma kernel DOFMipCoCMip0 MAIN=DOFMipCoCMip0 COPY_MIP0
 
-RWTexture2D<float3> _InputTexture;;
+RWTexture2D<float3> _InputTexture;
 #if defined(COPY_MIP0)
 RWTexture2D<float3> _OutputTexture;
 #endif
