@@ -64,6 +64,9 @@ float4 InitMinMaxTile() {
 }
 
 void UpdateMinMaxTile(inout float4 tile, float CoC) {
+    //TODO: Min intersectable CoC --> smallest CoC the kernel may intersect with
+    //OutBgdMinCoc = min(OutBgdMinCoc, NeighborBgdMinCoc);
+    //OutBgdMinIntersectableCoc = min(OutBgdMinIntersectableCoc, NeighborBgdMinIntersectableCoc + ClosestNeighborDistance);
     if (CoC >= 0) {
         tile.x = min(tile.x, CoC);
         tile.y = max(tile.y, CoC);
