@@ -295,7 +295,7 @@ void DoFGathering(uint2 texelCoord, DoFTile tileData, SampleData centerSample, o
 int GetTileClass(float2 texelCoord) {
     float4 cocRanges = LOAD_TEXTURE2D(_MinMaxTile, ResScale * texelCoord / TILE_RES);
     float minRadius = min(abs(cocRanges.x), -cocRanges.z);
-    float maxRadius = max(abs(cocRanges.y), -cocRanges.w);\
+    float maxRadius = max(abs(cocRanges.y), -cocRanges.w);
     if (minRadius < 1 && maxRadius < 1)
         return FAST_INFOCUS_TILE;
     else if (minRadius > 2.5 && maxRadius > 2.5)

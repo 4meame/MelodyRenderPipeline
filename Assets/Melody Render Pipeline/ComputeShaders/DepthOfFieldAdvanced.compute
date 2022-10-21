@@ -159,8 +159,10 @@ void CircleOfConfusionCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
         float outAlpha;
         DoFGathering(dispatchThreadId.xy, tileData, centerSample, outColor, outAlpha);
         output.xyz = outColor.xyz;
+        output.w = 1;
 #if defined(ENABLE_ALPHA)
         ComposeAlpha(outColor, outAlpha, centerSample.color.xyz);
+        output.w = outAlpha;
 #endif
     }
     else if (tileClass == FAST_DEFOCUS_TILE) {
