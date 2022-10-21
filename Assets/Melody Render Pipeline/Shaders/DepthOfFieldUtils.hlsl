@@ -304,6 +304,19 @@ int GetTileClass(float2 texelCoord) {
         return SLOW_INFOCUS_TILE;
 }
 
+void DebugTiles(float2 texelCoord, inout float3 output) {
+    int tileClass = GetTileClass(texelCoord);
+    if (tileClass == SLOW_INFOCUS_TILE) {
+        output.xyz = lerp(output.xyz, float3(1, 0, 0), 0.9);
+    }
+    else if (tileClass == FAST_DEFOCUS_TILE) {
+        output.xyz = lerp(output.xyz, float3(0, 0, 1), 0.9);
+    }
+    else {
+        output.xyz = lerp(output.xyz, float3(0, 1, 0), 0.9);
+    }
+}
+
 void ComposeAlpha(inout float3 outColor, inout float outAlpha, float3 inputColor) {
     //preserve the original value of the pixels with zero alpha
     outColor = lerp(inputColor, outColor, smoothstep(0, 0.01, outAlpha));

@@ -172,5 +172,6 @@ void CircleOfConfusionCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
     else {
         output = GetColorSample(dispatchThreadId.xy, 0);
     }
+    //DebugTiles(dispatchThreadId.xy, output.xyz);
     _OutputResult[dispatchThreadId.xy] = output;
 }
