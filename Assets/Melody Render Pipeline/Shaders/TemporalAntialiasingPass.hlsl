@@ -19,7 +19,7 @@ static const int2 _OffsetArray[8] = {
 };
 
 float3 _TemporalClipBounding;
-float2 _Jitter;
+//float2 _Jitter;
 float4 _FinalBlendParams;
 float _Sharpness;
 

@@ -1,6 +1,6 @@
 ﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
 #include "../Shaders/DepthOfFieldUtils.hlsl"
-
+#pragma multi_compile _ ENABLE_ALPHA
 #pragma kernel CircleOfConfusionPhysical
 #pragma kernel CircleOfConfusionManual
 //const
@@ -111,4 +111,64 @@ void CircleOfConfusionDilate(uint3 dispatchThreadId : SV_DispatchThreadID) {
         }
     }
     _DilateCoCTexture[dispatchThreadId.xy] = tileInfo;
+}
+
+#pragma kernel CircleOfConfusionGather
+// Outpute texture
+RWTexture2D<float4> _GatheringTexture;
+
+[numthreads(8, 8, 1)]
+void CircleOfConfusionGather(uint3 dispatchThreadId : SV_DispatchThreadID) {
+    SampleData centerSample;
+    centerSample.color = GetColorSample(dispatchThreadId.xy, 0);
+    centerSample.CoC = GetCoCRadius(dispatchThreadId.xy);
+    int tileClass = GetTileClass(dispatchThreadId.xy);
+    if (ResScale != 1.0 && tileClass != FAST_DEFOCUS_TILE) {
+        //early exit: these tiles will be computed at full res in the combine pass
+        _GatheringTexture[dispatchThreadId.xy] = centerSample.color;
+        return;
+    }
+    DoFTile tileData;
+    LoadTileData(dispatchThreadId.xy, centerSample, NumRings, tileData);
+    float3 outColor;
+    float outAlpha;
+    DoFGathering(dispatchThreadId.xy, tileData, centerSample, outColor, outAlpha);
+#if defined(ENABLE_ALPHA)
+    ComposeAlpha(outColor, outAlpha, centerSample.color.xyz);
+    _GatheringTexture[dispatchThreadId.xy] = float4(outColor, outAlpha);
+#endif
+    _GatheringTexture[dispatchThreadId.xy] = float4(outColor, 1);
+}
+
+#pragma kernel CircleOfConfusionCombine
+//texture
+TEXTURE2D(_InputGatherTexture);
+RWTexture2D<float4> _OutputResult;
+
+[numthreads(8, 8, 1)]
+void CircleOfConfusionCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
+    float4 output = 0;
+    int tileClass = GetTileClass(dispatchThreadId.xy);
+    if (tileClass == SLOW_INFOCUS_TILE) {
+        SampleData centerSample;
+        centerSample.color = GetColorSample(dispatchThreadId.xy, 0);
+        centerSample.CoC = GetCoCRadius(dispatchThreadId.xy);
+        DoFTile tileData;
+        LoadTileData(dispatchThreadId.xy, centerSample, NumRings, tileData);
+        float3 outColor;
+        float outAlpha;
+        DoFGathering(dispatchThreadId.xy, tileData, centerSample, outColor, outAlpha);
+        output.xyz = outColor.xyz;
+#if defined(ENABLE_ALPHA)
+        ComposeAlpha(outColor, outAlpha, centerSample.color.xyz);
+#endif
+    }
+    else if (tileClass == FAST_DEFOCUS_TILE) {
+        float2 uv = min((dispatchThreadId.xy + 0.5) * _CameraBufferSize.xy, 1.0);
+        output = SAMPLE_TEXTURE2D_LOD(_InputGatherTexture, sampler_linear_clamp, uv, 0.0);
+    }
+    else {
+        output = GetColorSample(dispatchThreadId.xy, 0);
+    }
+    _OutputResult[dispatchThreadId.xy] = output;
 }

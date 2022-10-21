@@ -273,4 +273,6 @@ float3 MultiBounce(float AO, float3 Albedo) {
 	return max(AO, ((AO * A + B) * AO + C) * AO);
 }
 
+//TAA public params
+float2 _Jitter;
 #endif
