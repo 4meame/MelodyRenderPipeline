@@ -133,6 +133,7 @@ public class PostFXStack {
     public void Render(int sourceId) {
         //buffer.Blit(sourceId, BuiltinRenderTextureType.CameraTarget);
         //Draw(sourceId, BuiltinRenderTextureType.CameraTarget, Pass.Copy);
+        buffer.SetGlobalFloat("_AutoExposure", settings.autoExposureSettings.metering == AutoExposureSettings.MeteringMode.None ? 0 : 1);
 
         if (DoBloom(sourceId)) {
             DoColorGradingAndToneMappingAndFxaa(bloomResultId);

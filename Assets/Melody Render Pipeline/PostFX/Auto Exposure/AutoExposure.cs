@@ -20,6 +20,7 @@ public class AutoExposure {
     bool resetHistory;
 
     LogHistogram logHistogram;
+    PhyscialCameraSettings physcialSettings;
 
     public AutoExposure() {
         autoExposurePool = new RenderTexture[numAutoExposureTexture];
@@ -27,12 +28,13 @@ public class AutoExposure {
         resetHistory = true;
     }
 
-    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, PostFXSettings settings) {
+    public void Setup(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, PostFXSettings settings, PhyscialCameraSettings physcialSettings) {
         this.context = context;
         this.camera = camera;
         this.bufferSize = bufferSize;
         //apply to proper camera
         this.settings = camera.cameraType <= CameraType.SceneView ? (settings ? settings.autoExposureSettings : default) : default;
+        this.physcialSettings = physcialSettings;
     }
 
     void CheckTexture(int id) {
@@ -43,7 +45,7 @@ public class AutoExposure {
     }
 
     //exposureParams x: lowPercent, y: highPercent, z: minEV, w: maxEV
-    void AutoExposureLookUp(Vector4 exposureParams, Vector4 adaptationParams, Vector4 scaleOffsetRes, ComputeBuffer data, bool isFixed) {
+    void AutoExposureLookUp(Vector4 exposureParams, Vector4 adaptationParams, Vector4 physicalParams, Vector4 scaleOffsetRes, ComputeBuffer data, bool isFixed, bool isPhysical) {
         CheckTexture(0);
         CheckTexture(1);
         bool firstFrame = resetHistory || !Application.isPlaying;
@@ -58,7 +60,15 @@ public class AutoExposure {
         buffer.SetComputeBufferParam(cs, kernel, "_HistogramBuffer", data);
         buffer.SetComputeVectorParam(cs, "_Params1", new Vector4(exposureParams.x * 0.01f, exposureParams.y * 0.01f, Mathf.Pow(2, exposureParams.z), Mathf.Pow(2, exposureParams.w)));
         buffer.SetComputeVectorParam(cs, "_Params2", adaptationParams);
+        buffer.SetComputeVectorParam(cs, "_Params3", physicalParams);
         buffer.SetComputeVectorParam(cs, "_ScaleOffsetRes", scaleOffsetRes);
+#if UNITY_2020_1_OR_NEWER
+        if (isPhysical) {
+            cs.EnableKeyword("PHYSCIAL_BASED");
+        } else {
+            cs.DisableKeyword("PHYSCIAL_BASED");
+        }
+#endif
         if (firstFrame) {
             //don't want eye adaptation when not in play mode because the GameView isn't animated, thus making it harder to tweak. Just use the final audo exposure value.
             currentAutoExposure = autoExposurePool[0];
@@ -82,16 +92,14 @@ public class AutoExposure {
 
     public void DoAutoExposure(int from) {
         if (settings.metering == AutoExposureSettings.MeteringMode.None) {
-            //set buffer keyword
-            buffer.SetGlobalFloat("_AutoExposure", 0);
             return;
         }
-        buffer.SetGlobalFloat("_AutoExposure", 1);
 
         cs = settings.autoExposure;
         if (logHistogram == null) {
             logHistogram = new LogHistogram(buffer, settings.logHistogram);
         }
+
         switch (settings.meteringMask) {
             case AutoExposureSettings.MeteringMask.None:
                 buffer.SetGlobalInt("_MeteringMask", 0);
@@ -118,8 +126,9 @@ public class AutoExposure {
         float maxLum = settings.maxEV;
         Vector4 exposureParams = new Vector4(lowPercent, highPercent, minLum, maxLum);
         Vector4 adaptationParams = new Vector4(settings.speedDown, settings.speedUp, settings.compensation, Time.deltaTime);
+        Vector4 physcialParams = new Vector4(physcialSettings.fStop, 1f / physcialSettings.shutterSpeed, physcialSettings.ISO, MelodyColorUtils.lensImperfectionExposureScale);
         Vector4 scaleOffsetRes = logHistogram.GetHistogramScaleOffsetRes(bufferSize.x, bufferSize.y);
-        AutoExposureLookUp(exposureParams, adaptationParams, scaleOffsetRes, logHistogram.data, settings.adaptation == AutoExposureSettings.AdaptationMode.Fixed ? true : false);
+        AutoExposureLookUp(exposureParams, adaptationParams, physcialParams, scaleOffsetRes, logHistogram.data, settings.adaptation == AutoExposureSettings.AdaptationMode.Fixed ? true : false, settings.metering == AutoExposureSettings.MeteringMode.Physical ? true : false);
         ExecuteBuffer();
     }
 

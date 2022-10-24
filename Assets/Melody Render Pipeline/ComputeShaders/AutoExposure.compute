@@ -3,6 +3,7 @@
 
 #pragma kernel AutoExposureAvgLuminance_fixed MAIN=AutoExposureAvgLuminance_fixed
 #pragma kernel AutoExposureAvgLuminance_progressive MAIN=AutoExposureAvgLuminance_progressive PROGRESSIVE
+#pragma multi_compile _ PHYSCIAL_BASED
 
 StructuredBuffer<uint> _HistogramBuffer;
 Texture2D<float> _SourceTex;
@@ -12,11 +13,29 @@ RWTexture2D<float> _DestinationTex;
 float4 _Params1;
 //x: speed down, y: speed up, z: exposure compensation, w: delta time
 float4 _Params2;
+//x: aperture, y: shutterSpeed, z: ISO, w: exposureScale
+float4 _Params3;
 float4 _ScaleOffsetRes;
 
 groupshared uint gs_pyramid[HISTOGRAM_REDUCTION_BINS];
 
-float GetExposureMultiplier(float avgLuminance) {
+//physical methods
+float ComputeEV100(float aperture, float shutterSpeed, float ISO) {
+    return log2((aperture * aperture) / shutterSpeed * 100.0 / ISO);
+}
+
+float ConvertEV100ToLuminance(float EV100, float exposureScale) {
+    //compute the maximum luminance possible with H_sbs sensitivity
+    //maxLum = 78 / ( S * q ) * N^2 / t
+    //       = 78 / ( S * q ) * 2^ EV_100
+    //       = 78 / (100 * s_LensAttenuation) * 2^ EV_100
+    //       = exposureScale * 2^ EV
+    //reference: http://en.wikipedia.org/wiki/Film_speed
+    float maxLuminance = exposureScale * exp2(EV100);
+    return maxLuminance;
+}
+
+float GetExposureFromLuminance(float avgLuminance) {
     avgLuminance = max(0.00001, avgLuminance);
     //Krzysztof's method
     float keyValue = 1.03 - (2.0 / (2.0 + log2(avgLuminance + 1.0)));
@@ -51,15 +70,26 @@ void MAIN(uint2 groupThreadId : SV_GroupThreadID) {
         //float maxValue = FindMaxHistogramValue(_HistogramBuffer);
         float maxValue = float(gs_pyramid[0]);
 #if defined(PROGRESSIVE)
-        float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
-        float exposure = GetExposureMultiplier(avgLuminance);
         //pre-apply last frame EV to prevent sudden changes in exposure and calculation leak
         float prevExposure = _SourceTex[uint2(0u, 0u)].x;
+#if defined(PHYSCIAL_BASED)
+        float ev100 = ComputeEV100(_Params3.x, _Params3.y, _Params3.z);
+        float exposure = GetExposureFromLuminance(ConvertEV100ToLuminance(ev100, _Params3.w));
         exposure = InterpolateExposure(exposure, prevExposure);
-        _DestinationTex[uint2(0u, 0u)].x = exposure.x;
 #else
         float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
-        float exposure = GetExposureMultiplier(avgLuminance);
+        float exposure = GetExposureFromLuminance(avgLuminance);
+        exposure = InterpolateExposure(exposure, prevExposure);
+#endif
+        _DestinationTex[uint2(0u, 0u)].x = exposure.x;
+#else
+#if defined(PHYSCIAL_BASED)
+        float ev100 = ComputeEV100(_Params3.x, _Params3.y, _Params3.z);
+        float exposure = GetExposureFromLuminance(ConvertEV100ToLuminance(ev100, _Params3.w));
+#else
+        float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
+        float exposure = GetExposureFromLuminance(avgLuminance);
+#endif
         _DestinationTex[uint2(0u, 0u)].x = exposure.x;
 #endif
     }

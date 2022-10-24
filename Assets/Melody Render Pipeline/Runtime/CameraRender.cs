@@ -191,7 +191,7 @@ public partial class CameraRender {
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
-        autoExposure.Setup(context, camera, bufferSize, postFXSettings);
+        autoExposure.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings);
         taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, physcialCameraSettings, useHDR, cameraSettings.allowPhyscialCamera, copyTextureSupported);
         motionBlur.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings, useHDR);
         //sspr Objects
@@ -240,9 +240,6 @@ public partial class CameraRender {
         //screen space feature debug or combine
         ssao.Combine(colorAttachmentId);
         ssr.Combine(colorAttachmentId);
-
-        //I want do auto exposure before cloud rendering
-        autoExposure.DoAutoExposure(colorAttachmentId);
         if (renderCloud) {
             cloud.Render(colorAttachmentId);
         }
@@ -254,7 +251,7 @@ public partial class CameraRender {
             ExecuteBuffer();
             atmosphere.RenderFog(colorAttachmentId);
         }
-
+        autoExposure.DoAutoExposure(colorAttachmentId);
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         taa.Render(colorAttachmentId);
