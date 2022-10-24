@@ -1,6 +1,7 @@
 ﻿#include "../Shaders/DepthOfFieldCommon.hlsl"
 #include "../Shaders/DepthOfFieldUtils.hlsl"
 #pragma multi_compile _ ENABLE_ALPHA
+#pragma multi_compile _ DEBUG_TILE
 #pragma kernel CircleOfConfusionPhysical
 #pragma kernel CircleOfConfusionManual
 //const
@@ -172,6 +173,8 @@ void CircleOfConfusionCombine(uint3 dispatchThreadId : SV_DispatchThreadID) {
     else {
         output = GetColorSample(dispatchThreadId.xy, 0);
     }
-    //DebugTiles(dispatchThreadId.xy, output.xyz);
+#if defined(DEBUG_TILE)
+    DebugTiles(dispatchThreadId.xy, output.xyz);
+#endif
     _OutputResult[dispatchThreadId.xy] = output;
 }

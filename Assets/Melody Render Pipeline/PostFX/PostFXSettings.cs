@@ -237,6 +237,7 @@ public class PostFXSettings : ScriptableObject {
         public float farBlurMaxRadius;
         public ComputeShader dofAdvanced;
         public bool useAdvanced;
+        public bool debugTile;
     }
 
     [System.Serializable]

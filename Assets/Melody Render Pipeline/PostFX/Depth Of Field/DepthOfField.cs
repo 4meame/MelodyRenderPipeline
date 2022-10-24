@@ -263,6 +263,14 @@ public class DepthOfField : MonoBehaviour {
             parameters.dofCoCReprojectCS.EnableKeyword("MAX_BLENDING");
             //fix the resolution to half. This only affects the out-of-focus regions (and there is no visible benefit at computing those at higher res). Tiles with pixels near the focus plane always run at full res
             parameters.resolution = DepthOfFieldSettings.Resolution.Half;
+            if (settings.debugTile) {
+                parameters.dofAdvancedCS.EnableKeyword("DEBUG_TILE");
+            } else {
+                parameters.dofAdvancedCS.DisableKeyword("DEBUG_TILE");
+            }
+        } else {
+            parameters.dofCoCReprojectCS.DisableKeyword("MAX_BLENDING");
+            parameters.dofAdvancedCS.DisableKeyword("DEBUG_TILE");
         }
 #endif
         return parameters;
