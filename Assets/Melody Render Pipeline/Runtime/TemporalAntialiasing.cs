@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
 
-public class TemporalAntialiasing : MonoBehaviour {
+public class TemporalAntialiasing {
     enum Pass {
         AdaptiveTAA,
         CopyDepth,
@@ -273,7 +273,7 @@ public class TemporalAntialiasing : MonoBehaviour {
         }
     }
 
-    private void OnDisable() {
+    public void ResetJitter() {
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {
             Shader.SetGlobalVector("_Jitter", Vector4.zero);
         }

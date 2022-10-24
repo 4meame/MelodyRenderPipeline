@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
 
-public class ScreenSpaceReflection : MonoBehaviour {
+public class ScreenSpaceReflection {
     const string bufferName = "ScreenSpaceReflection";
     CommandBuffer buffer = new CommandBuffer {
         name = bufferName
@@ -368,10 +368,6 @@ public class ScreenSpaceReflection : MonoBehaviour {
         if (settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
             SSR_Prev_ViewProjectionMatrix = SSR_ViewProjectionMatrix;
         }
-    }
-
-    void OnDisable() {
-        ReleaseBuffer();
     }
 
     void ReleaseBuffer() {

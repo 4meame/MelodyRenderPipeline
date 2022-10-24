@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using static PostFXSettings;
 
-public class DepthOfField : MonoBehaviour {
+public class DepthOfField {
     const string bufferName = "Depth Of Field";
     CommandBuffer buffer = new CommandBuffer { name = bufferName };
     ScriptableRenderContext context;
@@ -846,10 +846,6 @@ public class DepthOfField : MonoBehaviour {
             }
             GetTemporaryRenderTexture(buffer, resultId, bufferSize, 0, format, true, false, "DOF Dest");
         }
-    }
-
-    void OnDisable() {
-        ReleaseComputeBuffer();
     }
 
     void ReleaseComputeBuffer() {
