@@ -24,7 +24,7 @@ float ComputeEV100(float aperture, float shutterSpeed, float ISO) {
     return log2((aperture * aperture) / shutterSpeed * 100.0 / ISO);
 }
 
-float ConvertEV100ToLuminance(float EV100, float exposureScale) {
+float ConvertEV100ToExposure(float EV100, float exposureScale) {
     //compute the maximum luminance possible with H_sbs sensitivity
     //maxLum = 78 / ( S * q ) * N^2 / t
     //       = 78 / ( S * q ) * 2^ EV_100
@@ -32,7 +32,7 @@ float ConvertEV100ToLuminance(float EV100, float exposureScale) {
     //       = exposureScale * 2^ EV
     //reference: http://en.wikipedia.org/wiki/Film_speed
     float maxLuminance = exposureScale * exp2(EV100);
-    return maxLuminance;
+    return 1.0 / maxLuminance;
 }
 
 float GetExposureFromLuminance(float avgLuminance) {
@@ -74,7 +74,8 @@ void MAIN(uint2 groupThreadId : SV_GroupThreadID) {
         float prevExposure = _SourceTex[uint2(0u, 0u)].x;
 #if defined(PHYSCIAL_BASED)
         float ev100 = ComputeEV100(_Params3.x, _Params3.y, _Params3.z);
-        float exposure = GetExposureFromLuminance(ConvertEV100ToLuminance(ev100, _Params3.w));
+        ev100 -= _Params2.z;
+        float exposure = ConvertEV100ToExposure(ev100, _Params3.w);
         exposure = InterpolateExposure(exposure, prevExposure);
 #else
         float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
@@ -85,7 +86,8 @@ void MAIN(uint2 groupThreadId : SV_GroupThreadID) {
 #else
 #if defined(PHYSCIAL_BASED)
         float ev100 = ComputeEV100(_Params3.x, _Params3.y, _Params3.z);
-        float exposure = GetExposureFromLuminance(ConvertEV100ToLuminance(ev100, _Params3.w));
+        ev100 -= _Params2.z;
+        float exposure = ConvertEV100ToExposure(ev100, _Params3.w);
 #else
         float avgLuminance = GetAverageLuminance(_HistogramBuffer, _Params1, 1 / maxValue, _ScaleOffsetRes.xy);
         float exposure = GetExposureFromLuminance(avgLuminance);
