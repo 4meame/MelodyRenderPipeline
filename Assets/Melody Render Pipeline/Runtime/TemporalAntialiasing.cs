@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
 
-public class TemporalAntialiasing {
+public class TemporalAntialiasing : MonoBehaviour {
     enum Pass {
         AdaptiveTAA,
         CopyDepth,
@@ -271,6 +271,10 @@ public class TemporalAntialiasing {
             }
             return result;
         }
+    }
+
+    void OnDisable() {
+        ResetJitter();
     }
 
     public void ResetJitter() {

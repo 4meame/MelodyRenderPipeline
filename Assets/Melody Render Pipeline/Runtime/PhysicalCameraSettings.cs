@@ -16,7 +16,7 @@ public class PhyscialCameraSettings {
 	public Vector2 sensorSize = new Vector2(70.0f, 51.0f);
 	public int ISO = 200;
 	[Min(1)]
-	public int shutterSpeed = 200;
+	public int shutterSpeed = 16;
 	public Camera.GateFitMode gateFit = Camera.GateFitMode.Horizontal;
 	[Header("Lens")]
 	[Min(0.1117f)]

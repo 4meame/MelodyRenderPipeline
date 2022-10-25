@@ -78,7 +78,7 @@ public class FrameBlendingFilter {
             if (time == 0) { 
                 return 0; 
             }
-            var coeff = Mathf.Lerp(80.0f, 16.0f, strength);
+            var coeff = Mathf.Lerp(90.0f, 10.0f, strength);
             return Mathf.Exp((time - currentTime) * coeff);
         }
 
