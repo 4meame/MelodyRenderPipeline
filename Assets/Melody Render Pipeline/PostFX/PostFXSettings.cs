@@ -231,7 +231,7 @@ public class PostFXSettings : ScriptableObject {
         public int nearBlurSampleCount;
         [Range(0, 8f)]
         public float nearBlurMaxRadius;
-        [Range(3, 16f)]
+        [Range(3, 8)]
         public int farBlurSampleCount;
         [Range(0, 16f)]
         public float farBlurMaxRadius;
