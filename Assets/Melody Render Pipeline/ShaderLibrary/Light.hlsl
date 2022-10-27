@@ -9,6 +9,11 @@ int _DirectionLightCount;
 float4 _DirectionalLightColors[MAX_DIRECTIONAL_LIGHT_COUNT];
 float4 _DirectionalLightDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
 float4 _DirectionalLightShadowData[MAX_DIRECTIONAL_LIGHT_COUNT];
+//volume
+float4 _DirectionLightSampleData[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionLightScatterData[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionLightNoiseData[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionLightNoiseVelocity[MAX_DIRECTIONAL_LIGHT_COUNT];
 
 int _OtherLightCount;
 float4 _OtherLightColors[MAX_OTHER_LIGHT_COUNT];
@@ -16,6 +21,11 @@ float4 _OtherLightPositions[MAX_OTHER_LIGHT_COUNT];
 float4 _OtherLightDirections[MAX_OTHER_LIGHT_COUNT];
 float4 _OtherLightSpotAngles[MAX_OTHER_LIGHT_COUNT];
 float4 _OtherLightShadowData[MAX_OTHER_LIGHT_COUNT];
+//volume
+float4 _OtherLightSampleData[MAX_OTHER_LIGHT_COUNT];
+float4 _OtherLightScatterData[MAX_OTHER_LIGHT_COUNT];
+float4 _OtherLightNoiseData[MAX_OTHER_LIGHT_COUNT];
+float4 _OtherLightNoiseVelocity[MAX_OTHER_LIGHT_COUNT];
 
 int _MainLightIndex;
 float4 _MainLightPosition;

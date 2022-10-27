@@ -1,15 +1,36 @@
 ﻿#ifndef MELODY_VOLUMETRIC_LIGHT_PASS_INCLUDED
 #define MELODY_VOLUMETRIC_LIGHT_PASS_INCLUDED
 
-//x : sample
-float4 _DirectionLightSampleData[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionLightScatterData[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionLightNoiseData[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionLightNoiseVelocity[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _OtherLightSampleData[MAX_OTHER_LIGHT_COUNT];
-float4 _OtherLightScatterData[MAX_OTHER_LIGHT_COUNT];
-float4 _OtherLightNoiseData[MAX_OTHER_LIGHT_COUNT];
-float4 _OtherLightNoiseVelocity[MAX_OTHER_LIGHT_COUNT];
+int Index;
+#if defined(DIRECTIONAL)
+#define SampleCount _DirectionLightSampleData[Index].x
+#define HeightFog _DirectionLightSampleData[Index].y
+#define HeightScale _DirectionLightSampleData[Index].z
+#define GroundHeight _DirectionLightSampleData[Index].w
+#define Scattering  _DirectionLightScatterData[Index].x
+#define Extinction _DirectionLightScatterData[Index].y
+#define SkyboxExtinction _DirectionLightScatterData[Index].z
+#define MieG _DirectionLightScatterData[Index].w
+#define UseNoise _DirectionLightNoiseData[Index].x
+#define NoiseScale _DirectionLightNoiseData[Index].y
+#define NoiseIntensity _DirectionLightNoiseData[Index].z
+#define NoiseOffset _DirectionLightNoiseData[Index].w
+#define NoiseVelocity _DirectionLightNoiseVelocity[Index].xy
+#else
+#define SampleCount _OtherLightSampleData[Index].x
+#define UseHeightFog _OtherLightSampleData[Index].y
+#define HeightScale _OtherLightSampleData[Index].z
+#define GroundHeight _OtherLightSampleData[Index].w
+#define Scattering _OtherLightScatterData[Index].x
+#define Extinction _OtherLightScatterData[Index].y
+#define SkyboxExtinction _OtherLightScatterData[Index].z
+#define MieG _OtherLightScatterData[Index].w
+#define UseNoise _OtherLightNoiseData[Index].x
+#define NoiseScale _OtherLightNoiseData[Index].y
+#define NoiseIntensity _OtherLightNoiseData[Index].z
+#define NoiseOffset _OtherLightNoiseData[Index].w
+#define NoiseVelocity _OtherLightNoiseVelocity[Index].xy
+#endif
 
 struct Attributes {
 	float4 positionOS : POSITION;
@@ -31,7 +52,7 @@ Varyings DefaultPassVertex(Attributes input) {
 
 float4 TestFragment(Varyings input) : SV_TARGET {
 	float4 color = 1;
-	return color;
+	return NoiseVelocity.xxxx;
 }
 
 #endif

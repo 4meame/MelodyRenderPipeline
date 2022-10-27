@@ -34,7 +34,7 @@ public class VolumetricLight {
         }
     }
 
-    public void PreRenderVolumetric(ScriptableRenderContext context, bool useVolumetric) {
+    public void PreRenderVolumetric(bool useVolumetric) {
         if (!useVolumetric || camera.cameraType == CameraType.Preview) {
             return;
         }
@@ -50,12 +50,12 @@ public class VolumetricLight {
             switch (visibleLight.lightType) {
                 case LightType.Point:
                     if (otherLightCount < maxOtherLightCount) {
-                        SetUpPointVolume(visibleLight, viewProj);
+                        SetUpPointVolume(otherLightCount++, visibleLight, viewProj);
                     }
                     break;
                 case LightType.Directional:
                     if (dirLightCount < maxDirLightCount) {
-                        SetUpDirectionalVolume(visibleLight);
+                        SetUpDirectionalVolume(dirLightCount++, visibleLight);
                     }
                     break;
                 case LightType.Spot:
@@ -69,7 +69,7 @@ public class VolumetricLight {
         buffer.Clear();
     }
 
-    void SetUpPointVolume(VisibleLight visibleLight, Matrix4x4 viewProj) {
+    void SetUpPointVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {
         VolumetricLightComponent component = visibleLight.light.GetComponent<VolumetricLightComponent>();
         Light light = visibleLight.light;
         if (component == null || !component.isActiveAndEnabled) {
@@ -79,15 +79,17 @@ public class VolumetricLight {
         if (!IsCameraInPointLightBounds(visibleLight.light)) {
             pass = 0;
         }
-        material.SetPass(pass);
+        //material.SetPass(pass);
         float scale = light.range * 2.0f;
         Matrix4x4 world = Matrix4x4.TRS(light.transform.position, light.transform.rotation, new Vector3(scale, scale, scale));
         material.SetMatrix("_WorldViewProj", viewProj * world);
         material.SetMatrix("_WorldView", camera.worldToCameraMatrix * world);
-
+        material.SetInt("Index", index);
+        Debug.Log(index);
+        buffer.DrawMesh(pointLightMesh, world, material, 0, pass);
     }
 
-    void SetUpDirectionalVolume(VisibleLight visibleLight) {
+    void SetUpDirectionalVolume(int index, VisibleLight visibleLight) {
         VolumetricLightComponent component = visibleLight.light.GetComponent<VolumetricLightComponent>();
         if (component == null || !component.isActiveAndEnabled) {
             return;
@@ -112,7 +114,7 @@ public class VolumetricLight {
         return false;
     }
 
-    private Mesh CreateSpotLightMesh() {
+    Mesh CreateSpotLightMesh() {
         //copy & pasted from other project, the geometry is too complex, should be simplified
         Mesh mesh = new Mesh();
         const int segmentCount = 16;
