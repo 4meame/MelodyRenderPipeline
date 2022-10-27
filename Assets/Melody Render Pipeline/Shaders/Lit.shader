@@ -28,6 +28,7 @@
         [Enum(UnityEngine.Rendering.BlendMode)]_SrcBlend("Src Blend", Float) = 1
         [Enum(UnityEngine.Rendering.BlendMode)]_DstBlend("Dst Blend", Float) = 0
         [Enum(Off, 0, On, 1)]_ZWrite("Z Write", Float) = 1
+        [Enum(UnityEngine.Rendering.CullMode)]_Cull("Cull Mode", Float) = 0
     }
     SubShader
     {       
@@ -38,6 +39,7 @@
 
             Blend [_SrcBlend][_DstBlend], One OneMinusSrcAlpha
             ZWrite [_ZWrite]
+            Cull[_Cull]
             HLSLPROGRAM
             #pragma target 3.5
             #pragma shader_feature _CLIPPING

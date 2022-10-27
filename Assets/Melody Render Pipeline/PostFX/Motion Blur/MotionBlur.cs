@@ -84,6 +84,8 @@ public class MotionBlur {
     }
 
     public void Combine(int sourceId) {
+        if (settings.mode == MotionBlurSettings.Mode.None)
+            return;
         buffer.Blit(motionResultId, sourceId);
         ExecuteBuffer();
     }

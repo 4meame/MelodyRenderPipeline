@@ -55,8 +55,30 @@ public class Lighting {
     #endregion
     static string lightsPerObjectKeyword = "_LIGHTS_PER_OBJECT";
     CullingResults cullingResults;
-
     Shadows shadows = new Shadows();
+    #region Volumetric Data
+    //Volumetric Light Data
+    static int
+        dirLightSampleDataId = Shader.PropertyToID("_DirectionLightSampleData"),
+        dirLightScatterDataId = Shader.PropertyToID("_DirectionalLightScatterData"),
+        dirLightNoiseDataId = Shader.PropertyToID("_DirectionalLightNoiseData"),
+        dirLightNoiseVelocityId = Shader.PropertyToID("_DirectionalLightNoiseVelocity");
+    static Vector4[]
+        dirLightSampleData = new Vector4[maxDirLightCount],
+        dirLightScatterData = new Vector4[maxDirLightCount],
+        dirLightNoiseData = new Vector4[maxDirLightCount],
+        dirLightNoiseVelocity = new Vector4[maxDirLightCount];
+    static int
+        otherLightSampleDataId = Shader.PropertyToID("_OtherLightSampleData"),
+        otherLightScatterDataId = Shader.PropertyToID("_OtherLightScatterData"),
+        otherLightNoiseDataId = Shader.PropertyToID("_OtherLightNoiseData"),
+        otherLightNoiseVelocityId = Shader.PropertyToID("_OtherLightNoiseVelocity");
+    static Vector4[]
+        otherLightSampleData = new Vector4[maxOtherLightCount],
+        otherLightScatterData = new Vector4[maxOtherLightCount],
+        otherLightNoiseData = new Vector4[maxOtherLightCount],
+        otherLightNoiseVelocity = new Vector4[maxOtherLightCount];
+    #endregion
 
     public void Setup(ScriptableRenderContext context, CullingResults cullingResults, ShadowSettings shadowSettings, bool useLightsPerObject) {
         this.cullingResults = cullingResults;
@@ -121,6 +143,11 @@ public class Lighting {
             buffer.SetGlobalVectorArray(dirLightColorsId, dirLightColors);
             buffer.SetGlobalVectorArray(dirLightDirectionsId, dirLightDirections);
             buffer.SetGlobalVectorArray(dirLightShadowDataId, dirLightShadowData);
+            //volume data
+            buffer.SetGlobalVectorArray(dirLightSampleDataId, dirLightSampleData);
+            buffer.SetGlobalVectorArray(dirLightScatterDataId, dirLightScatterData);
+            buffer.SetGlobalVectorArray(dirLightNoiseDataId, dirLightNoiseData);
+            buffer.SetGlobalVectorArray(dirLightNoiseVelocityId, dirLightNoiseVelocity);
         }
         #endregion
         #region Other Light
@@ -132,6 +159,11 @@ public class Lighting {
             buffer.SetGlobalVectorArray(otherLightDirectionsId, otherLightDirections);
             buffer.SetGlobalVectorArray(otherLightSpotAnglesId, otherLightSpotAngles);
             buffer.SetGlobalVectorArray(otherLightShadowDataId, otherLightShadowData);
+            //volume data
+            buffer.SetGlobalVectorArray(otherLightSampleDataId, otherLightSampleData);
+            buffer.SetGlobalVectorArray(otherLightScatterDataId, otherLightScatterData);
+            buffer.SetGlobalVectorArray(otherLightNoiseDataId, otherLightNoiseData);
+            buffer.SetGlobalVectorArray(otherLightNoiseVelocityId, otherLightNoiseVelocity);
         }
         #endregion
         #region Main Light
@@ -180,6 +212,14 @@ public class Lighting {
         dirLightShadowData[index] = shadows.ReserveDirectionalShadows(visibleLight.light, visibleIndex);
         //main light index calculations
         dirVisibleLights[index] = visibleLight;
+        //set volumetric data
+        VolumetricLightComponent volumeLight = visibleLight.light.GetComponent<VolumetricLightComponent>();
+        if (volumeLight != null) {
+            dirLightSampleData[index] = new Vector4(volumeLight.sampleCount, volumeLight.HeightFog ? 1f : 0f, volumeLight.heightScale, volumeLight.groundHeight);
+            dirLightScatterData[index] = new Vector4(volumeLight.scatteringCoef, volumeLight.extinctionCoef, volumeLight.skyBackgroundExtinctionCoef, volumeLight.mieG);
+            dirLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseScale);
+            dirLightNoiseVelocity[index] = new Vector4(volumeLight.noiseVelocity.x, volumeLight.noiseVelocity.y, 0f, 0f);
+        }
     }
 
     void SetUpPointLight(int index, int visibleIndex, ref VisibleLight visibleLight) {
@@ -192,6 +232,14 @@ public class Lighting {
         //avoid being affected by spot angle
         otherLightSpotAngles[index] = new Vector4(0f, 1f);
         otherLightShadowData[index] = shadows.ReserveOtherShadows(visibleLight.light, visibleIndex);
+        //set volumetric data
+        VolumetricLightComponent volumeLight = visibleLight.light.GetComponent<VolumetricLightComponent>();
+        if (volumeLight != null) {
+            otherLightSampleData[index] = new Vector4(volumeLight.sampleCount, volumeLight.HeightFog ? 1f : 0f, volumeLight.heightScale, volumeLight.groundHeight);
+            otherLightScatterData[index] = new Vector4(volumeLight.scatteringCoef, volumeLight.extinctionCoef, volumeLight.skyBackgroundExtinctionCoef, volumeLight.mieG);
+            otherLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseScale);
+            otherLightNoiseVelocity[index] = new Vector4(volumeLight.noiseVelocity.x, volumeLight.noiseVelocity.y, 0f, 0f);
+        }
     }
 
     //spot light is a point light that is enclosed by an occluding sphere with a hole on it, the size of the hole determines the size of the light cone
@@ -212,9 +260,18 @@ public class Lighting {
         float angleRangeInv = 1.0f / Mathf.Max(0.001f, innerCos - outerCos);
         otherLightSpotAngles[index] = new Vector4(angleRangeInv, -outerCos * angleRangeInv);
         otherLightShadowData[index] = shadows.ReserveOtherShadows(visibleLight.light, visibleIndex);
+        //set volumetric data
+        VolumetricLightComponent volumeLight = visibleLight.light.GetComponent<VolumetricLightComponent>();
+        if (volumeLight != null) {
+            otherLightSampleData[index] = new Vector4(volumeLight.sampleCount, volumeLight.HeightFog ? 1f : 0f, volumeLight.heightScale, volumeLight.groundHeight);
+            otherLightScatterData[index] = new Vector4(volumeLight.scatteringCoef, volumeLight.extinctionCoef, volumeLight.skyBackgroundExtinctionCoef, volumeLight.mieG);
+            otherLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseScale);
+            otherLightNoiseVelocity[index] = new Vector4(volumeLight.noiseVelocity.x, volumeLight.noiseVelocity.y, 0f, 0f);
+        }
     }
 
     public void CleanUp() {
         shadows.CleanUp();
     }
+
 }

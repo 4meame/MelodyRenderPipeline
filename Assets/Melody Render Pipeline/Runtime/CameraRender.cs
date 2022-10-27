@@ -17,7 +17,8 @@ public partial class CameraRender {
 
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
-    VolumetricCloud cloud = new VolumetricCloud();
+    VolumetricCloud volumetricCloud = new VolumetricCloud();
+    VolumetricLight volumetricLight = new VolumetricLight();
     ScreenSpaceAmbientOcclusion ssao = new ScreenSpaceAmbientOcclusion();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
     AutoExposure autoExposure = new AutoExposure();
@@ -149,7 +150,10 @@ public partial class CameraRender {
         cameraBufferSettings.fxaa.enabled = cameraBufferSettings.fxaa.enabled && cameraSettings.allowFXAA;
         #endregion
         #region Volumetric Cloud
-        var renderCloud = cloudSettings.enabled && cameraSettings.allowCloud;
+        var renderCloud = cloudSettings.enabled && cameraSettings.allowVolumetricCloud;
+        #endregion
+        #region Volumetric Light
+        var useVolumetricLight = cameraSettings.allowVolumetricLight;
         #endregion
         #region Atmosphere Scattering
         var atmosScatter = cameraSettings.allowAtmosFog;
@@ -187,6 +191,7 @@ public partial class CameraRender {
             DrawDepthNormal(useDepthNormalTexture);
         }
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
+        volumetricLight.Setup(context, cullingResults, camera);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
@@ -197,7 +202,7 @@ public partial class CameraRender {
         //sspr Objects
         sspr.Setup(context, camera, cullingResults, cameraBufferSettings.sspr, useHDR);
         atmosphere.Setup(context, camera, useHDR, atmosphereSettings);
-        cloud.Setup(context, camera, cloudSettings, useHDR);
+        volumetricCloud.Setup(context, camera, cloudSettings, useHDR);
         lensFlare.Setup(context, camera, bufferSize, postFXSettings);
         dof.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings, useHDR);
         postFXStack.Setup(context, camera, lighting, bufferSize, postFXSettings, useHDR, colorLUTResolution, cameraSettings.finalBlendMode, cameraBufferSettings.rescalingMode, cameraBufferSettings.fxaa, cameraSettings.keepAlpha);
@@ -235,13 +240,15 @@ public partial class CameraRender {
             ssr.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
+        //draw volumetric light
+        volumetricLight.PreRenderVolumetric(context, useVolumetricLight);
         //draw SSPR renders
         sspr.Render();
         //screen space feature debug or combine
         ssao.Combine(colorAttachmentId);
         ssr.Combine(colorAttachmentId);
         if (renderCloud) {
-            cloud.Render(colorAttachmentId);
+            volumetricCloud.Render(colorAttachmentId);
         }
         if (atmosScatter) {
             var backGroundTextureId = Shader.PropertyToID("_BackGroundTexture");
@@ -586,7 +593,7 @@ public partial class CameraRender {
         sspr.CleanUp();
         ssao.CleanUp();
         ssr.CleanUp();
-        cloud.CleanUp();
+        volumetricCloud.CleanUp();
         #region Lens Flare
         LensFlareCommon.Dispose();
         #endregion

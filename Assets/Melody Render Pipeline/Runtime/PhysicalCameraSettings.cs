@@ -14,7 +14,7 @@ public class PhyscialCameraSettings {
 	[Header("Camera Body")]
 	public SensorType sensorType = SensorType.Custom;
 	public Vector2 sensorSize = new Vector2(70.0f, 51.0f);
-	public int ISO = 200;
+	public int ISO = 20000;
 	[Min(1)]
 	public int shutterSpeed = 16;
 	public Camera.GateFitMode gateFit = Camera.GateFitMode.Horizontal;
@@ -23,7 +23,7 @@ public class PhyscialCameraSettings {
 	public float focalLength = 20.0f;
 	public Vector2 shift = Vector2.zero;
 	[Range(MinAperture, MaxAperture)]
-	public float fStop = 3.0f;
+	public float fStop = 2.2f;
 	[Min(0.1f)]
 	public float focusDistance = 10.0f;
 	[Header("Aperture Shape")]
