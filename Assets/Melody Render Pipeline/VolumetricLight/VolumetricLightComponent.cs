@@ -27,10 +27,8 @@ public class VolumetricLightComponent : MonoBehaviour {
     bool reversedZ = false;
 
     void OnEnable() {
-
     }
 
     void OnDisable() {
-
     }
 }

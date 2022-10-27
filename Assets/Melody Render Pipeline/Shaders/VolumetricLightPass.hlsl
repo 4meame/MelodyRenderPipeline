@@ -2,6 +2,9 @@
 #define MELODY_VOLUMETRIC_LIGHT_PASS_INCLUDED
 
 int Index;
+float4x4 _WorldViewProj;
+float3 _CameraForward;
+const float MaxRayLength = 499;
 #if defined(DIRECTIONAL)
 #define SampleCount _DirectionLightSampleData[Index].x
 #define HeightFog _DirectionLightSampleData[Index].y
@@ -44,11 +47,13 @@ struct Varyings {
 
 Varyings DefaultPassVertex(Attributes input) {
 	Varyings output;
-	output.positionWS = TransformObjectToWorld(input.positionOS);
-	output.positionCS = TransformWorldToHClip(output.positionWS);
+	output.positionCS = mul(_WorldViewProj, input.positionOS);
 	output.screenUV = ComputeScreenPos(output.positionCS);
+	output.positionWS = mul(unity_ObjectToWorld, input.positionOS);
 	return output;
 }
+
+
 
 float4 TestFragment(Varyings input) : SV_TARGET {
 	float4 color = 1;

@@ -15,15 +15,18 @@ public class VolumetricLight {
     ScriptableRenderContext context;
     CullingResults cullingResults;
     Camera camera;
-    Material material;
+    Vector2 bufferSize;
     bool useHDR;
+    Material globalMaterial;
     Mesh pointLightMesh;
     Mesh spotLightMesh;
-    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera) {
+    RenderTexture volumeLightPreTexture;
+    Vector2 cameraBufferSize;
+    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera, Vector2 bufferSize) {
         this.context = context;
         this.cullingResults = cullingResults;
         this.camera = camera;
-        material = new Material(Shader.Find("Hidden/Melody RP/VolumetricLight"));
+        this.bufferSize = bufferSize;
         if(pointLightMesh == null) {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.hideFlags = HideFlags.HideAndDontSave;
@@ -31,6 +34,15 @@ public class VolumetricLight {
         }
         if (spotLightMesh == null) {
             spotLightMesh = CreateSpotLightMesh();
+        }
+    }
+
+    void UpdateRenderTexture() {
+        Vector2 halfBufferSize = new Vector2(bufferSize.x / 2, bufferSize.y / 2);
+        Vector2 currentBufferSize = new Vector2(bufferSize.x, bufferSize.y);
+        if (cameraBufferSize != currentBufferSize) {
+            cameraBufferSize = currentBufferSize;
+
         }
     }
 
@@ -72,12 +84,13 @@ public class VolumetricLight {
     void SetUpPointVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {
         VolumetricLightComponent component = visibleLight.light.GetComponent<VolumetricLightComponent>();
         Light light = visibleLight.light;
+        Material material = new Material(Shader.Find("Hidden/Melody RP/VolumetricLight"));
         if (component == null || !component.isActiveAndEnabled) {
             return;
         }
         int pass = 0;
         if (!IsCameraInPointLightBounds(visibleLight.light)) {
-            pass = 0;
+            //pass = 2;
         }
         //material.SetPass(pass);
         float scale = light.range * 2.0f;
@@ -85,8 +98,14 @@ public class VolumetricLight {
         material.SetMatrix("_WorldViewProj", viewProj * world);
         material.SetMatrix("_WorldView", camera.worldToCameraMatrix * world);
         material.SetInt("Index", index);
-        Debug.Log(index);
-        buffer.DrawMesh(pointLightMesh, world, material, 0, pass);
+        bool forceShadowsOff = false;
+        if ((light.transform.position - camera.transform.position).magnitude >= ShadowSettings.maxDistance)
+            forceShadowsOff = true;
+        if (light.shadows != LightShadows.None && !forceShadowsOff) {
+
+        } else {
+
+        }
     }
 
     void SetUpDirectionalVolume(int index, VisibleLight visibleLight) {
