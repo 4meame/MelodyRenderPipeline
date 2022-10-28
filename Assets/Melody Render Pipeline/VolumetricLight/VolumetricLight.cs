@@ -17,16 +17,19 @@ public class VolumetricLight {
     Camera camera;
     Vector2 bufferSize;
     bool useHDR;
+    ShadowSettings shadowSettings;
     Material globalMaterial;
     Mesh pointLightMesh;
     Mesh spotLightMesh;
     RenderTexture volumeLightPreTexture;
     Vector2 cameraBufferSize;
-    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera, Vector2 bufferSize) {
+    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera, Vector2 bufferSize, bool useHDR, ShadowSettings shadowSettings) {
         this.context = context;
         this.cullingResults = cullingResults;
         this.camera = camera;
         this.bufferSize = bufferSize;
+        this.useHDR = useHDR;
+        this.shadowSettings = shadowSettings;
         if(pointLightMesh == null) {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.hideFlags = HideFlags.HideAndDontSave;
@@ -35,6 +38,7 @@ public class VolumetricLight {
         if (spotLightMesh == null) {
             spotLightMesh = CreateSpotLightMesh();
         }
+        UpdateRenderTexture();
     }
 
     void UpdateRenderTexture() {
@@ -42,7 +46,9 @@ public class VolumetricLight {
         Vector2 currentBufferSize = new Vector2(bufferSize.x, bufferSize.y);
         if (cameraBufferSize != currentBufferSize) {
             cameraBufferSize = currentBufferSize;
-
+            volumeLightPreTexture = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            volumeLightPreTexture.filterMode = FilterMode.Bilinear;
+            volumeLightPreTexture.name = "Volumetric Pre Light";
         }
     }
 
@@ -53,8 +59,7 @@ public class VolumetricLight {
         NativeArray<VisibleLight> visibleLights = cullingResults.visibleLights;
         int dirLightCount = 0, otherLightCount = 0;
         int i;
-        //use very low value for near clip plane to simplify cone/frustum intersection
-        Matrix4x4 proj = Matrix4x4.Perspective(camera.fieldOfView, camera.aspect, 0.01f, camera.farClipPlane);
+        Matrix4x4 proj = camera.projectionMatrix;
         proj = GL.GetGPUProjectionMatrix(proj, true);
         Matrix4x4 viewProj = proj * camera.worldToCameraMatrix;
         for (i = 0; i < visibleLights.Length; i++) {
@@ -90,22 +95,26 @@ public class VolumetricLight {
         }
         int pass = 0;
         if (!IsCameraInPointLightBounds(visibleLight.light)) {
-            //pass = 2;
+            pass = 1;
         }
-        //material.SetPass(pass);
+        material.SetPass(pass);
         float scale = light.range * 2.0f;
         Matrix4x4 world = Matrix4x4.TRS(light.transform.position, light.transform.rotation, new Vector3(scale, scale, scale));
         material.SetMatrix("_WorldViewProj", viewProj * world);
         material.SetMatrix("_WorldView", camera.worldToCameraMatrix * world);
+        material.SetVector("_CameraForward", camera.transform.forward);
         material.SetInt("Index", index);
+        material.SetFloat("_Range", light.range);
         bool forceShadowsOff = false;
-        if ((light.transform.position - camera.transform.position).magnitude >= ShadowSettings.maxDistance)
+        if ((light.transform.position - camera.transform.position).magnitude >= shadowSettings.maxDistance)
             forceShadowsOff = true;
         if (light.shadows != LightShadows.None && !forceShadowsOff) {
-
+            material.EnableKeyword("_RECEIVE_SHADOWS");
         } else {
-
+            material.DisableKeyword("_RECEIVE_SHADOWS");
         }
+        //buffer.SetRenderTarget(volumeLightPreTexture);
+        buffer.DrawMesh(pointLightMesh, world, material, 0, pass);
     }
 
     void SetUpDirectionalVolume(int index, VisibleLight visibleLight) {

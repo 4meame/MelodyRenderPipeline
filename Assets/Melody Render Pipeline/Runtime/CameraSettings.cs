@@ -23,7 +23,7 @@ public class CameraSettings {
 	public bool allowSSAO = false;
 	public bool allowSSR = false;
 	public bool allowVolumetricCloud = true;
-	public bool allowVolumetricLight = false;
+	public bool allowVolumetricLight = true;
 	public bool allowAtmosFog = true;
 	public bool allowPhyscialCamera = false;
 	public RenderScaleMode renderScaleMode = RenderScaleMode.Inherit;

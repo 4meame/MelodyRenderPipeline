@@ -191,7 +191,7 @@ public partial class CameraRender {
             DrawDepthNormal(useDepthNormalTexture);
         }
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
-        volumetricLight.Setup(context, cullingResults, camera, bufferSize);
+        volumetricLight.Setup(context, cullingResults, camera, bufferSize, useHDR, shadowSettings);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
