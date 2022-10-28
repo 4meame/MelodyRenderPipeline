@@ -84,7 +84,7 @@ public class VolumetricLight {
                     break;
                 case LightType.Spot:
                     if (otherLightCount < maxOtherLightCount) {
-                        SetUpSpotVolume(visibleLight);
+                        SetUpSpotVolume(otherLightCount++, visibleLight, viewProj);
                     }
                     break;
             }
@@ -107,7 +107,6 @@ public class VolumetricLight {
         float scale = light.range * 2.0f;
         Matrix4x4 world = Matrix4x4.TRS(light.transform.position, light.transform.rotation, new Vector3(scale, scale, scale));
         material.SetMatrix("_WorldViewProj", viewProj * world);
-        material.SetMatrix("_WorldView", camera.worldToCameraMatrix * world);
         material.SetVector("_CameraForward", camera.transform.forward);
         material.SetInt("Index", index);
         material.SetFloat("_Range", light.range);
@@ -131,18 +130,42 @@ public class VolumetricLight {
 
     }
 
-    void SetUpSpotVolume(VisibleLight visibleLight) {
+    void SetUpSpotVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {
         VolumetricLightComponent component = visibleLight.light.GetComponent<VolumetricLightComponent>();
         if (component == null || !component.isActiveAndEnabled) {
             return;
         }
         int pass = 2;
-        if (!IsCameraInPointLightBounds(visibleLight.light)) {
+        if (!IsCameraInSpotLightBounds(visibleLight.light)) {
             pass = 3;
         }
         Light light = visibleLight.light;
         Material material = component.material;
-
+        float scale = light.range;
+        float angleScale = Mathf.Tan((light.spotAngle + 1) * 0.5f * Mathf.Deg2Rad) * light.range;
+        Matrix4x4 world = Matrix4x4.TRS(light.transform.position, light.transform.rotation, new Vector3(angleScale, angleScale, scale));
+        material.SetMatrix("_WorldViewProj", viewProj * world);
+        material.SetVector("_CameraForward", camera.transform.forward);
+        material.SetInt("Index", index);
+        bool forceShadowsOff = false;
+        if ((light.transform.position - camera.transform.position).magnitude >= shadowSettings.maxDistance)
+            forceShadowsOff = true;
+        Vector3 apex = light.transform.position;
+        Vector3 axis = light.transform.forward;
+        //plane equation ax + by + cz + d = 0, precompute d here to lighten the shader
+        Vector3 center = apex + axis * light.range;
+        float d = -Vector3.Dot(center, axis);
+        material.SetFloat("_PlaneD", d);
+        material.SetFloat("_CosAngle", Mathf.Cos((light.spotAngle + 1) * 0.5f * Mathf.Deg2Rad));
+        material.SetVector("_ConeApex", new Vector4(apex.x, apex.y, apex.z));
+        material.SetVector("_ConeAxis", new Vector4(axis.x, axis.y, axis.z));
+        if (light.shadows != LightShadows.None && !forceShadowsOff) {
+            material.EnableKeyword("_RECEIVE_SHADOWS");
+        } else {
+            material.DisableKeyword("_RECEIVE_SHADOWS");
+        }
+        //buffer.SetRenderTarget(volumeLightPreTexture);
+        buffer.DrawMesh(spotLightMesh, world, material, 0, pass);
     }
 
     bool IsCameraInPointLightBounds(Light light)
@@ -152,6 +175,19 @@ public class VolumetricLight {
         if (distanceSqr < (extendedRange * extendedRange))
             return true;
         return false;
+    }
+
+    bool IsCameraInSpotLightBounds(Light light) {
+        //check range
+        float distance = Vector3.Dot(light.transform.forward, (camera.transform.position - light.transform.position));
+        float extendedRange = light.range + 1;
+        if (distance > (extendedRange))
+            return false;
+        //check angle
+        float cosAngle = Vector3.Dot(light.transform.forward, (camera.transform.position - light.transform.position).normalized);
+        if ((Mathf.Acos(cosAngle) * Mathf.Rad2Deg) > (light.spotAngle + 3) * 0.5f)
+            return false;
+        return true;
     }
 
     Mesh CreateSpotLightMesh() {

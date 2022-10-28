@@ -41,5 +41,37 @@
             #pragma fragment fragPointOutside
             ENDHLSL
         }
+
+        //pass 2
+        Pass
+        {
+            Name "Inside Spot Light"
+            ZTest Off
+            Cull Front
+            ZWrite Off
+            Blend One One
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma multi_compile _ _RECEIVE_SHADOWS
+            #pragma vertex DefaultPassVertex
+            #pragma fragment fragSpotInside
+            ENDHLSL
+        }
+
+        //pass 3
+        Pass
+        {
+            Name "Outside Spot Light"
+            ZTest Always
+            Cull Off
+            ZWrite Off
+            Blend One One
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma multi_compile _ _RECEIVE_SHADOWS
+            #pragma vertex DefaultPassVertex
+            #pragma fragment fragSpotOutside
+            ENDHLSL
+        }
     }
 }
