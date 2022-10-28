@@ -217,7 +217,7 @@ public class Lighting {
         if (volumeLight != null) {
             dirLightSampleData[index] = new Vector4(volumeLight.sampleCount, volumeLight.HeightFog ? 1f : 0f, volumeLight.heightScale, volumeLight.groundHeight);
             dirLightScatterData[index] = new Vector4(volumeLight.scatteringCoef, volumeLight.extinctionCoef, volumeLight.skyBackgroundExtinctionCoef, volumeLight.mieG);
-            dirLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseScale);
+            dirLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseIntensityOffset);
             dirLightNoiseVelocity[index] = new Vector4(volumeLight.noiseVelocity.x, volumeLight.noiseVelocity.y, 0f, 0f);
         }
     }
@@ -237,7 +237,7 @@ public class Lighting {
         if (volumeLight != null) {
             otherLightSampleData[index] = new Vector4(volumeLight.sampleCount, volumeLight.HeightFog ? 1f : 0f, volumeLight.heightScale, volumeLight.groundHeight);
             otherLightScatterData[index] = new Vector4(volumeLight.scatteringCoef, volumeLight.extinctionCoef, volumeLight.skyBackgroundExtinctionCoef, volumeLight.mieG);
-            otherLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseScale);
+            otherLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseIntensityOffset);
             otherLightNoiseVelocity[index] = new Vector4(volumeLight.noiseVelocity.x, volumeLight.noiseVelocity.y, 0f, 0f);
         }
     }
@@ -265,7 +265,7 @@ public class Lighting {
         if (volumeLight != null) {
             otherLightSampleData[index] = new Vector4(volumeLight.sampleCount, volumeLight.HeightFog ? 1f : 0f, volumeLight.heightScale, volumeLight.groundHeight);
             otherLightScatterData[index] = new Vector4(volumeLight.scatteringCoef, volumeLight.extinctionCoef, volumeLight.skyBackgroundExtinctionCoef, volumeLight.mieG);
-            otherLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseScale);
+            otherLightNoiseData[index] = new Vector4(volumeLight.useNoise ? 1f : 0f, volumeLight.noiseScale, volumeLight.noiseIntensity, volumeLight.noiseIntensityOffset);
             otherLightNoiseVelocity[index] = new Vector4(volumeLight.noiseVelocity.x, volumeLight.noiseVelocity.y, 0f, 0f);
         }
     }

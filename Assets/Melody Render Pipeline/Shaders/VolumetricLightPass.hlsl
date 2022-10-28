@@ -74,7 +74,7 @@ void ApplyHeightFog(float3 posWS, inout float density) {
 float GetDensity(float3 posWS) {
 	float density = 1;
 	if (UseNoise == 1) {
-		float noise = SAMPLE_TEXTURE3D_LOD(_NoiseTexture, sampler_NoiseTexture, float4(posWS * NoiseScale + float3(_Time.y * NoiseVelocity.x, 0, _Time.y * NoiseVelocity.y), 0), 0);
+		float noise = SAMPLE_TEXTURE3D_LOD(_NoiseTexture, sampler_NoiseTexture, float4(frac(posWS * NoiseScale + float3(_Time.y * NoiseVelocity.x, 0, _Time.y * NoiseVelocity.y)), 0), 0);
 		noise = saturate(noise - NoiseOffset) * NoiseIntensity;
 		density = saturate(noise);
 	}
