@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+[ExecuteInEditMode]
 [RequireComponent(typeof(Light))]
 public class VolumetricLightComponent : MonoBehaviour {
     [Range(1, 64)]
@@ -25,10 +26,14 @@ public class VolumetricLightComponent : MonoBehaviour {
     public float noiseIntensityOffset = 0.3f;
     public Vector2 noiseVelocity = new Vector2(3.0f, 3.0f);
     bool reversedZ = false;
+    [HideInInspector]
+    public Material material;
 
     void OnEnable() {
+        material = new Material(Shader.Find("Hidden/Melody RP/VolumetricLight"));
     }
 
     void OnDisable() {
+        DestroyImmediate(material);
     }
 }

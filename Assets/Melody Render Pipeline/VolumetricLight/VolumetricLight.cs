@@ -95,8 +95,6 @@ public class VolumetricLight {
 
     void SetUpPointVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {
         VolumetricLightComponent component = visibleLight.light.GetComponent<VolumetricLightComponent>();
-        Light light = visibleLight.light;
-        Material material = new Material(Shader.Find("Hidden/Melody RP/VolumetricLight"));
         if (component == null || !component.isActiveAndEnabled) {
             return;
         }
@@ -104,7 +102,8 @@ public class VolumetricLight {
         if (!IsCameraInPointLightBounds(visibleLight.light)) {
             pass = 1;
         }
-        material.SetPass(pass);
+        Light light = visibleLight.light;
+        Material material = component.material;
         float scale = light.range * 2.0f;
         Matrix4x4 world = Matrix4x4.TRS(light.transform.position, light.transform.rotation, new Vector3(scale, scale, scale));
         material.SetMatrix("_WorldViewProj", viewProj * world);
@@ -137,6 +136,12 @@ public class VolumetricLight {
         if (component == null || !component.isActiveAndEnabled) {
             return;
         }
+        int pass = 2;
+        if (!IsCameraInPointLightBounds(visibleLight.light)) {
+            pass = 3;
+        }
+        Light light = visibleLight.light;
+        Material material = component.material;
 
     }
 
