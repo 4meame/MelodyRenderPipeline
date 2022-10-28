@@ -127,7 +127,10 @@ public class VolumetricLight {
         if (component == null || !component.isActiveAndEnabled) {
             return;
         }
-
+        int pass = 4;
+        Light light = visibleLight.light;
+        Material material = component.material;
+        material.SetFloat("_MaxRayLength", component.maxRayLength);
     }
 
     void SetUpSpotVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {

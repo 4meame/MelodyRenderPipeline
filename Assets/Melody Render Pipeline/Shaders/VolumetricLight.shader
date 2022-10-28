@@ -73,5 +73,22 @@
             #pragma fragment fragSpotOutside
             ENDHLSL
         }
+
+        //pass 4
+        Pass
+        {
+            Name "Directional Light"
+            ZTest Off
+            Cull Off
+            ZWrite Off
+            Blend One One, One Zero
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma multi_compile _ _RECEIVE_SHADOWS
+            #pragma vertex DefaultPassVertex
+            #pragma fragment fragSpotOutside
+            #define DIRECTIONAL
+            ENDHLSL
+        }
     }
 }

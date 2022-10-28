@@ -281,5 +281,8 @@ float4 fragSpotOutside(Varyings input) : SV_TARGET{
 	return RayMarch(input.positionCS.xy, rayEnd, rayDir, rayLength);
 }
 
+float4 fragDirectional(Varyings input) : SV_TARGET{
+	return 1;
+}
 
 #endif
