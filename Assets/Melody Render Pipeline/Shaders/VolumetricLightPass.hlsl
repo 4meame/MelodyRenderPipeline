@@ -4,44 +4,61 @@
 int Index;
 float4x4 _WorldViewProj;
 float3 _CameraForward;
-const float MaxRayLength = 1000;
+const float _MaxRayLength;
 TEXTURE3D(_NoiseTexture);
 SAMPLER(sampler_NoiseTexture);
 TEXTURE2D(_DitherTexture);
 SAMPLER(sampler_DitherTexture);
-#if defined(DIRECTIONAL)
-#define LightDirection _DirectionalLightDirections[Index]
-#define LightColor _DirectionalLightColors[Index]
-#define SampleCount _DirectionLightSampleData[Index].x
-#define HeightFog _DirectionLightSampleData[Index].y
-#define HeightScale _DirectionLightSampleData[Index].z
-#define GroundHeight _DirectionLightSampleData[Index].w
-#define Scattering  _DirectionLightScatterData[Index].x
-#define Extinction _DirectionLightScatterData[Index].y
-#define SkyboxExtinction _DirectionLightScatterData[Index].z
-#define MieG _DirectionLightScatterData[Index].w
-#define UseNoise _DirectionLightNoiseData[Index].x
-#define NoiseScale _DirectionLightNoiseData[Index].y
-#define NoiseIntensity _DirectionLightNoiseData[Index].z
-#define NoiseOffset _DirectionLightNoiseData[Index].w
-#define NoiseVelocity _DirectionLightNoiseVelocity[Index].xy
-#else
-#define LightDirection _OtherLightDirections[Index]
-#define LightPosition _OtherLightPositions[Index]
-#define LightColor _OtherLightColors[Index]
-#define SampleCount _OtherLightSampleData[Index].x
-#define UseHeightFog _OtherLightSampleData[Index].y
-#define HeightScale _OtherLightSampleData[Index].z
-#define GroundHeight _OtherLightSampleData[Index].w
-#define Scattering _OtherLightScatterData[Index].x
-#define Extinction _OtherLightScatterData[Index].y
-#define SkyboxExtinction _OtherLightScatterData[Index].z
-#define MieG _OtherLightScatterData[Index].w
-#define UseNoise _OtherLightNoiseData[Index].x
-#define NoiseScale _OtherLightNoiseData[Index].y
-#define NoiseIntensity _OtherLightNoiseData[Index].z
-#define NoiseOffset _OtherLightNoiseData[Index].w
-#define NoiseVelocity _OtherLightNoiseVelocity[Index].xy
+float4 LightDirection;
+float4 LightPosition;
+float4 LightColor;
+float SampleCount;
+float UseHeightFog;
+float HeightScale;
+float GroundHeight;
+float Scattering;
+float Extinction;
+float SkyboxExtinction;
+float MieG;
+float UseNoise;
+float NoiseScale;
+float NoiseIntensity;
+float NoiseOffset;
+float2 NoiseVelocity;
+
+#if defined(_DIRECTION)
+	#define LightDirection _DirectionalLightDirections[Index]
+	#define LightColor _DirectionalLightColors[Index]
+	#define SampleCount _DirectionLightSampleData[Index].x
+	#define UseHeightFog _DirectionLightSampleData[Index].y
+	#define HeightScale _DirectionLightSampleData[Index].z
+	#define GroundHeight _DirectionLightSampleData[Index].w
+	#define Scattering  _DirectionLightScatterData[Index].x
+	#define Extinction _DirectionLightScatterData[Index].y
+	#define SkyboxExtinction _DirectionLightScatterData[Index].z
+	#define MieG _DirectionLightScatterData[Index].w
+	#define UseNoise _DirectionLightNoiseData[Index].x
+	#define NoiseScale _DirectionLightNoiseData[Index].y
+	#define NoiseIntensity _DirectionLightNoiseData[Index].z
+	#define NoiseOffset _DirectionLightNoiseData[Index].w
+	#define NoiseVelocity _DirectionLightNoiseVelocity[Index].xy
+#elif defined(_SPOT) || defined(_POINT)
+	#define LightDirection _OtherLightDirections[Index]
+	#define LightPosition _OtherLightPositions[Index]
+	#define LightColor _OtherLightColors[Index]
+	#define SampleCount _OtherLightSampleData[Index].x
+	#define UseHeightFog _OtherLightSampleData[Index].y
+	#define HeightScale _OtherLightSampleData[Index].z
+	#define GroundHeight _OtherLightSampleData[Index].w
+	#define Scattering _OtherLightScatterData[Index].x
+	#define Extinction _OtherLightScatterData[Index].y
+	#define SkyboxExtinction _OtherLightScatterData[Index].z
+	#define MieG _OtherLightScatterData[Index].w
+	#define UseNoise _OtherLightNoiseData[Index].x
+	#define NoiseScale _OtherLightNoiseData[Index].y
+	#define NoiseIntensity _OtherLightNoiseData[Index].z
+	#define NoiseOffset _OtherLightNoiseData[Index].w
+	#define NoiseVelocity _OtherLightNoiseVelocity[Index].xy
 #endif
 
 struct Attributes {
@@ -99,12 +116,13 @@ float4 RayMarch(float2 screenPos, float3 rayStart, float3 rayDir, float rayLengt
 	float3 currentPosition = rayStart + offset * rayDir;
 	float4 result = 0;
 	float cosAngle;
-#if defined(DIRECTIONAL)
 	float extinction = 0;
+	float attenuation = 0;
+#if defined(_DIRECTION)
 	cosAngle = dot(LightDirection.xyz, -rayDir);
-#else
+#elif defined(_SPOT) || defined(_POINT)
 	//we don't know about density between camera and light's volume, assume 0.5
-	float extinction = length(_WorldSpaceCameraPos - currentPosition) * Extinction * 0.5;
+	extinction = length(_WorldSpaceCameraPos - currentPosition) * Extinction * 0.5;
 #endif
 	Surface surfaceData;
 	//init surface data to rely on pipeline bilut-in method for now
@@ -125,18 +143,18 @@ float4 RayMarch(float2 screenPos, float3 rayStart, float3 rayDir, float rayLengt
 	for (int i = 0; i < stepCount; ++i) {
 		surfaceData.position = currentPosition;
 		shadowData = GetShadowData(surfaceData);
-#if defined(DIRECTIONAL)
+#if defined(_DIRECTION)
 		Light light = GetDirectionalLight(Index, surfaceData, shadowData);
-		float attenuation = light.shadowAttenuation;
-#else
+		attenuation = light.shadowAttenuation;
+#elif defined(_SPOT) || defined(_POINT)
 		Light light = GetOtherLight(Index, surfaceData, shadowData);
-		float attenuation = light.shadowAttenuation;
+		attenuation = light.shadowAttenuation;
 #endif
 		float density = GetDensity(currentPosition);
 		float scattering = Scattering * stepSize * density;
 		extinction += Extinction * stepSize * density;
 		float4 energy = attenuation * scattering * exp(-extinction);
-#if !defined(DIRECTIONAL)
+#if defined(_SPOT) || defined(_POINT)
 		//phase function for spot and point lights
 		float3 toLight = normalize(currentPosition - LightPosition.xyz);
 		cosAngle = dot(toLight, -rayDir);
@@ -146,15 +164,15 @@ float4 RayMarch(float2 screenPos, float3 rayStart, float3 rayDir, float rayLengt
 		currentPosition += step;
 	}
 	//phase function for spot and point lights
-#if defined(DIRECTIONAL)
+#if defined(_DIRECTION)
 	result *= MieScattering(cosAngle, MieG);
 #endif
 	//apply light's color
 	result *= LightColor;
 	result = max(0, result);
-#if defined(DIRECTIONAL)
+#if defined(_DIRECTION)
 	result.w = exp(-extinction);
-#else
+#elif defined(_SPOT) || defined(_POINT)
 	result.w = 0;
 #endif
 	return result;
@@ -279,10 +297,6 @@ float4 fragSpotOutside(Varyings input) : SV_TARGET{
 	rayLength = min(planeCoord, min(lineCoords.x, lineCoords.y));
 	rayLength = min(rayLength, z);
 	return RayMarch(input.positionCS.xy, rayEnd, rayDir, rayLength);
-}
-
-float4 fragDirectional(Varyings input) : SV_TARGET{
-	return 1;
 }
 
 #endif

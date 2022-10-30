@@ -22,6 +22,7 @@ public class VolumetricLight {
     Material globalMaterial;
     Mesh pointLightMesh;
     Mesh spotLightMesh;
+    Vector4[] frustumCorners = new Vector4[4];
     RenderTexture volumeLightPreTexture;
     Texture2D ditheringTexture;
     Texture3D noiseTexture;
@@ -59,7 +60,7 @@ public class VolumetricLight {
         }
     }
 
-    public void PreRenderVolumetric(bool useVolumetric) {
+    public void PreRenderVolumetric(bool useVolumetric, int sourceId) {
         if (!useVolumetric || camera.cameraType == CameraType.Preview) {
             return;
         }
@@ -79,7 +80,7 @@ public class VolumetricLight {
                     break;
                 case LightType.Directional:
                     if (dirLightCount < maxDirLightCount) {
-                        SetUpDirectionalVolume(dirLightCount++, visibleLight);
+                        SetUpDirectionalVolume(dirLightCount++, visibleLight, sourceId);
                     }
                     break;
                 case LightType.Spot:
@@ -110,6 +111,9 @@ public class VolumetricLight {
         material.SetVector("_CameraForward", camera.transform.forward);
         material.SetInt("Index", index);
         material.SetFloat("_Range", light.range);
+        material.DisableKeyword("_DIRECTION");
+        material.DisableKeyword("_SPOT");
+        material.EnableKeyword("_POINT");
         bool forceShadowsOff = false;
         if ((light.transform.position - camera.transform.position).magnitude >= shadowSettings.maxDistance)
             forceShadowsOff = true;
@@ -122,7 +126,7 @@ public class VolumetricLight {
         buffer.DrawMesh(pointLightMesh, world, material, 0, pass);
     }
 
-    void SetUpDirectionalVolume(int index, VisibleLight visibleLight) {
+    void SetUpDirectionalVolume(int index, VisibleLight visibleLight, int sourceId) {
         VolumetricLightComponent component = visibleLight.light.GetComponent<VolumetricLightComponent>();
         if (component == null || !component.isActiveAndEnabled) {
             return;
@@ -131,6 +135,22 @@ public class VolumetricLight {
         Light light = visibleLight.light;
         Material material = component.material;
         material.SetFloat("_MaxRayLength", component.maxRayLength);
+        //setup frustum corners for world position reconstruction
+        frustumCorners[0] = camera.ViewportToWorldPoint(new Vector3(0, 0, camera.farClipPlane));
+        frustumCorners[2] = camera.ViewportToWorldPoint(new Vector3(0, 1, camera.farClipPlane));
+        frustumCorners[3] = camera.ViewportToWorldPoint(new Vector3(1, 1, camera.farClipPlane));
+        frustumCorners[1] = camera.ViewportToWorldPoint(new Vector3(1, 0, camera.farClipPlane));
+        material.SetVectorArray("_FrustumCorners", frustumCorners);
+        material.SetInt("Index", index);
+        material.EnableKeyword("_DIRECTION");
+        material.DisableKeyword("_SPOT");
+        material.DisableKeyword("_POINT");
+        if (light.shadows != LightShadows.None) {
+            material.EnableKeyword("_RECEIVE_SHADOWS");
+        } else {
+            material.DisableKeyword("_RECEIVE_SHADOWS");
+        }
+        buffer.Blit(null, sourceId, material, pass);
     }
 
     void SetUpSpotVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {
@@ -162,6 +182,9 @@ public class VolumetricLight {
         material.SetFloat("_CosAngle", Mathf.Cos((light.spotAngle + 1) * 0.5f * Mathf.Deg2Rad));
         material.SetVector("_ConeApex", new Vector4(apex.x, apex.y, apex.z));
         material.SetVector("_ConeAxis", new Vector4(axis.x, axis.y, axis.z));
+        material.DisableKeyword("_DIRECTION");
+        material.EnableKeyword("_SPOT");
+        material.DisableKeyword("_POINT");
         if (light.shadows != LightShadows.None && !forceShadowsOff) {
             material.EnableKeyword("_RECEIVE_SHADOWS");
         } else {

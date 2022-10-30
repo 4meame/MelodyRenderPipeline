@@ -241,7 +241,7 @@ public partial class CameraRender {
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
         //draw volumetric light
-        volumetricLight.PreRenderVolumetric(useVolumetricLight);
+        volumetricLight.PreRenderVolumetric(useVolumetricLight, colorAttachmentId);
         //draw SSPR renders
         sspr.Render();
         //screen space feature debug or combine

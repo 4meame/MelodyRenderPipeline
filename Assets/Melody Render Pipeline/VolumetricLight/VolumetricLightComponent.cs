@@ -29,7 +29,7 @@ public class VolumetricLightComponent : MonoBehaviour {
     [HideInInspector]
     public Material material;
     [Min(1)]
-    public float maxRayLength;
+    public float maxRayLength = 400.0f;
 
     void OnEnable() {
         material = new Material(Shader.Find("Hidden/Melody RP/VolumetricLight"));
