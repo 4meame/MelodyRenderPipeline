@@ -2,18 +2,18 @@
 #define MELODY_LIGHT_INCLUDED
 
 #define MAX_DIRECTIONAL_LIGHT_COUNT 4
-float4 _DirectionalLightDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionalLightShadowData[MAX_DIRECTIONAL_LIGHT_COUNT];
 #define MAX_OTHER_LIGHT_COUNT 64
 
 CBUFFER_START(_ChickenLight)
 int _DirectionLightCount;
 float4 _DirectionalLightColors[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionalLightDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionalLightShadowData[MAX_DIRECTIONAL_LIGHT_COUNT];
 //volume
-float4 _DirectionLightSampleData[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionLightScatterData[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionLightNoiseData[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionLightNoiseVelocity[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionalLightSampleData[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionalLightScatterData[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionalLightNoiseData[MAX_DIRECTIONAL_LIGHT_COUNT];
+float4 _DirectionalLightNoiseVelocity[MAX_DIRECTIONAL_LIGHT_COUNT];
 
 int _OtherLightCount;
 float4 _OtherLightColors[MAX_OTHER_LIGHT_COUNT];

@@ -120,15 +120,15 @@
                 float2 uv = input.uv;
                 //read depth and reconstruct world position
                 float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, uv);
-                float linearDepth = LinearEyeDepth(depth, _ZBufferParams);
+                float linear01Depth = Linear01Depth(depth, _ZBufferParams);
                 float3 rayStart = _WorldSpaceCameraPos;
                 float3 rayDir = input.positionWS - _WorldSpaceCameraPos;
-                rayDir *= linearDepth;
+                rayDir *= linear01Depth;
                 float rayLength = length(rayDir);
                 rayDir /= rayLength;
                 rayLength = min(rayLength, _MaxRayLength);
                 float4 color = RayMarch(input.positionCS.xy, rayStart, rayDir, rayLength);
-                if (linearDepth > 0.999999) {
+                if (linear01Depth > 0.999999) {
                     color.w = lerp(color.w, 1, SkyboxExtinction);
                 }
                 return color;

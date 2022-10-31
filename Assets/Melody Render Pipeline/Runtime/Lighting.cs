@@ -59,10 +59,10 @@ public class Lighting {
     #region Volumetric Data
     //Volumetric Light Data
     static int
-        dirLightSampleDataId = Shader.PropertyToID("_DirectionLightSampleData"),
-        dirLightScatterDataId = Shader.PropertyToID("_DirectionLightScatterData"),
-        dirLightNoiseDataId = Shader.PropertyToID("_DirectionLightNoiseData"),
-        dirLightNoiseVelocityId = Shader.PropertyToID("_DirectionLightNoiseVelocity");
+        dirLightSampleDataId = Shader.PropertyToID("_DirectionalLightSampleData"),
+        dirLightScatterDataId = Shader.PropertyToID("_DirectionalLightScatterData"),
+        dirLightNoiseDataId = Shader.PropertyToID("_DirectionalLightNoiseData"),
+        dirLightNoiseVelocityId = Shader.PropertyToID("_DirectionalLightNoiseVelocity");
     static Vector4[]
         dirLightSampleData = new Vector4[maxDirLightCount],
         dirLightScatterData = new Vector4[maxDirLightCount],

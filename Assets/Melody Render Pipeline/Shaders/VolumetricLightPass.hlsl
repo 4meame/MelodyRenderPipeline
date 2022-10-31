@@ -29,21 +29,20 @@ float2 NoiseVelocity;
 #if defined(_DIRECTION)
 	#define LightDirection _DirectionalLightDirections[Index]
 	#define LightColor _DirectionalLightColors[Index]
-	#define SampleCount _DirectionLightSampleData[Index].x
-	#define UseHeightFog _DirectionLightSampleData[Index].y
-	#define HeightScale _DirectionLightSampleData[Index].z
-	#define GroundHeight _DirectionLightSampleData[Index].w
-	#define Scattering  _DirectionLightScatterData[Index].x
-	#define Extinction _DirectionLightScatterData[Index].y
-	#define SkyboxExtinction _DirectionLightScatterData[Index].z
-	#define MieG _DirectionLightScatterData[Index].w
-	#define UseNoise _DirectionLightNoiseData[Index].x
-	#define NoiseScale _DirectionLightNoiseData[Index].y
-	#define NoiseIntensity _DirectionLightNoiseData[Index].z
-	#define NoiseOffset _DirectionLightNoiseData[Index].w
-	#define NoiseVelocity _DirectionLightNoiseVelocity[Index].xy
+	#define SampleCount _DirectionalLightSampleData[Index].x
+	#define UseHeightFog _DirectionalLightSampleData[Index].y
+	#define HeightScale _DirectionalLightSampleData[Index].z
+	#define GroundHeight _DirectionalLightSampleData[Index].w
+	#define Scattering  _DirectionalLightScatterData[Index].x
+	#define Extinction _DirectionalLightScatterData[Index].y
+	#define SkyboxExtinction _DirectionalLightScatterData[Index].z
+	#define MieG _DirectionalLightScatterData[Index].w
+	#define UseNoise _DirectionalLightNoiseData[Index].x
+	#define NoiseScale _DirectionalLightNoiseData[Index].y
+	#define NoiseIntensity _DirectionalLightNoiseData[Index].z
+	#define NoiseOffset _DirectionalLightNoiseData[Index].w
+	#define NoiseVelocity _DirectionalLightNoiseVelocity[Index].xy
 #elif defined(_SPOT) || defined(_POINT)
-	#define LightDirection _OtherLightDirections[Index]
 	#define LightPosition _OtherLightPositions[Index]
 	#define LightColor _OtherLightColors[Index]
 	#define SampleCount _OtherLightSampleData[Index].x
@@ -82,7 +81,7 @@ Varyings DefaultPassVertex(Attributes input) {
 //height fog
 void ApplyHeightFog(float3 posWS, inout float density) {
 	if (UseHeightFog == 1) {
-		density *= exp(-(posWS.y + GroundHeight) * HeightScale);
+		density *= exp(-(posWS.y - GroundHeight) * HeightScale);
 	}
 }
 
@@ -113,13 +112,13 @@ float4 RayMarch(float2 screenPos, float3 rayStart, float3 rayDir, float rayLengt
 	int stepCount = SampleCount;
 	float stepSize = rayLength / stepCount;
 	float3 step = rayDir * stepSize;
-	float3 currentPosition = rayStart + offset * rayDir;
+	float3 currentPosition = rayStart + offset * step;
 	float4 result = 0;
 	float cosAngle;
 	float extinction = 0;
 	float attenuation = 0;
 #if defined(_DIRECTION)
-	cosAngle = dot(LightDirection.xyz, -rayDir);
+	cosAngle = dot(-LightDirection.xyz, -rayDir);
 #elif defined(_SPOT) || defined(_POINT)
 	//we don't know about density between camera and light's volume, assume 0.5
 	extinction = length(_WorldSpaceCameraPos - currentPosition) * Extinction * 0.5;
