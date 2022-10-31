@@ -11,11 +11,12 @@ public partial class MelodyRenderPipeline : RenderPipeline {
     ShadowSettings shadowSettings;
     AtmosphereScatteringSettings atmosphereSettings;
     VolumetricCloudSettings cloudSettings;
+    VolumetricLightSettings fogSettings;
     PostFXSettings postFXSettings;
     CameraBufferSettings cameraBufferSettings;
     int colorLUTResolution;
 
-    public MelodyRenderPipeline(bool useDynamicBatching, bool useInstancing, bool useSRPBatcher, bool useLightsPerObject, ShadowSettings shadowSettings, AtmosphereScatteringSettings atmosphereSettings, VolumetricCloudSettings cloudSettings, PostFXSettings postFXSettings, CameraBufferSettings cameraBufferSettings, int colorLUTResolution, Shader cameraRendererShader) {
+    public MelodyRenderPipeline(bool useDynamicBatching, bool useInstancing, bool useSRPBatcher, bool useLightsPerObject, ShadowSettings shadowSettings, AtmosphereScatteringSettings atmosphereSettings, VolumetricCloudSettings cloudSettings, VolumetricLightSettings fogSettings, PostFXSettings postFXSettings, CameraBufferSettings cameraBufferSettings, int colorLUTResolution, Shader cameraRendererShader) {
         this.useDynamicBatching = useDynamicBatching;
         this.useInstancing = useInstancing;
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
@@ -23,6 +24,7 @@ public partial class MelodyRenderPipeline : RenderPipeline {
         this.shadowSettings = shadowSettings;
         this.atmosphereSettings = atmosphereSettings;
         this.cloudSettings = cloudSettings;
+        this.fogSettings = fogSettings;
         GraphicsSettings.lightsUseLinearIntensity = true;
         this.postFXSettings = postFXSettings;
         this.cameraBufferSettings = cameraBufferSettings;
@@ -34,7 +36,7 @@ public partial class MelodyRenderPipeline : RenderPipeline {
 
     protected override void Render(ScriptableRenderContext context, Camera[] cameras) {
         foreach (Camera camera in cameras) {
-            renderer.Render(context, camera, useDynamicBatching, useInstancing, useLightsPerObject, shadowSettings, atmosphereSettings, cloudSettings, postFXSettings, cameraBufferSettings, colorLUTResolution);
+            renderer.Render(context, camera, useDynamicBatching, useInstancing, useLightsPerObject, shadowSettings, atmosphereSettings, cloudSettings, fogSettings, postFXSettings, cameraBufferSettings, colorLUTResolution);
         }
     }
 }

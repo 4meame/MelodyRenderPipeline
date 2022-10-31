@@ -18,6 +18,7 @@ public class VolumetricLight {
     Camera camera;
     Vector2 bufferSize;
     bool useHDR;
+    VolumetricLightSettings fogSettings;
     ShadowSettings shadowSettings;
     Material globalMaterial;
     Mesh pointLightMesh;
@@ -27,12 +28,13 @@ public class VolumetricLight {
     Texture2D ditheringTexture;
     Texture3D noiseTexture;
     Vector2 cameraBufferSize;
-    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera, Vector2 bufferSize, bool useHDR, ShadowSettings shadowSettings) {
+    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera, Vector2 bufferSize, bool useHDR, VolumetricLightSettings fogSettings, ShadowSettings shadowSettings) {
         this.context = context;
         this.cullingResults = cullingResults;
         this.camera = camera;
         this.bufferSize = bufferSize;
         this.useHDR = useHDR;
+        this.fogSettings = fogSettings;
         this.shadowSettings = shadowSettings;
         if(pointLightMesh == null) {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -47,20 +49,33 @@ public class VolumetricLight {
         buffer.SetGlobalTexture("_DitherTexture", ditheringTexture);
         LoadNoise3dTexture();
         buffer.SetGlobalTexture("_NoiseTexture", noiseTexture);
+        if(globalMaterial == null) {
+            globalMaterial = new Material(Shader.Find("Hidden/Melody RP/VolumetricLight/Filter"));
+        }
+    }
+
+    public void CleanUp() {
+        if (volumeLightPreTexture != null) {
+            volumeLightPreTexture.Release();
+        }
     }
 
     void UpdateRenderTexture() {
-        Vector2 halfBufferSize = new Vector2(bufferSize.x / 2, bufferSize.y / 2);
         Vector2 currentBufferSize = new Vector2(bufferSize.x, bufferSize.y);
+        Vector2 halfBufferSize = new Vector2(currentBufferSize.x / 2, currentBufferSize.y / 2);
         if (cameraBufferSize != currentBufferSize) {
             cameraBufferSize = currentBufferSize;
-            volumeLightPreTexture = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            volumeLightPreTexture = RenderTexture.GetTemporary((int)halfBufferSize.x, (int)halfBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             volumeLightPreTexture.filterMode = FilterMode.Bilinear;
             volumeLightPreTexture.name = "Volumetric Pre Light";
         }
     }
 
-    public void PreRenderVolumetric(bool useVolumetric, int sourceId) {
+    public void BilateralFilter() {
+
+    }
+
+    public void PreRenderVolumetric(bool useVolumetric) {
         if (!useVolumetric || camera.cameraType == CameraType.Preview) {
             return;
         }
@@ -80,7 +95,7 @@ public class VolumetricLight {
                     break;
                 case LightType.Directional:
                     if (dirLightCount < maxDirLightCount) {
-                        SetUpDirectionalVolume(dirLightCount++, visibleLight, sourceId);
+                        SetUpDirectionalVolume(dirLightCount++, visibleLight);
                     }
                     break;
                 case LightType.Spot:
@@ -122,11 +137,11 @@ public class VolumetricLight {
         } else {
             material.DisableKeyword("_RECEIVE_SHADOWS");
         }
-        //buffer.SetRenderTarget(volumeLightPreTexture);
+        buffer.SetRenderTarget(volumeLightPreTexture);
         buffer.DrawMesh(pointLightMesh, world, material, 0, pass);
     }
 
-    void SetUpDirectionalVolume(int index, VisibleLight visibleLight, int sourceId) {
+    void SetUpDirectionalVolume(int index, VisibleLight visibleLight) {
         VolumetricLightComponent component = visibleLight.light.GetComponent<VolumetricLightComponent>();
         if (component == null || !component.isActiveAndEnabled) {
             return;
@@ -150,7 +165,7 @@ public class VolumetricLight {
         } else {
             material.DisableKeyword("_RECEIVE_SHADOWS");
         }
-        buffer.Blit(null, sourceId, material, pass);
+        buffer.Blit(null, volumeLightPreTexture, material, pass);
     }
 
     void SetUpSpotVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {
@@ -190,7 +205,7 @@ public class VolumetricLight {
         } else {
             material.DisableKeyword("_RECEIVE_SHADOWS");
         }
-        //buffer.SetRenderTarget(volumeLightPreTexture);
+        buffer.SetRenderTarget(volumeLightPreTexture);
         buffer.DrawMesh(spotLightMesh, world, material, 0, pass);
     }
 

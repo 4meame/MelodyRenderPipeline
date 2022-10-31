@@ -14,6 +14,8 @@ public class MelodyRenderPipelineAsset : RenderPipelineAsset {
     [SerializeField]
     VolumetricCloudSettings cloud = default;
     [SerializeField]
+    VolumetricLightSettings fog = default;
+    [SerializeField]
     PostFXSettings postFXSettings = default;
     [SerializeField]
     CameraBufferSettings cameraBufferSettings = new CameraBufferSettings { allowHDR = true, renderScale = 1.0f, renderingPath = CameraBufferSettings.RenderingPath.Forward,
@@ -30,6 +32,6 @@ public class MelodyRenderPipelineAsset : RenderPipelineAsset {
     //TODO: use global pipeline resources SO to collect all shaders,textures,material and so on
     //MelodyRenderPipelineResources pipelineResources;
     protected override RenderPipeline CreatePipeline() {
-        return new MelodyRenderPipeline(useDynamicBachting, useInstancing, useSRPBatcher, useLightsPerObject, shadows, atmosphere, cloud, postFXSettings, cameraBufferSettings, (int)colorLUTResolution, cameraRendererShader);
+        return new MelodyRenderPipeline(useDynamicBachting, useInstancing, useSRPBatcher, useLightsPerObject, shadows, atmosphere, cloud, fog, postFXSettings, cameraBufferSettings, (int)colorLUTResolution, cameraRendererShader);
     }
 }

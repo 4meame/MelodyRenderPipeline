@@ -29,7 +29,9 @@ public class MotionVectorRender {
         this.cullingResults = cullingResults;
         this.bufferSize = bufferSize;
         this.taa = taa;
-        motionVectorMaterial = new Material(Shader.Find("Hidden/Melody RP/DrawMotionVector"));
+        if (motionVectorMaterial == null) {
+            motionVectorMaterial = new Material(Shader.Find("Hidden/Melody RP/DrawMotionVector"));
+        }
     }
 
     public void Render(int sourceId, int motionVectorTextureId, int depthAttachmentId) {

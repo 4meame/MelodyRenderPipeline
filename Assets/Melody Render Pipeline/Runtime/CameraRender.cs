@@ -88,7 +88,7 @@ public partial class CameraRender {
 
     static int srcBlendId = Shader.PropertyToID("_CameraSrcBlend"),
                dstBlendId = Shader.PropertyToID("_CameraDstBlend");
-    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, ShadowSettings shadowSettings, AtmosphereScatteringSettings atmosphereSettings, VolumetricCloudSettings cloudSettings, PostFXSettings postFXSettings, CameraBufferSettings cameraBufferSettings, int colorLUTResolution) {
+    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, ShadowSettings shadowSettings, AtmosphereScatteringSettings atmosphereSettings, VolumetricCloudSettings cloudSettings, VolumetricLightSettings fogSettings, PostFXSettings postFXSettings, CameraBufferSettings cameraBufferSettings, int colorLUTResolution) {
         this.context = context;
         this.camera = camera;
 
@@ -153,7 +153,7 @@ public partial class CameraRender {
         var renderCloud = cloudSettings.enabled && cameraSettings.allowVolumetricCloud;
         #endregion
         #region Volumetric Light
-        var useVolumetricLight = cameraSettings.allowVolumetricLight;
+        var useVolumetricLight = fogSettings.enabled && cameraSettings.allowVolumetricLight;
         #endregion
         #region Atmosphere Scattering
         var atmosScatter = cameraSettings.allowAtmosFog;
@@ -191,7 +191,7 @@ public partial class CameraRender {
             DrawDepthNormal(useDepthNormalTexture);
         }
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
-        volumetricLight.Setup(context, cullingResults, camera, bufferSize, useHDR, shadowSettings);
+        volumetricLight.Setup(context, cullingResults, camera, bufferSize, useHDR, fogSettings, shadowSettings);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
@@ -241,7 +241,7 @@ public partial class CameraRender {
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
         //draw volumetric light
-        volumetricLight.PreRenderVolumetric(useVolumetricLight, colorAttachmentId);
+        volumetricLight.PreRenderVolumetric(useVolumetricLight);
         //draw SSPR renders
         sspr.Render();
         //screen space feature debug or combine
@@ -594,6 +594,7 @@ public partial class CameraRender {
         ssao.CleanUp();
         ssr.CleanUp();
         volumetricCloud.CleanUp();
+        volumetricLight.CleanUp();
         #region Lens Flare
         LensFlareCommon.Dispose();
         #endregion
