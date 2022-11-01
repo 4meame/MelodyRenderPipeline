@@ -18,6 +18,7 @@ public class VolumetricLight {
     Camera camera;
     Vector2 bufferSize;
     bool useHDR;
+    bool useVolumetric;
     VolumetricLightSettings fogSettings;
     ShadowSettings shadowSettings;
     Material globalMaterial;
@@ -25,15 +26,19 @@ public class VolumetricLight {
     Mesh spotLightMesh;
     Vector4[] frustumCorners = new Vector4[4];
     RenderTexture volumeLightPreTexture;
+    RenderTexture halfVolumeLightPreTexture;
+    RenderTexture halfDepthTexture;
+    RenderTexture sceneColor;
     Texture2D ditheringTexture;
     Texture3D noiseTexture;
     Vector2 cameraBufferSize;
-    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera, Vector2 bufferSize, bool useHDR, VolumetricLightSettings fogSettings, ShadowSettings shadowSettings) {
+    public void Setup(ScriptableRenderContext context, CullingResults cullingResults, Camera camera, Vector2 bufferSize, bool useHDR, bool useVolumetric, VolumetricLightSettings fogSettings, ShadowSettings shadowSettings) {
         this.context = context;
         this.cullingResults = cullingResults;
         this.camera = camera;
         this.bufferSize = bufferSize;
         this.useHDR = useHDR;
+        this.useVolumetric = useVolumetric;
         this.fogSettings = fogSettings;
         this.shadowSettings = shadowSettings;
         if(pointLightMesh == null) {
@@ -55,29 +60,90 @@ public class VolumetricLight {
     }
 
     public void CleanUp() {
+        //this will clear(Z/stencil) before drawing every frame
         if (volumeLightPreTexture != null) {
             volumeLightPreTexture.Release();
+        }
+        if (halfVolumeLightPreTexture != null) {
+            halfVolumeLightPreTexture.Release();
+        }
+        if (halfDepthTexture != null) {
+            halfDepthTexture.Release();
+        }
+        if (sceneColor != null) {
+            sceneColor.Release();
         }
     }
 
     void UpdateRenderTexture() {
         Vector2 currentBufferSize = new Vector2(bufferSize.x, bufferSize.y);
-        Vector2 halfBufferSize = new Vector2(currentBufferSize.x / 2, currentBufferSize.y / 2);
         if (cameraBufferSize != currentBufferSize) {
             cameraBufferSize = currentBufferSize;
-            volumeLightPreTexture = RenderTexture.GetTemporary((int)halfBufferSize.x, (int)halfBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            volumeLightPreTexture.filterMode = FilterMode.Bilinear;
-            volumeLightPreTexture.name = "Volumetric Pre Light";
+            if (fogSettings.resolution == VolumetricLightSettings.Resolution.Half) {
+                halfVolumeLightPreTexture = RenderTexture.GetTemporary((int)cameraBufferSize.x / 2, (int)cameraBufferSize.y / 2, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+                halfVolumeLightPreTexture.filterMode = FilterMode.Bilinear;
+                halfVolumeLightPreTexture.name = "Half Volumetric Pre Light";
+                volumeLightPreTexture = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+                volumeLightPreTexture.filterMode = FilterMode.Bilinear;
+                volumeLightPreTexture.name = "Volumetric Pre Light";
+                halfDepthTexture = RenderTexture.GetTemporary((int)cameraBufferSize.x / 2, (int)cameraBufferSize.y / 2, 0, RenderTextureFormat.RFloat);
+                halfDepthTexture.filterMode = FilterMode.Point;
+                halfDepthTexture.name = "Half Depth Texture";
+            }
+            else {
+                volumeLightPreTexture = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+                volumeLightPreTexture.filterMode = FilterMode.Bilinear;
+                volumeLightPreTexture.name = "Volumetric Pre Light";
+            }
+            sceneColor = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            sceneColor.filterMode = FilterMode.Bilinear;
+            sceneColor.name = "Current Color";
         }
     }
 
-    public void BilateralFilter() {
-
-    }
-
-    public void PreRenderVolumetric(bool useVolumetric) {
+    public void BilateralFilter(int sourceId) {
         if (!useVolumetric || camera.cameraType == CameraType.Preview) {
             return;
+        }
+        //store scene color at once
+        buffer.Blit(sourceId, sceneColor, globalMaterial, 7);
+        if (fogSettings.resolution == VolumetricLightSettings.Resolution.Half) {
+            RenderTexture temp = RenderTexture.GetTemporary((int)cameraBufferSize.x / 2, (int)cameraBufferSize.y / 2, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            temp.name = "Volume Light Temp";
+            temp.filterMode = FilterMode.Bilinear;
+            globalMaterial.SetTexture("_HalfResDepthTexture", halfDepthTexture);
+            globalMaterial.SetTexture("_HalfResColorTexture", halfVolumeLightPreTexture);
+            buffer.Blit(halfVolumeLightPreTexture, temp, globalMaterial, 2);
+            buffer.Blit(temp, halfVolumeLightPreTexture, globalMaterial, 3);
+            buffer.Blit(halfVolumeLightPreTexture, volumeLightPreTexture, globalMaterial, 5);
+            RenderTexture.ReleaseTemporary(temp);
+        }
+        else {
+            RenderTexture temp = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            temp.filterMode = FilterMode.Bilinear;
+            temp.name = "Volume Light Temp";
+            buffer.Blit(volumeLightPreTexture, temp, globalMaterial, 0);
+            buffer.Blit(temp, volumeLightPreTexture, globalMaterial, 1);
+            RenderTexture.ReleaseTemporary(temp);
+        }
+        globalMaterial.SetTexture("_Main", volumeLightPreTexture);
+        globalMaterial.SetTexture("_Source", sceneColor);
+        buffer.Blit(null, sourceId, globalMaterial, 6);
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
+    }
+
+    public void PreRenderVolumetric(int depthId) {
+        if (!useVolumetric || camera.cameraType == CameraType.Preview) {
+            return;
+        }
+        if(fogSettings.resolution == VolumetricLightSettings.Resolution.Half)
+        {
+            buffer.Blit(null, halfDepthTexture, globalMaterial, 4);
+            buffer.SetGlobalTexture("_DepthTexture", halfDepthTexture);
+        }
+        else {
+            buffer.SetGlobalTexture("_DepthTexture", depthId);
         }
         NativeArray<VisibleLight> visibleLights = cullingResults.visibleLights;
         int dirLightCount = 0, otherLightCount = 0;
@@ -129,6 +195,9 @@ public class VolumetricLight {
         material.DisableKeyword("_DIRECTION");
         material.DisableKeyword("_SPOT");
         material.EnableKeyword("_POINT");
+        globalMaterial.DisableKeyword("_DIRECTION");
+        globalMaterial.DisableKeyword("_SPOT");
+        globalMaterial.EnableKeyword("_POINT");
         bool forceShadowsOff = false;
         if ((light.transform.position - camera.transform.position).magnitude >= shadowSettings.maxDistance)
             forceShadowsOff = true;
@@ -137,7 +206,7 @@ public class VolumetricLight {
         } else {
             material.DisableKeyword("_RECEIVE_SHADOWS");
         }
-        buffer.SetRenderTarget(volumeLightPreTexture);
+        buffer.SetRenderTarget(fogSettings.resolution == VolumetricLightSettings.Resolution.Half ? halfVolumeLightPreTexture : volumeLightPreTexture);
         buffer.DrawMesh(pointLightMesh, world, material, 0, pass);
     }
 
@@ -160,12 +229,15 @@ public class VolumetricLight {
         material.EnableKeyword("_DIRECTION");
         material.DisableKeyword("_SPOT");
         material.DisableKeyword("_POINT");
+        globalMaterial.EnableKeyword("_DIRECTION");
+        globalMaterial.DisableKeyword("_SPOT");
+        globalMaterial.DisableKeyword("_POINT");
         if (light.shadows != LightShadows.None) {
             material.EnableKeyword("_RECEIVE_SHADOWS");
         } else {
             material.DisableKeyword("_RECEIVE_SHADOWS");
         }
-        buffer.Blit(null, volumeLightPreTexture, material, pass);
+        buffer.Blit(null, fogSettings.resolution == VolumetricLightSettings.Resolution.Half ? halfVolumeLightPreTexture : volumeLightPreTexture, material, pass);
     }
 
     void SetUpSpotVolume(int index, VisibleLight visibleLight, Matrix4x4 viewProj) {
@@ -200,12 +272,15 @@ public class VolumetricLight {
         material.DisableKeyword("_DIRECTION");
         material.EnableKeyword("_SPOT");
         material.DisableKeyword("_POINT");
+       globalMaterial.DisableKeyword("_DIRECTION");
+       globalMaterial.EnableKeyword("_SPOT");
+       globalMaterial.DisableKeyword("_POINT");
         if (light.shadows != LightShadows.None && !forceShadowsOff) {
             material.EnableKeyword("_RECEIVE_SHADOWS");
         } else {
             material.DisableKeyword("_RECEIVE_SHADOWS");
         }
-        buffer.SetRenderTarget(volumeLightPreTexture);
+        buffer.SetRenderTarget(fogSettings.resolution == VolumetricLightSettings.Resolution.Half ? halfVolumeLightPreTexture : volumeLightPreTexture);
         buffer.DrawMesh(spotLightMesh, world, material, 0, pass);
     }
 

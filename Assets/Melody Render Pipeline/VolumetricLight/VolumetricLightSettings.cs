@@ -9,5 +9,5 @@ public class VolumetricLightSettings {
         Half,
         Full
     }
-
+    public Resolution resolution = Resolution.Full;
 }

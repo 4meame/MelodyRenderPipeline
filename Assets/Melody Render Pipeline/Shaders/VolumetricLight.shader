@@ -119,7 +119,7 @@
             float4 fragDir(vertData input) : SV_TARGET{
                 float2 uv = input.uv;
                 //read depth and reconstruct world position
-                float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, uv);
+                float depth = SAMPLE_DEPTH_TEXTURE(_DepthTexture, sampler_point_clamp, uv);
                 float linear01Depth = Linear01Depth(depth, _ZBufferParams);
                 float3 rayStart = _WorldSpaceCameraPos;
                 float3 rayDir = input.positionWS - _WorldSpaceCameraPos;

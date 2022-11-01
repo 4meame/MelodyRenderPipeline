@@ -1,14 +1,14 @@
 ﻿Shader "Hidden/Melody RP/VolumetricLight/Filter"
 {
+    Properties
+    {
+        _MainTex("Texture", any) = "" {}
+    }
+
     SubShader
     {
-        Cull Off
-        ZWrite Off
-        ZTest Always
-
         HLSLINCLUDE
         #include "../ShaderLibrary/Common.hlsl"
-
         //--------------------------------------------------------------------------------------------
         //downsample, bilateral blur and upsample config
         //--------------------------------------------------------------------------------------------        
@@ -22,8 +22,9 @@
 
         TEXTURE2D(_HalfResDepthTexture);
         TEXTURE2D(_HalfResColorTexture);
-        TEXTURE2D(_SourceTex);
+        TEXTURE2D(_MainTex);
         float4 _HalfResDepthTexture_TexelSize;
+        float4 _MainTex_ST;
         
         struct Attributes {
             float4 vertex : POSITION;
@@ -151,7 +152,7 @@
             //make it really strong
             const float deviation = kernelRadius / GAUSS_BLUR_DEVIATION;
             float2 uv = input.uv;
-            float4 centerColor = SAMPLE_TEXTURE2D(_SourceTex, sampler_linear_clamp, uv);
+            float4 centerColor = SAMPLE_TEXTURE2D(_MainTex, sampler_linear_clamp, uv);
             float3 color = centerColor.xyz;
             float centerDepth = LinearEyeDepth(SAMPLE_TEXTURE2D(depth, sampler_point_clamp, uv), _ZBufferParams).x;
             float weightSum = 0;
@@ -162,7 +163,7 @@
             [unroll] 
             for (int i = -kernelRadius; i < 0; i += 1) {
                 float2 offset = (direction * i);
-                float3 sampleColor = SAMPLE_TEXTURE2D_OFFSET(_SourceTex, sampler_linear_clamp, uv, offset);
+                float3 sampleColor = SAMPLE_TEXTURE2D_OFFSET(_MainTex, sampler_linear_clamp, uv, offset);
                 float sampleDepth = LinearEyeDepth(SAMPLE_DEPTH_OFFSET(depth, sampler_point_clamp, uv, offset), _ZBufferParams);
                 float depthDiff = abs(centerDepth - sampleDepth);
                 float dFactor = depthDiff * BLUR_DEPTH_FACTOR;
@@ -175,7 +176,7 @@
             [unroll]
             for (i = 1; i <= kernelRadius; i += 1) {
                 float2 offset = (direction * i);
-                float3 sampleColor = SAMPLE_TEXTURE2D_OFFSET(_SourceTex, sampler_linear_clamp, uv, offset);
+                float3 sampleColor = SAMPLE_TEXTURE2D_OFFSET(_MainTex, sampler_linear_clamp, uv, offset);
                 float sampleDepth = LinearEyeDepth(SAMPLE_DEPTH_OFFSET(depth, sampler_point_clamp, uv, offset), _ZBufferParams);
                 float depthDiff = abs(centerDepth - sampleDepth);
                 float dFactor = depthDiff * BLUR_DEPTH_FACTOR;
@@ -193,6 +194,9 @@
         //pass 0 - horizontal blur (hires)
         Pass
         {
+            Cull Off
+            ZWrite Off
+            ZTest Always
             Name "horizontal blur (hires)"
             HLSLPROGRAM
             #pragma target 3.5
@@ -210,6 +214,9 @@
         //pass 1 - vertical blur (hires)
         Pass
         {
+            Cull Off
+            ZWrite Off
+            ZTest Always
             Name "vertical blur (hires)"
             HLSLPROGRAM
             #pragma target 3.5
@@ -227,6 +234,9 @@
         //pass 2 - horizontal blur (lores)
         Pass
         {
+            Cull Off
+            ZWrite Off
+            ZTest Always
             Name "horizontal blur (lores)"
             HLSLPROGRAM
             #pragma target 3.5
@@ -244,6 +254,9 @@
         //pass 3 - vertical blur (lores)
         Pass
         {
+            Cull Off
+            ZWrite Off
+            ZTest Always
             Name "vertical blur (lores)"
             HLSLPROGRAM
             #pragma target 3.5
@@ -262,6 +275,9 @@
 		//pass 4 - downsample depth to half
 		Pass
 		{
+            Cull Off
+            ZWrite Off
+            ZTest Always
             Name "downsample depth to half"
             HLSLPROGRAM
             #pragma target 3.5
@@ -285,7 +301,9 @@
 		Pass
 		{
             Blend One Zero
-
+            Cull Off
+            ZWrite Off
+            ZTest Always
             Name "bilateral upsample"
             HLSLPROGRAM
             #pragma target 3.5
@@ -297,10 +315,83 @@
                 return vertUpSample(i, _HalfResDepthTexture_TexelSize);
 			}
 
-			float4 frag(UpSample input) : SV_Target
+			float4 frag(UpSample input) : SV_TARGET
 			{
 				return BilateralUpSample(input, _CameraDepthTexture, _HalfResDepthTexture, _HalfResColorTexture);
 			}
+
+            ENDHLSL
+		}
+
+        //pass 6 - combine add
+		Pass
+		{
+            Blend One Zero
+            Cull Off
+            ZWrite Off
+            ZTest Always
+            Name "combine"
+            HLSLPROGRAM
+            #pragma target 3.5
+			#pragma vertex vertShader
+			#pragma fragment fragShader		
+            #pragma multi_compile _ _DIRECTION _SPOT _POINT
+            TEXTURE2D(_Main);
+            TEXTURE2D(_Source);
+            float4 _Main_ST;
+
+            Varyings vertShader(Attributes i)
+            {
+                Varyings o;
+                o.vertex = TransformObjectToHClip(i.vertex);
+                o.uv = TRANSFORM_TEX(i.uv, _Main);
+                return o;
+            }
+
+            float4 fragShader(Varyings input) : SV_TARGET
+            {
+                float4 main = SAMPLE_TEXTURE2D(_Main, sampler_linear_clamp, input.uv);
+                //some graphics APIs have the texture V coordinate start at the top while others have it start at the bottom
+                if (_ProjectionParams.x < 0.0) {
+                    input.uv.y = 1.0 - input.uv.y;
+                }
+                float4 source = SAMPLE_TEXTURE2D(_Source, sampler_linear_clamp, input.uv);
+#if defined(_DIRECTION)
+                source *= main.w;
+#endif
+                source.xyz += main.xyz;
+                return float4(source.xyz, 1);
+            }
+
+            ENDHLSL
+		}
+
+        //pass 7 - copy
+		Pass
+		{
+            Name "copy"
+            HLSLPROGRAM
+            #pragma target 3.5
+			#pragma vertex vertShader
+			#pragma fragment fragShader		
+
+            Varyings vertShader(Attributes i)
+            {
+                Varyings o;
+                o.vertex = TransformObjectToHClip(i.vertex);
+                o.uv = TRANSFORM_TEX(i.uv, _MainTex);
+                return o;
+            }
+
+            float4 fragShader(Varyings input) : SV_TARGET
+            {
+                //some graphics APIs have the texture V coordinate start at the top while others have it start at the bottom
+                if (_ProjectionParams.x < 0.0) {
+                    input.uv.y = 1.0 - input.uv.y;
+                }
+                float4 main = SAMPLE_TEXTURE2D(_MainTex, sampler_linear_clamp, input.uv);
+                return main;
+            }
 
             ENDHLSL
 		}

@@ -5,6 +5,7 @@ int Index;
 float4x4 _WorldViewProj;
 float3 _CameraForward;
 const float _MaxRayLength;
+TEXTURE2D(_DepthTexture);
 TEXTURE3D(_NoiseTexture);
 SAMPLER(sampler_NoiseTexture);
 TEXTURE2D(_DitherTexture);
@@ -182,7 +183,7 @@ float _Range;
 float4 fragPointInside(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV.xy / input.screenUV.w;
 	//read depth and reconstruct world position
-	float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, uv);
+	float depth = SAMPLE_DEPTH_TEXTURE(_DepthTexture, sampler_point_clamp, uv);
 	float3 rayStart = _WorldSpaceCameraPos;
 	float3 rayEnd = input.positionWS;
 	float3 rayDir = (rayEnd - rayStart);
@@ -197,7 +198,7 @@ float4 fragPointInside(Varyings input) : SV_TARGET{
 float4 fragPointOutside(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV.xy / input.screenUV.w;
 	//read depth and reconstruct world position
-	float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, uv);
+	float depth = SAMPLE_DEPTH_TEXTURE(_DepthTexture, sampler_point_clamp, uv);
 	float3 rayStart = _WorldSpaceCameraPos;
 	float3 rayEnd = input.positionWS;
 	float3 rayDir = (rayEnd - rayStart);
@@ -262,7 +263,7 @@ float RayPlaneIntersect(in float3 planeNormal, in float planeD, in float3 rayOri
 float4 fragSpotInside(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV.xy / input.screenUV.w;
 	//read depth and reconstruct world position
-	float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, uv);
+	float depth = SAMPLE_DEPTH_TEXTURE(_DepthTexture, sampler_point_clamp, uv);
 	float3 rayStart = _WorldSpaceCameraPos;
 	float3 rayEnd = input.positionWS;
 	float3 rayDir = (rayEnd - rayStart);
@@ -277,7 +278,7 @@ float4 fragSpotInside(Varyings input) : SV_TARGET{
 float4 fragSpotOutside(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV.xy / input.screenUV.w;
 	//read depth and reconstruct world position
-	float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, uv);
+	float depth = SAMPLE_DEPTH_TEXTURE(_DepthTexture, sampler_point_clamp, uv);
 	float3 rayStart = _WorldSpaceCameraPos;
 	float3 rayEnd = input.positionWS;
 	float3 rayDir = (rayEnd - rayStart);

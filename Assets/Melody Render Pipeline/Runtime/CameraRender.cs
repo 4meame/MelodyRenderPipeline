@@ -191,7 +191,7 @@ public partial class CameraRender {
             DrawDepthNormal(useDepthNormalTexture);
         }
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
-        volumetricLight.Setup(context, cullingResults, camera, bufferSize, useHDR, fogSettings, shadowSettings);
+        volumetricLight.Setup(context, cullingResults, camera, bufferSize, useHDR, useVolumetricLight, fogSettings, shadowSettings);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
@@ -241,7 +241,7 @@ public partial class CameraRender {
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
         //draw volumetric light
-        volumetricLight.PreRenderVolumetric(useVolumetricLight);
+        volumetricLight.PreRenderVolumetric(depthAttachmentId);
         //draw SSPR renders
         sspr.Render();
         //screen space feature debug or combine
@@ -258,6 +258,7 @@ public partial class CameraRender {
             ExecuteBuffer();
             atmosphere.RenderFog(colorAttachmentId);
         }
+        volumetricLight.BilateralFilter(colorAttachmentId);
         autoExposure.DoAutoExposure(colorAttachmentId);
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
