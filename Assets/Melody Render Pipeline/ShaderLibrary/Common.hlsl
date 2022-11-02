@@ -228,6 +228,13 @@ inline float4 EncodeDepthNormal(float depth, float3 normal) {
 	return enc;
 }
 
+inline float3 UnpackDerivativeHeight(float4 textureData) {
+	float3 dh = textureData.agb;
+	dh.xy = dh.xy * 2 - 1;
+	return dh;
+}
+
+
 //Fragment data
 SAMPLER(sampler_trilinear_clamp);
 SAMPLER(sampler_trilinear_repeat);

@@ -25,10 +25,16 @@ TEXTURE2D(_NormalMap);
 SAMPLER(sampler_NormalMap);
 TEXTURE2D(_DetailNormalMap);
 SAMPLER(sampler_DetailNormalMap);
+//screen space
 TEXTURE2D(_SSR_Filtered);
 SAMPLER(sampler_SSR_Filtered);
 TEXTURE2D(_SSAO_Filtered);
 SAMPLER(sampler_SSAO_Filtered);
+//flow
+TEXTURE2D(_FlowMap);
+SAMPLER(sampler_FlowMap);
+TEXTURE2D(_DerivHeightMap);
+SAMPLER(sampler_DerivHeightMap);
 
 //Support per-instance material data, replace variable with an array reference WHEN NEEDED
 UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
@@ -46,6 +52,15 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _DetailNormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _ZWrite)
+	//flow
+	UNITY_DEFINE_INSTANCED_PROP(float, _UJump)
+	UNITY_DEFINE_INSTANCED_PROP(float, _VJump)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Tilling)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Speed)
+	UNITY_DEFINE_INSTANCED_PROP(float, _FlowStrength)
+	UNITY_DEFINE_INSTANCED_PROP(float, _FlowOffset)
+	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScale)
+	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScaleModulated)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 struct Attributes {
@@ -150,6 +165,36 @@ void LitPassFragment(Varyings input,
 	float3 detailNormal = DecodeNormal(detailNormalMap, detailNormalScale) * detailMask;
 	//UDN Blending
 	normal = normalize(float3(normal.xy + detailNormal.xy, normal.z));
+
+#if defined(_FLOW)
+	//sample flow map 
+	float4 flowMap = SAMPLE_TEXTURE2D(_FlowMap, sampler_FlowMap, input.baseUV);
+	//access material property via UNITY_ACCESS_INSTANCED_PROP( , );
+	float ujump = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _UJump);
+	float vjump = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _VJump);
+	float tilling = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Tilling);
+	float speed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Speed);
+	float flowStrength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlowStrength);
+	float flowOffset = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlowOffset);
+	float heightScale = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeightScale);
+	float heightScaleModulated = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeightScaleModulated);
+	//calculate flow uv
+	float2 flowVector = flowMap.rg * 2 - 1;
+	flowVector *= flowStrength;
+	float noise = flowMap.a;
+	float time = _Time.y * speed + noise;
+	float2 jump = float2(ujump, vjump);
+	float3 uvwA = FlowUV(input.baseUV, flowVector, jump, flowOffset, tilling, time, false);
+	float3 uvwB = FlowUV(input.baseUV, flowVector, jump, flowOffset, tilling, time, true);
+	float4 flowA = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uvwA.xy) * uvwA.z;
+	float4 flowB = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uvwB.xy) * uvwB.z;
+	base = flowA + flowB;
+	//stronger flow gets higher wave
+	float finalHeightScale = length(flowVector) * heightScaleModulated * heightScale;
+	float3 dhA =UnpackDerivativeHeight(SAMPLE_TEXTURE2D(_DerivHeightMap, sampler_DerivHeightMap, uvwA.xy)) * uvwA.z * finalHeightScale;
+	float3 dhB =UnpackDerivativeHeight(SAMPLE_TEXTURE2D(_DerivHeightMap, sampler_DerivHeightMap, uvwB.xy)) * uvwB.z * finalHeightScale;
+	normal = normalize(float3(-(dhA.xy + dhB.xy), 1));
+#endif
 
 #if defined(_CLIPPING)
 //access material property via UNITY_ACCESS_INSTANCED_PROP( , );
