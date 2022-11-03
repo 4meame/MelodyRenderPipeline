@@ -36,6 +36,9 @@ public class MotionBlur {
     }
 
     public void DoMotionBlur(int from) {
+        if (camera.cameraType != CameraType.Game) {
+            return;
+        }
         float shutterAngle = 0;
         float frameBlending = 0;
         switch (settings.mode) {
@@ -84,8 +87,12 @@ public class MotionBlur {
     }
 
     public void Combine(int sourceId) {
-        if (settings.mode == MotionBlurSettings.Mode.None)
+        if (camera.cameraType != CameraType.Game) {
             return;
+        }
+        if (settings.mode == MotionBlurSettings.Mode.None) {
+            return;
+        }
         buffer.Blit(motionResultId, sourceId);
         ExecuteBuffer();
     }
