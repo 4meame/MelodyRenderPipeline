@@ -53,14 +53,10 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void Render(int sourceId) {
-        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
-            Shader.SetGlobalVector("_Jitter", Vector4.zero);
+        if (camera.cameraType != CameraType.Game) {
             return;
         }
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {       
-            if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
-                return;
-            }
             buffer.name = "Temporal Antialiasing";
             buffer.BeginSample("Copy Current Frame");
             buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
@@ -126,9 +122,6 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void Refresh() {
-        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
-            return;
-        }
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {
             //for camera motion vector
             previousVP = nonJitteredVP;
@@ -158,7 +151,7 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void CopyLastFrameRT(int lastDepth, int lastMV) {
-        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+        if (camera.cameraType != CameraType.Game) {
             return;
         }
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {

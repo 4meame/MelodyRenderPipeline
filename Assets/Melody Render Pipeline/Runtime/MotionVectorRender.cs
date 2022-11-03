@@ -35,7 +35,7 @@ public class MotionVectorRender {
     }
 
     public void Render(int sourceId, int motionVectorTextureId, int depthAttachmentId) {
-        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+        if (camera.cameraType != CameraType.Game) {
             return;
         }
         if (taa.motionVectorEnabled) {
@@ -93,7 +93,7 @@ public class MotionVectorRender {
     }
 
     public void Refresh() {
-        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+        if (camera.cameraType != CameraType.Game) {
             return;
         }
         if (taa.motionVectorEnabled) {
