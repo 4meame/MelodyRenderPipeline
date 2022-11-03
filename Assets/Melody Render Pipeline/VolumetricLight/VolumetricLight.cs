@@ -102,7 +102,7 @@ public class VolumetricLight {
     }
 
     public void BilateralFilter(int sourceId) {
-        if (!useVolumetric || camera.cameraType == CameraType.Preview) {
+        if (!useVolumetric || camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
             return;
         }
         //store scene color at once
@@ -134,7 +134,7 @@ public class VolumetricLight {
     }
 
     public void PreRenderVolumetric(int depthId) {
-        if (!useVolumetric || camera.cameraType == CameraType.Preview) {
+        if (!useVolumetric || camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
             return;
         }
         if(fogSettings.resolution == VolumetricLightSettings.Resolution.Half)
