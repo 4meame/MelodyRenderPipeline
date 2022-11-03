@@ -55,9 +55,11 @@ public class VolumetricCloud {
         noise = Object.FindObjectOfType<CloudNoiseGenerator>();
         painter = Object.FindObjectOfType<CoveragePainter>();
         this.useHDR = useHDR;
-
         if (cloudSharedProperties == null) {
             cloudSharedProperties = new SharedProperties();
+        }
+        if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
+            return;
         }
         UpdateGradientVectors();
         UpdateSharedFromPublicProperties();
@@ -195,7 +197,7 @@ public class VolumetricCloud {
         buffer.ReleaseTemporaryRT(preDepthId);
     }
 
-    public void UpdateSharedFromPublicProperties() {
+    void UpdateSharedFromPublicProperties() {
         Vector3 earthCenter = settings.earthCenter;
         float earthRadius = settings.earthRadius;
         coverageOffset.Set(settings.coverageOffsetX, settings.coverageOffsetY);
@@ -245,7 +247,7 @@ public class VolumetricCloud {
         return new Vector4(a, b, c, d);
     }
 
-    public void UpdateAnimatedProperties() {
+    void UpdateAnimatedProperties() {
         coverageOffsetPerFrame = settings.coverageOffsetPerFrame * settings.speed;
         baseOffset = settings.baseOffsetPerFrame * settings.speed;
         detailOffset = settings.detailOffsetPerFrame * settings.speed;

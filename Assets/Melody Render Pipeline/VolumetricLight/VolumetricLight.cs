@@ -80,6 +80,10 @@ public class VolumetricLight {
 
     void UpdateRenderTexture() {
         Vector2 currentBufferSize = new Vector2(bufferSize.x, bufferSize.y);
+        if(currentBufferSize.x < 350 || currentBufferSize.y < 200) {
+            //scene preview camera exit
+            return;
+        }
         if (cameraBufferSize != currentBufferSize) {
             cameraBufferSize = currentBufferSize;
             if (fogSettings.resolution == VolumetricLightSettings.Resolution.Half) {
