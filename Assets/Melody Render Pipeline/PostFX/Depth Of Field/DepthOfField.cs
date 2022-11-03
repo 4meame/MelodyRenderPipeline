@@ -740,7 +740,10 @@ public class DepthOfField {
     }
 
     public void DoDepthOfField(int sourceId) {
-        if (settings.focusMode == DepthOfFieldSettings.FocusMode.None || camera.cameraType == CameraType.SceneView) {
+        if (camera.cameraType != CameraType.Game) {
+            return;
+        }
+        if (settings.focusMode == DepthOfFieldSettings.FocusMode.None) {
             return;
         }
 

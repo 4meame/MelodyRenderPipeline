@@ -49,7 +49,6 @@ public class VolumetricLight {
         if (spotLightMesh == null) {
             spotLightMesh = CreateSpotLightMesh();
         }
-        UpdateRenderTexture();
         GenerateDitherTexture();
         buffer.SetGlobalTexture("_DitherTexture", ditheringTexture);
         LoadNoise3dTexture();
@@ -57,6 +56,10 @@ public class VolumetricLight {
         if(globalMaterial == null) {
             globalMaterial = new Material(Shader.Find("Hidden/Melody RP/VolumetricLight/Filter"));
         }
+        if (!useVolumetric || camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
+            return;
+        }
+        UpdateRenderTexture();
     }
 
     public void CleanUp() {

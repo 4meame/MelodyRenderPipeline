@@ -35,6 +35,9 @@ public class MotionVectorRender {
     }
 
     public void Render(int sourceId, int motionVectorTextureId, int depthAttachmentId) {
+        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+            return;
+        }
         if (taa.motionVectorEnabled) {
             context.SetupCameraProperties(camera);
             camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
@@ -90,6 +93,9 @@ public class MotionVectorRender {
     }
 
     public void Refresh() {
+        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+            return;
+        }
         if (taa.motionVectorEnabled) {
             previousVP = nonJitteredVP;
             camPreviousVP = camNonJitteredVP;

@@ -70,8 +70,11 @@ public class ScreenSpaceReflection {
         this.cs = settings.computeShader;
         this.useHDR = useHDR;
         this.copyTextureSupported = copyTextureSupported;
-        if(material == null) {
+        if (material == null) {
             material = new Material(Shader.Find("Hidden/Melody RP/StochasticSSR"));
+        }
+        if (camera.cameraType != CameraType.Game) {
+            return;
         }
     }
 
@@ -91,6 +94,9 @@ public class ScreenSpaceReflection {
     }
 
     public void Render() {
+        if(camera.cameraType != CameraType.Game) {
+            return;
+        }
         if (settings.enabled) {
             if (settings.sSRType == CameraBufferSettings.SSR.SSRType.SSR) {
                 buffer.EnableShaderKeyword("_SSR_ON");
@@ -173,6 +179,9 @@ public class ScreenSpaceReflection {
     }
 
     public void Combine(int sourceId) {
+        if (camera.cameraType != CameraType.Game) {
+            return;
+        }
         if (settings.enabled && settings.sSRType == CameraBufferSettings.SSR.SSRType.SSR && settings.debugMode == CameraBufferSettings.SSR.DebugMode.Reflection) {        
             buffer.Blit(ssrResultId, sourceId);
             ExecuteBuffer();
@@ -365,6 +374,9 @@ public class ScreenSpaceReflection {
     }
 
     public void Refresh() {
+        if (camera.cameraType != CameraType.Game) {
+            return;
+        }
         if (settings.sSRType == CameraBufferSettings.SSR.SSRType.StochasticSSR) {
             SSR_Prev_ViewProjectionMatrix = SSR_ViewProjectionMatrix;
         }

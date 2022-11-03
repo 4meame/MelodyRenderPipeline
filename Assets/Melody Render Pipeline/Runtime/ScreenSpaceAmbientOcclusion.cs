@@ -152,6 +152,9 @@ public class ScreenSpaceAmbientOcclusion {
     }
 
     public void Combine(int sourceId) {
+        if (camera.cameraType != CameraType.Game) {
+            return;
+        }
         if (settings.enabled && settings.debugType == CameraBufferSettings.SSAO.DebugType.AO) {
             int kernel_Debug = cs.FindKernel("DebugAO");
             buffer.SetComputeTextureParam(cs, kernel_Debug, "Filtered1", filtered1Id);

@@ -47,10 +47,16 @@ public class TemporalAntialiasing : MonoBehaviour {
         this.useHDR = useHDR;
         this.usePhyscialCamera = usePhyscialCamera;
         this.copyTextureSupported = copyTextureSupported;
-        taaMaterial = new Material(Shader.Find("Hidden/Melody RP/TemporalAntialiasing"));
+        if (taaMaterial == null) {
+            taaMaterial = new Material(Shader.Find("Hidden/Melody RP/TemporalAntialiasing"));
+        }
     }
 
     public void Render(int sourceId) {
+        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+            Shader.SetGlobalVector("_Jitter", Vector4.zero);
+            return;
+        }
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {       
             if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) {
                 return;
@@ -120,6 +126,9 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void Refresh() {
+        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+            return;
+        }
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {
             //for camera motion vector
             previousVP = nonJitteredVP;
@@ -149,6 +158,9 @@ public class TemporalAntialiasing : MonoBehaviour {
     }
 
     public void CopyLastFrameRT(int lastDepth, int lastMV) {
+        if (camera.cameraType != CameraType.Game || camera.cameraType != CameraType.SceneView) {
+            return;
+        }
         if (taa.mode == CameraBufferSettings.TAA.Mode.Adaptive) {
             if (copyTextureSupported) {
                 buffer.CopyTexture(lastDepth, historyDepth);
