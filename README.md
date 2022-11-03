@@ -16,6 +16,7 @@ Feature include ：
 11.Screen-space ambient occlusion:SSAO,HBAO,GTAO
 12.Screen-space Reflection
 13.Temporal Antialiasing
+14.Physical Camera: Depth of Field,Auto Exposure,Lens Falre
 
 VERY IMPROTANT:
 Please let me know if you find bug in this project.
