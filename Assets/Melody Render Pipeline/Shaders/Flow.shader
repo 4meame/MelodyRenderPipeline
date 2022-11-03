@@ -21,10 +21,14 @@
 		_DetailNormalScale("Detail Normal Scale", Range(0, 1)) = 1
 		[NoScaleOffset]_NormalMap("Normals", 2D) = "bump" {}
 		_NormalScale("Normal Scale", Range(0, 1)) = 1
+        [KeywordEnum(DISTORTION,DIRECTION)] _FLOW("Flow Mode", Float) = 0
+        [Toggle(_DUAL_GRID)] _DualGrid("Dual Grid", Int) = 0
         [NoScaleOffset] _FlowMap("Flow (RG, A noise)", 2D) = "black" {}
         _UJump("U jump per phase", Range(-0.25, 0.25)) = 0.25
         _VJump("V jump per phase", Range(-0.25, 0.25)) = 0.25
         _Tilling("Tilling", Float) = 1
+        _TilingModulated("Tiling, Modulated", Float) = 1
+        _GridResolution("Grid Resolution", Float) = 10
         _Speed("Speed", Float) = 1
         _FlowStrength("Flow Strength", Float) = 1
         _FlowOffset("Flow Offset", Float) = 0
@@ -66,6 +70,8 @@
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
             #define _FLOW
+            #pragma multi_compile _FLOW_DISTORTION _FLOW_DIRECTION
+            #pragma shader_feature _DUAL_GRID
             #include "FlowPass.hlsl"
             #include "LitPass.hlsl"
             ENDHLSL
@@ -98,6 +104,8 @@
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
             #define _FLOW
+            #pragma multi_compile _FLOW_DISTORTION _FLOW_DIRECTION
+            #pragma shader_feature _DUAL_GRID
             #include "FlowPass.hlsl"
             #include "LitPass-Deferred.hlsl"
             ENDHLSL
