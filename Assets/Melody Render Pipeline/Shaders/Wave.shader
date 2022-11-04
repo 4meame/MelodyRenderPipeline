@@ -1,4 +1,4 @@
-﻿Shader "Melody RP/Standard/Water/Flow"
+﻿Shader "Melody RP/Standard/Water/Wave"
 {
     Properties
     {
@@ -21,20 +21,6 @@
 		_DetailNormalScale("Detail Normal Scale", Range(0, 1)) = 1
 		[NoScaleOffset]_NormalMap("Normals", 2D) = "bump" {}
 		_NormalScale("Normal Scale", Range(0, 1)) = 1
-        [KeywordEnum(DISTORTION,DIRECTION)] _FLOW("Flow Mode", Float) = 0
-        [Toggle(_DUAL_GRID)] _DualGrid("Dual Grid", Int) = 0
-        [NoScaleOffset] _FlowMap("Flow (RG, A noise)", 2D) = "black" {}
-        _UJump("U jump per phase", Range(-0.25, 0.25)) = 0.25
-        _VJump("V jump per phase", Range(-0.25, 0.25)) = 0.25
-        _Tilling("Tilling", Float) = 1
-        _TilingModulated("Tiling, Modulated", Float) = 1
-        _GridResolution("Grid Resolution", Float) = 10
-        _Speed("Speed", Float) = 1
-        _FlowStrength("Flow Strength", Float) = 1
-        _FlowOffset("Flow Offset", Float) = 0
-        [NoScaleOffset] _DerivHeightMap("Deriv (AG) Height (B)", 2D) = "black" {}
-        _HeightScale("Height Scale", Float) = 1
-        _HeightScaleModulated("Height Scale, Modulated", Float) = 0.75
         [Toggle(_PREMULTIPLY_ALPHA)]_PremulAlpha("Premultiply Alpha", Float) = 0
         [Toggle(_CLIPPING)]_Clipping("Alpha Clipping", Float) = 0
 		[Toggle(_RECEIVE_SHADOWS)] _ReceiveShadows("Receive Shadows", Float) = 1
@@ -46,37 +32,6 @@
     }
     SubShader
     {       
-        Pass
-        {
-            Name "MelodyForward"
-            Tags { "LightMode" = "MelodyForward" }
-
-            Blend[_SrcBlend][_DstBlend], One OneMinusSrcAlpha
-            ZWrite[_ZWrite]
-            Cull[_Cull]
-            HLSLPROGRAM
-            #pragma target 3.5
-            #pragma shader_feature _CLIPPING
-            #pragma shader_feature _PREMULTIPLY_ALPHA
-            #pragma shader_feature _RECEIVE_SHADOWS
-            #pragma multi_compile _ _DIRECTIONAL_PCF3 _DIRECTIONAL_PCF5 _DIRECTIONAL_PCF7
-            #pragma multi_compile _ _OTHER_PCF3 _OTHER_PCF5 _OTHER_PCF7
-            #pragma multi_compile _ _CASCADE_BLEND_SOFT _CASCADE_BLEND_DITHER
-            #pragma multi_compile _ _SHADOW_MASK_ALWAYS _SHADOW_MASK_DISTANCE
-            #pragma multi_compile_instancing
-            #pragma multi_compile _ LIGHTMAP_ON
-            #pragma multi_compile _ LOD_FADE_CROSSFADE
-            #pragma multi_compile _ _LIGHTS_PER_OBJECT
-            #pragma vertex LitPassVertex
-            #pragma fragment LitPassFragment
-            #define _FLOW
-            #pragma multi_compile _FLOW_DISTORTION _FLOW_DIRECTION
-            #pragma shader_feature _DUAL_GRID
-            #include "FlowPass.hlsl"
-            #include "LitPass.hlsl"
-            ENDHLSL
-        }
-
         Pass
         {
             Name "MelodyDeferred"
@@ -103,10 +58,6 @@
             #pragma multi_compile _ _SSR_ON
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
-            #define _FLOW
-            #pragma multi_compile _FLOW_DISTORTION _FLOW_DIRECTION
-            #pragma shader_feature _DUAL_GRID
-            #include "FlowPass.hlsl"
             #include "LitPass-Deferred.hlsl"
             ENDHLSL
         }
@@ -150,9 +101,9 @@
 
             HLSLPROGRAM
             #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+            #include "MetaPass.hlsl"
             ENDHLSL
         }
 

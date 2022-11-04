@@ -1,4 +1,4 @@
-﻿Shader "Melody RP/Standard/SSPR"
+﻿Shader "Melody RP/Standard/Misc/SSPR"
 {
     Properties
     {

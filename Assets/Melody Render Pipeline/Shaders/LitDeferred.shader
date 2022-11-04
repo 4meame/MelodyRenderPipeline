@@ -1,4 +1,4 @@
-﻿Shader "Melody RP/Standard/DeferredLit"
+﻿Shader "Melody RP/Standard/Lit/DeferredLit"
 {
     Properties
     {

@@ -1,4 +1,4 @@
-﻿Shader "Melody RP/Standard/ForwardLit"
+﻿Shader "Melody RP/Standard/Lit/ForwardLit"
 {
     Properties
     {
