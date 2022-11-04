@@ -42,7 +42,7 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _DetailNormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _ZWrite)
-	//flow
+#if defined(_FLOW)
 	UNITY_DEFINE_INSTANCED_PROP(float, _UJump)
 	UNITY_DEFINE_INSTANCED_PROP(float, _VJump)
 	UNITY_DEFINE_INSTANCED_PROP(float, _Tilling)
@@ -53,6 +53,12 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScaleModulated)
 	UNITY_DEFINE_INSTANCED_PROP(float, _TilingModulated)
+#endif
+#if defined(_WAVE)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Wavelength)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Steepness)
+	UNITY_DEFINE_INSTANCED_PROP(float4, _Direction)
+#endif
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 struct Attributes {

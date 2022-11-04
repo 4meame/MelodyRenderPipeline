@@ -47,7 +47,7 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _DetailNormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _ZWrite)
-	//flow
+#if defined(_FLOW)
 	UNITY_DEFINE_INSTANCED_PROP(float, _UJump)
 	UNITY_DEFINE_INSTANCED_PROP(float, _VJump)
 	UNITY_DEFINE_INSTANCED_PROP(float, _Tilling)
@@ -58,6 +58,12 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScaleModulated)
 	UNITY_DEFINE_INSTANCED_PROP(float, _TilingModulated)
+#endif
+#if defined(_WAVE)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Wavelength)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Steepness)
+	UNITY_DEFINE_INSTANCED_PROP(float4, _Direction)
+#endif
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 struct Attributes {
@@ -93,6 +99,28 @@ Varyings LitPassVertex(Attributes input) {
     UNITY_TRANSFER_INSTANCE_ID(input, output);
 //extract the UV Coordinate from the light map data
 	TRANSFER_GI_DATA(input, output);
+#if defined(_WAVE)
+//access material property via UNITY_ACCESS_INSTANCED_PROP( , );
+	float waveLength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Wavelength);
+	float steepness = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Steepness);
+	float2 direction = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Direction);
+	float3 p = input.positionOS;
+	float k = 2 * PI / waveLength;
+	//gravity
+	float c = sqrt(9.8 / k);
+	float2 d = normalize(direction);
+	float f = k * (dot(d, p.xz) - c * _Time.y);
+	float a = steepness / k;
+	p.x += d.x * (a * cos(f));
+	p.y = a * sin(f);
+	p.z += d.y * (a * cos(f));
+	//derivative of the surface posotion
+	float3 tangent = float3(1 - d.x * d.x * (steepness * sin(f)), d.x * (steepness * cos(f)), -d.x * d.y * (steepness * sin(f)));
+	float3 binormal = float3(-d.x * d.y * (steepness * sin(f)), d.y * (steepness * cos(f)), 1 - d.y * d.y * (steepness * sin(f)));
+	float3 normal = normalize(cross(binormal, tangent));
+	input.positionOS = p;
+	input.normalOS = normal;
+#endif
 	output.positionWS = TransformObjectToWorld(input.positionOS);
 	output.positionCS = TransformWorldToHClip(output.positionWS);	
 //access material property via UNITY_ACCESS_INSTANCED_PROP( , );

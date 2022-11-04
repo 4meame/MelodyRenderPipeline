@@ -4,6 +4,19 @@
     {
         [HideInInspector] _MainTex("Texture for Lightmap", 2D) = "white" {}
         [HideInInspector] _Color("Color for Lightmap", Color) = (0.5, 0.5, 0.5, 1.0)
+        [Header(Flow)]
+        [KeywordEnum(DISTORTION,DIRECTION)] _FLOW("Flow Mode", Float) = 0
+        [Toggle(_DUAL_GRID)] _DualGrid("Dual Grid", Int) = 0
+        [NoScaleOffset] _FlowMap("Flow (RG, A noise)", 2D) = "black" {}
+        _UJump("U jump per phase", Range(-0.25, 0.25)) = 0.25
+        _VJump("V jump per phase", Range(-0.25, 0.25)) = 0.25
+        _Tilling("Tilling", Float) = 1
+        _TilingModulated("Tiling, Modulated", Float) = 1
+        _GridResolution("Grid Resolution", Float) = 10
+        _Speed("Speed", Float) = 1
+        _FlowStrength("Flow Strength", Float) = 1
+        _FlowOffset("Flow Offset", Float) = 0
+        [Header(Property)]
         _BaseMap("Base Map<Albedo>", 2D) = "white" {}
         _BaseColor("Base Color", Color) = (0.5, 0.5, 0.5, 1.0)
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
@@ -21,17 +34,6 @@
 		_DetailNormalScale("Detail Normal Scale", Range(0, 1)) = 1
 		[NoScaleOffset]_NormalMap("Normals", 2D) = "bump" {}
 		_NormalScale("Normal Scale", Range(0, 1)) = 1
-        [KeywordEnum(DISTORTION,DIRECTION)] _FLOW("Flow Mode", Float) = 0
-        [Toggle(_DUAL_GRID)] _DualGrid("Dual Grid", Int) = 0
-        [NoScaleOffset] _FlowMap("Flow (RG, A noise)", 2D) = "black" {}
-        _UJump("U jump per phase", Range(-0.25, 0.25)) = 0.25
-        _VJump("V jump per phase", Range(-0.25, 0.25)) = 0.25
-        _Tilling("Tilling", Float) = 1
-        _TilingModulated("Tiling, Modulated", Float) = 1
-        _GridResolution("Grid Resolution", Float) = 10
-        _Speed("Speed", Float) = 1
-        _FlowStrength("Flow Strength", Float) = 1
-        _FlowOffset("Flow Offset", Float) = 0
         [NoScaleOffset] _DerivHeightMap("Deriv (AG) Height (B)", 2D) = "black" {}
         _HeightScale("Height Scale", Float) = 1
         _HeightScaleModulated("Height Scale, Modulated", Float) = 0.75
