@@ -143,7 +143,7 @@ MonoBehaviour:
   cameraPositionScale: {x: 1, y: 1, z: 1}
   lodDistance: 0.336
   horizonLevel: 0
-  horizonFade: 0.027
+  horizonFade: 0.28
   horizonFadeStartAlpha: 0
   shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
   detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}

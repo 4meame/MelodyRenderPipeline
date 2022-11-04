@@ -18,23 +18,23 @@ MonoBehaviour:
     downscaleLimit: 10
     bicubicUpsampling: 1
     threshold: 1
-    thresholdKnee: 0.102
+    thresholdKnee: 0.512
     fadeFireflies: 1
-    mode: 0
-    intensity: 0.3
-    scatter: 0.567
+    mode: 1
+    intensity: 0.45
+    scatter: 0.81
     ignoreRenderScale: 1
   colorAdjustment:
     postExposure: 0
-    constrat: -5
+    constrat: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 11.6
+    saturation: 0
   whiteBalance:
     Temperature: 0
     Tint: 0
   splitToning:
-    shadows: {r: 0.5, g: 0.47265622, b: 0.47265622, a: 0}
+    shadows: {r: 0.5, g: 0.5, b: 0.5, a: 0}
     highlights: {r: 1, g: 1, b: 1, a: 1}
     balance: 0
   channelMixer:
@@ -64,8 +64,8 @@ MonoBehaviour:
     depthNormalThreshold: 0.447
     depthNormalThresholdScale: 4.92
   lightShaftsSetting:
-    mode: 1
-    enable: 1
+    mode: 2
+    enable: 0
     Downsample: 4
     lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
     radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}
@@ -75,22 +75,22 @@ MonoBehaviour:
     exposure: 1.045
     bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}
   motionBlurSetting:
-    mode: 0
+    mode: 2
     shutterAngle: 120
     sampleCount: 8
-    frameBlending: 0.208
+    frameBlending: 0.3
   autoExposureSetting:
     autoExposure: {fileID: 7200000, guid: 9ab31004dd070044dad9f84fe059d67a, type: 3}
     logHistogram: {fileID: 7200000, guid: a13a6250b9b3e714fb4ba6e365397836, type: 3}
-    metering: 1
+    metering: 3
     meteringMask: 1
     mask: {fileID: 0}
     minEV: -10
     maxEV: 10
-    lowPercent: 1
-    highPercent: 99
+    lowPercent: 10
+    highPercent: 90
     compensation: 0
-    adaptation: 1
+    adaptation: 0
     speedUp: 3
     speedDown: 1
   depthOfFieldSetting:
@@ -107,19 +107,20 @@ MonoBehaviour:
     dofCombine: {fileID: 7200000, guid: 0688f2b097264e04a995691e63f3f7f3, type: 3}
     focusMode: 2
     focusDistanceMode: 1
-    resolution: 2
-    taaEnabled: 0
-    focusDistance: 0.1
+    resolution: 1
+    taaEnabled: 1
+    focusDistance: 5
     nearRangeStart: 0
     nearRangeEnd: 4
     farRangeStart: 10
     farRangeEnd: 20
     nearBlurSampleCount: 5
-    nearBlurMaxRadius: 5
+    nearBlurMaxRadius: 6
     farBlurSampleCount: 8
-    farBlurMaxRadius: 7
+    farBlurMaxRadius: 13
     dofAdvanced: {fileID: 7200000, guid: 9d1da698c5b72744a876fe64886cf47a, type: 3}
     useAdvanced: 0
+    debugTile: 0
   lensFlareSetting:
     lensFlareShader: {fileID: 4800000, guid: 22920c1d1d86e394b8a09b15a538dd7b, type: 3}
     mergeOcclusion: {fileID: 7200000, guid: 0d0a3f5b9cd287f4598e549236f3e518, type: 3}

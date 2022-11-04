@@ -15,24 +15,27 @@ MonoBehaviour:
   useDynamicBachting: 0
   useInstancing: 1
   useSRPBatcher: 1
-  useLightsPerObject: 0
+  useLightsPerObject: 1
   shadows:
     maxDistance: 50
     distanceFade: 0.303
     directional:
       atlasSize: 4096
       filter: 3
-      cascadeCount: 1
+      cascadeCount: 4
       cascadeRatio1: 0.478
       cascadeRatio2: 0.624
       cascadeRatio3: 0.799
       cascadeFade: 0.237
       cascadeBlend: 1
     other:
-      atlasSize: 2048
+      atlasSize: 4096
       filter: 3
   atmosphere: {fileID: 11400000, guid: 21777d4397c8a5842bd9927000c6afc3, type: 2}
-  cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
+  cloud: {fileID: 11400000, guid: 730e556ca83280c41a942b15f8619d83, type: 2}
+  fog:
+    enabled: 1
+    resolution: 1
   postFXSettings: {fileID: 11400000, guid: b4828196f5e88184d928f696687e89a2, type: 2}
   cameraBufferSettings:
     allowHDR: 1
@@ -57,7 +60,7 @@ MonoBehaviour:
       motionVectorEnabled: 1
       jitterScale: 1
       sharpness: 0.2
-      staticBlending: 0.901
+      staticBlending: 0.97
       motionBlending: 0.953
       staticAABBScale: 2
       motionAABBScale: 2.65
@@ -87,7 +90,7 @@ MonoBehaviour:
       screenEdgeFade: 0.918
       eyeFadeStart: 0.024
       eyeFadeEnd: 1
-      traceMethod: 1
+      traceMethod: 0
       rayCastSize: 1
       rayNums: 1
       BRDFBias: 0.7
@@ -119,9 +122,9 @@ MonoBehaviour:
       randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
       downSample: 2
       sampleCount: 4
-      aoRadius: 2.7
+      aoRadius: 0.6
       filterRadius: 2.15
-      filterFactor: 0.973
+      filterFactor: 0.949
       kernelSize: 8
       pureDepthAOParameters: {x: 0.001, y: 1, z: 0.96, w: 0.15}
       SSAOParameters: {x: 0.001, y: 0.1, z: 0.22, w: 11.55}
@@ -131,9 +134,9 @@ MonoBehaviour:
       hbaoStrength: 1.2
       fadeParams: {x: 0, y: 0, z: 0, w: 0}
       numSlice: 4
-      thickness: 0.11
-      gtaoStrength: 1.39
-      multipleBounce: 1
+      thickness: 0.85
+      gtaoStrength: 0.98
+      multipleBounce: 0
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}

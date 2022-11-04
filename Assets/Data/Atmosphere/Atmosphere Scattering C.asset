@@ -18,7 +18,7 @@ MonoBehaviour:
   debugMode: 0
   planetRadius: 6371000
   atmosphereHeight: 80000
-  groundHeight: 1000
+  groundHeight: 10
   densityScaleHeight: {x: 7944, y: 1200}
   rayleighCoefficients: {x: 5.26, y: 12.84, z: 27.07}
   mieCoefficients: {x: 21, y: 21, z: 21}
