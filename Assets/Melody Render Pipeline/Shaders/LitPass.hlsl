@@ -42,6 +42,17 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _DetailNormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _ZWrite)
+	//flow
+	UNITY_DEFINE_INSTANCED_PROP(float, _UJump)
+	UNITY_DEFINE_INSTANCED_PROP(float, _VJump)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Tilling)
+	UNITY_DEFINE_INSTANCED_PROP(float, _GridResolution)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Speed)
+	UNITY_DEFINE_INSTANCED_PROP(float, _FlowStrength)
+	UNITY_DEFINE_INSTANCED_PROP(float, _FlowOffset)
+	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScale)
+	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScaleModulated)
+	UNITY_DEFINE_INSTANCED_PROP(float, _TilingModulated)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 struct Attributes {
@@ -142,6 +153,49 @@ float4 LitPassFragment(Varyings input) : SV_TARGET {
 	//UDN Blending
 	normal = normalize(float3(normal.xy + detailNormal.xy, normal.z));
 	
+#if defined(_FLOW)
+	//access material property via UNITY_ACCESS_INSTANCED_PROP( , );
+	float ujump = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _UJump);
+	float vjump = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _VJump);
+	float tilling = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Tilling);
+	float gridResolution = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GridResolution);
+	float speed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Speed);
+	float flowStrength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlowStrength);
+	float flowOffset = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlowOffset);
+	float heightScale = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeightScale);
+	float heightScaleModulated = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HeightScaleModulated);
+	float tilingModulated = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _TilingModulated);
+#if defined(_FLOW_DISTORTION)
+	//sample flow map 
+	float4 flowMap = SAMPLE_TEXTURE2D(_FlowMap, sampler_FlowMap, input.baseUV);
+	//calculate flow uv
+	float2 flowVector = flowMap.rg * 2 - 1;
+	flowVector *= flowStrength;
+	float flowSpeed = length(flowVector);
+	float noise = flowMap.a;
+	float time = _Time.y * speed + noise;
+	float2 jump = float2(ujump, vjump);
+	float3 uvwA = FlowUV(input.baseUV, flowVector, jump, flowOffset, tilling, time, false);
+	float3 uvwB = FlowUV(input.baseUV, flowVector, jump, flowOffset, tilling, time, true);
+	float4 flowA = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uvwA.xy) * uvwA.z;
+	float4 flowB = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uvwB.xy) * uvwB.z;
+	base = (flowA + flowB) * baseColor;
+	//stronger flow gets higher wave
+	float finalHeightScale = flowSpeed * heightScaleModulated * heightScale;
+	float3 dhA = UnpackDerivativeHeight(SAMPLE_TEXTURE2D(_DerivHeightMap, sampler_DerivHeightMap, uvwA.xy)) * uvwA.z * finalHeightScale;
+	float3 dhB = UnpackDerivativeHeight(SAMPLE_TEXTURE2D(_DerivHeightMap, sampler_DerivHeightMap, uvwB.xy)) * uvwB.z * finalHeightScale;
+	normal = normalize(float3(-(dhA.xy + dhB.xy), 1));
+#elif defined(_FLOW_DIRECTION)
+	//directional flow
+	float time = _Time.y * speed;
+	float3 dh = FlowGrid(input.baseUV, gridResolution, flowStrength, heightScaleModulated, heightScale, tilling, tilingModulated, time, false);
+#if defined(_DUAL_GRID)
+	dh = (dh + FlowGrid(input.baseUV, gridResolution, flowStrength, heightScaleModulated, heightScale, tilling, tilingModulated, time, true)) * 0.5;
+#endif
+	base.rgb = dh.z * dh.z * baseColor;
+	normal = normalize(float3(-dh.xy, 1));
+#endif
+#endif
 
 #if defined(_CLIPPING)
 //access material property via UNITY_ACCESS_INSTANCED_PROP( , );

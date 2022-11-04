@@ -33,6 +33,17 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 	UNITY_DEFINE_INSTANCED_PROP(float, _DetailNormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
 	UNITY_DEFINE_INSTANCED_PROP(float, _ZWrite)
+	//flow
+	UNITY_DEFINE_INSTANCED_PROP(float, _UJump)
+	UNITY_DEFINE_INSTANCED_PROP(float, _VJump)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Tilling)
+	UNITY_DEFINE_INSTANCED_PROP(float, _GridResolution)
+	UNITY_DEFINE_INSTANCED_PROP(float, _Speed)
+	UNITY_DEFINE_INSTANCED_PROP(float, _FlowStrength)
+	UNITY_DEFINE_INSTANCED_PROP(float, _FlowOffset)
+	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScale)
+	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScaleModulated)
+	UNITY_DEFINE_INSTANCED_PROP(float, _TilingModulated)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 //unity arguement x: diffuse, y: emission ?..

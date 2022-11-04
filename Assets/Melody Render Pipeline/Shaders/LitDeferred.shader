@@ -101,9 +101,9 @@
 
             HLSLPROGRAM
             #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
-            #include "ShadowCasterPass.hlsl"
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+            #include "MetaPass.hlsl"
             ENDHLSL
         }
 
