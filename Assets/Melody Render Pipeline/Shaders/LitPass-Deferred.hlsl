@@ -9,62 +9,7 @@
 #include "../ShaderLibrary/GI.hlsl"
 #include "../ShaderLibrary/Lighting.hlsl"
 
-//CBUFFER_START(UnityPerMaterial)
-//	float4 _BaseColor;
-//CBUFFER_END
-
-TEXTURE2D(_BaseMap);
-SAMPLER(sampler_BaseMap);
-TEXTURE2D(_MaskMap);
-SAMPLER(sampler_MaskMap);
-TEXTURE2D(_EmissionMap);
-SAMPLER(sampler_EmissionMap);
-TEXTURE2D(_DetailMap);
-SAMPLER(sampler_DetailMap);
-TEXTURE2D(_NormalMap);
-SAMPLER(sampler_NormalMap);
-TEXTURE2D(_DetailNormalMap);
-SAMPLER(sampler_DetailNormalMap);
-//screen space
-TEXTURE2D(_SSR_Filtered);
-SAMPLER(sampler_SSR_Filtered);
-TEXTURE2D(_SSAO_Filtered);
-SAMPLER(sampler_SSAO_Filtered);
-
-//Support per-instance material data, replace variable with an array reference WHEN NEEDED
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _BaseMap_ST)
-	UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Metallic)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Occlusion)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Smoothness)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Fresnel)
-	UNITY_DEFINE_INSTANCED_PROP(float4, _EmissionColor)
-	UNITY_DEFINE_INSTANCED_PROP(float4, _DetailMap_ST)
-	UNITY_DEFINE_INSTANCED_PROP(float, _DetailAlbedo)
-	UNITY_DEFINE_INSTANCED_PROP(float, _DetailSmoothness)
-	UNITY_DEFINE_INSTANCED_PROP(float, _DetailNormalScale)
-	UNITY_DEFINE_INSTANCED_PROP(float, _NormalScale)
-	UNITY_DEFINE_INSTANCED_PROP(float, _ZWrite)
-#if defined(_FLOW)
-	UNITY_DEFINE_INSTANCED_PROP(float, _UJump)
-	UNITY_DEFINE_INSTANCED_PROP(float, _VJump)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Tilling)
-	UNITY_DEFINE_INSTANCED_PROP(float, _GridResolution)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Speed)
-	UNITY_DEFINE_INSTANCED_PROP(float, _FlowStrength)
-	UNITY_DEFINE_INSTANCED_PROP(float, _FlowOffset)
-	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScale)
-	UNITY_DEFINE_INSTANCED_PROP(float, _HeightScaleModulated)
-	UNITY_DEFINE_INSTANCED_PROP(float, _TilingModulated)
-#endif
-#if defined(_WAVE)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Wavelength)
-	UNITY_DEFINE_INSTANCED_PROP(float, _Steepness)
-	UNITY_DEFINE_INSTANCED_PROP(float4, _Direction)
-#endif
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+#include "Lit-Input.hlsl"
 
 struct Attributes {
 	float3 positionOS : POSITION;
@@ -101,22 +46,16 @@ Varyings LitPassVertex(Attributes input) {
 	TRANSFER_GI_DATA(input, output);
 #if defined(_WAVE)
 //access material property via UNITY_ACCESS_INSTANCED_PROP( , );
-	float waveLength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Wavelength);
-	float steepness = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Steepness);
-	float2 direction = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Direction);
-	float3 p = input.positionOS;
-	float k = 2 * PI / waveLength;
-	//gravity
-	float c = sqrt(9.8 / k);
-	float2 d = normalize(direction);
-	float f = k * (dot(d, p.xz) - c * _Time.y);
-	float a = steepness / k;
-	p.x += d.x * (a * cos(f));
-	p.y = a * sin(f);
-	p.z += d.y * (a * cos(f));
-	//derivative of the surface posotion
-	float3 tangent = float3(1 - d.x * d.x * (steepness * sin(f)), d.x * (steepness * cos(f)), -d.x * d.y * (steepness * sin(f)));
-	float3 binormal = float3(-d.x * d.y * (steepness * sin(f)), d.y * (steepness * cos(f)), 1 - d.y * d.y * (steepness * sin(f)));
+	float4 waveA = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveA);
+	float4 waveB = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveB);
+	float4 waveC = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveC);
+	float3 gridPoint = input.positionOS;
+	float3 tangent = float3(1, 0, 0);
+	float3 binormal = float3(0, 0, 1);
+	float3 p = gridPoint;
+	p += GerstnerWave(waveA, gridPoint, tangent, binormal);
+	p += GerstnerWave(waveB, gridPoint, tangent, binormal);
+	p += GerstnerWave(waveC, gridPoint, tangent, binormal);
 	float3 normal = normalize(cross(binormal, tangent));
 	input.positionOS = p;
 	input.normalOS = normal;

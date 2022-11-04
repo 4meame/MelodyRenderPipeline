@@ -5,9 +5,9 @@
         [HideInInspector] _MainTex("Texture for Lightmap", 2D) = "white" {}
         [HideInInspector] _Color("Color for Lightmap", Color) = (0.5, 0.5, 0.5, 1.0)
         [Header(Wave)]
-        _Wavelength("Wavelength", Float) = 10
-        _Steepness("Steepness", Range(0, 1)) = 0.5
-        _Direction("Direction (2D)", Vector) = (1, 0, 0, 0)
+        _WaveA("Wave A (dir, steepness, wavelength)", Vector) = (1,0,0.5,10)
+        _WaveB("Wave B (dir, steepness, wavelength)", Vector) = (0,1,0.25,20)
+        _WaveC("Wave B (dir, steepness, wavelength)", Vector) = (1,1,0.15,10)
         [Header(Property)]
         _BaseMap("Base Map<Albedo>", 2D) = "white" {}
         _BaseColor("Base Color", Color) = (0.5, 0.5, 0.5, 1.0)
@@ -61,6 +61,7 @@
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
             #define _WAVE
+            #include "WavePass.hlsl"
             #include "LitPass.hlsl"
             ENDHLSL
         }
@@ -92,6 +93,7 @@
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment
             #define _WAVE
+            #include "WavePass.hlsl"
             #include "LitPass-Deferred.hlsl"
             ENDHLSL
         }
@@ -109,6 +111,7 @@
 			#pragma multi_compile_instancing
 			#pragma vertex ShadowCasterPassVertex
 			#pragma fragment ShadowCasterPassFragment
+            #define _WAVE
 			#include "ShadowCasterPass.hlsl"
 			ENDHLSL
 		}
@@ -124,6 +127,7 @@
             #pragma target 3.5
             #pragma vertex MetaPassVertex
             #pragma fragment MetaPassFragment
+            #define _WAVE
             #include "MetaPass.hlsl"
             ENDHLSL
         }
@@ -137,6 +141,7 @@
             #pragma target 3.5
             #pragma vertex MetaPassVertex
             #pragma fragment MetaPassFragment
+            #define _WAVE
             #include "MetaPass.hlsl"
             ENDHLSL
         }
@@ -150,6 +155,7 @@
             #pragma target 3.5
             #pragma vertex MetaPassVertex
             #pragma fragment MetaPassFragment
+            #define _WAVE
             #include "MetaPass.hlsl"
             ENDHLSL
         }

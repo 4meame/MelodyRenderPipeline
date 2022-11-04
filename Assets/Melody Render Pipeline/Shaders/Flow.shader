@@ -126,6 +126,7 @@
 			#pragma multi_compile_instancing
 			#pragma vertex ShadowCasterPassVertex
 			#pragma fragment ShadowCasterPassFragment
+            #define _FLOW
 			#include "ShadowCasterPass.hlsl"
 			ENDHLSL
 		}
@@ -141,6 +142,7 @@
             #pragma target 3.5
             #pragma vertex MetaPassVertex
             #pragma fragment MetaPassFragment
+            #define _FLOW
             #include "MetaPass.hlsl"
             ENDHLSL
         }
@@ -154,6 +156,7 @@
             #pragma target 3.5
             #pragma vertex ShadowCasterPassVertex
             #pragma fragment ShadowCasterPassFragment
+            #define _FLOW
             #include "ShadowCasterPass.hlsl"
             ENDHLSL
         }
@@ -167,6 +170,7 @@
             #pragma target 3.5
             #pragma vertex MetaPassVertex
             #pragma fragment MetaPassFragment
+            #define _FLOW
             #include "MetaPass.hlsl"
             ENDHLSL
         }
