@@ -297,6 +297,10 @@ public class ScreenSpaceReflection {
     void UpdateMatricesAndRenderTexture() {
         Vector2 halfBufferSize = new Vector2(bufferSize.x / 2, bufferSize.y / 2);
         Vector2 currentBufferSize = new Vector2(bufferSize.x, bufferSize.y);
+        if (currentBufferSize.x < 350 || currentBufferSize.y < 200) {
+            //scene preview camera exit
+            return;
+        }
         if (cameraBufferSize != currentBufferSize) {
             cameraBufferSize = currentBufferSize;
             //SceneColor and HierarchicalDepth RT

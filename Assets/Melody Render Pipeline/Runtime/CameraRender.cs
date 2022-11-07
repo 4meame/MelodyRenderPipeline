@@ -21,6 +21,7 @@ public partial class CameraRender {
     VolumetricLight volumetricLight = new VolumetricLight();
     ScreenSpaceAmbientOcclusion ssao = new ScreenSpaceAmbientOcclusion();
     ScreenSpaceReflection ssr = new ScreenSpaceReflection();
+    ScreenSpaceGlobalIllumination ssgi = new ScreenSpaceGlobalIllumination();
     AutoExposure autoExposure = new AutoExposure();
     MotionVectorRender motionVector = new MotionVectorRender();
     TemporalAntialiasing taa = new TemporalAntialiasing();
@@ -169,6 +170,10 @@ public partial class CameraRender {
         cameraBufferSettings.ssr.enabled = cameraBufferSettings.ssr.enabled && cameraSettings.allowSSR;
         var renderSSR = cameraBufferSettings.ssr.enabled;
         #endregion
+        #region SSGI
+        cameraBufferSettings.gi.enabled = cameraBufferSettings.gi.enabled && cameraSettings.allowGI;
+        var renderGI = cameraBufferSettings.gi.enabled;
+        #endregion
         #region Lens Flare
         LensFlareCommon.Initialize();
         #endregion
@@ -195,6 +200,7 @@ public partial class CameraRender {
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
+        ssgi.Setup(context, camera, bufferSize, cameraBufferSettings.gi, useHDR, copyTextureSupported);
         ssr.Setup(context, camera, bufferSize, cameraBufferSettings.ssr, useHDR, copyTextureSupported);
         autoExposure.Setup(context, camera, bufferSize, postFXSettings, physcialCameraSettings);
         taa.Setup(context, camera, bufferSize, cameraBufferSettings.taa, physcialCameraSettings, useHDR, cameraSettings.allowPhyscialCamera, copyTextureSupported);
@@ -223,6 +229,9 @@ public partial class CameraRender {
                 buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.CombineSSAO, MeshTopology.Triangles, 3);
                 ExecuteBuffer();
             }
+            if (renderGI) {
+
+            }
             if (renderSSR) {
                 ssr.Render();
                 buffer.name = "Combine SSR";
@@ -237,6 +246,7 @@ public partial class CameraRender {
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssao.Render();
+            ssgi.Render();
             ssr.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
         }
@@ -246,6 +256,7 @@ public partial class CameraRender {
         sspr.Render();
         //screen space feature debug or combine
         ssao.Combine(colorAttachmentId);
+        ssgi.Combine(colorAttachmentId);
         ssr.Combine(colorAttachmentId);
         if (renderCloud) {
             volumetricCloud.Render(colorAttachmentId);
@@ -282,6 +293,7 @@ public partial class CameraRender {
         Submit();
 
         motionVector.Refresh();
+        ssgi.Refresh();
         ssr.Refresh();
         taa.Refresh();
         //make the projection reflect normal camera's parameters.

@@ -22,6 +22,7 @@ public class CameraSettings {
     public bool allowSSPR = false;
 	public bool allowSSAO = false;
 	public bool allowSSR = false;
+	public bool allowGI = false;
 	public bool allowVolumetricCloud = true;
 	public bool allowVolumetricLight = true;
 	public bool allowAtmosFog = true;

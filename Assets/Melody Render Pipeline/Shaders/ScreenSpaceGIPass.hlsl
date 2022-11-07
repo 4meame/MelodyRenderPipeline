@@ -6,7 +6,7 @@
 
 TEXTURE2D(_SSGI_SceneColor_RT);
 TEXTURE2D(_SSGI_Noise);
-TEXTURE2D(_SSGI_CombienReflection_RT);
+TEXTURE2D(_SSGI_CombienScene_RT);
 TEXTURE2D(_SSGI_RayCastRT);
 TEXTURE2D(_SSGI_RayMask_RT);
 TEXTURE2D(_SSGI_Spatial_RT);
@@ -14,7 +14,6 @@ TEXTURE2D(_SSGI_TemporalPrev_RT);
 TEXTURE2D(_SSGI_TemporalCurr_RT);
 Texture2D _SSGI_HierarchicalDepth_RT; SamplerState sampler_SSGI_HierarchicalDepth_RT;
 
-float _SSGI_BRDFBias;
 float _SSGI_ScreenFade;
 float _SSGI_Thickness;
 int _SSGI_NumRays;
@@ -25,8 +24,6 @@ float4 _SSGI_NoiseSize;
 float4 _SSGI_Jitter;
 float4 _SSGI_RandomSeed;
 float4 _SSGI_ProjInfo;
-int _SSGI_BackwardsRay;
-int _SSGI_CullBack;
 int _SSGI_TraceBehind;
 //linear trace
 int _SSGI_NumSteps_Linear;
@@ -146,15 +143,6 @@ void GlobalIlluminationLinearTrace(Varyings input, out float4 SSGIColor_Occlusio
 		if (hit) {
 			Ray_HitMask = Square(1 - max(2 * float(Ray_NumMarch) / float(_SSGI_NumSteps_Linear) - 1, 0));
 			Ray_HitMask *= saturate(((_SSGI_TraceDistance - dot(Ray_HitPoint - Ray_Origin_VS, Ray_Dir_VS))));
-			//calculate backward ray mask
-			if (_SSGI_CullBack == 0) {
-				float4 Ray_HitDepthNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, Ray_HitUV, 0);
-				float3 Ray_HitNormal_VS = DecodeViewNormalStereo(Ray_HitDepthNormal);
-				float3 Ray_HitNormal_WS = mul(_SSGI_CameraToWorldMatrix, float4(Ray_HitNormal_VS, 0)).xyz;
-				float3 Ray_Dir_WS = mul(_SSGI_CameraToWorldMatrix, float4(Ray_Dir_VS, 0)).xyz;
-				if (dot(Ray_HitNormal_WS, Ray_Dir_WS) > 0)
-					Ray_HitMask = 0;
-			}
 		}
 		//calculate reflect color, last frame reflect color can be the light source for this frame
 		float4 SampleColor = SAMPLE_TEXTURE2D_LOD(_SSGI_SceneColor_RT, sampler_linear_clamp, Ray_HitUV, 0);
@@ -341,8 +329,8 @@ float4 TemporalFilter(Varyings input) : SV_TARGET {
 	return ReflectionColor;
 }
 
-float4 CombineGlobalIllumination(Varyings input) : SV_TARGET{	
-
-	return 0;
+float4 CombineGlobalIllumination(Varyings input) : SV_TARGET{
+	float2 uv = input.screenUV;
+	return SAMPLE_TEXTURE2D_LOD(_SSGI_TemporalCurr_RT, sampler_linear_clamp, uv, 0);;
 }
 #endif

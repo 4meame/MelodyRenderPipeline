@@ -253,4 +253,73 @@ public struct CameraBufferSettings {
 
     }
     public SSAO ssao;
+
+    [Serializable]
+    public struct GI
+    {
+        public enum GIType
+        {
+            SSGI,
+        }
+        public enum RenderSize
+        {
+            Full = 1,
+            Half = 2
+        };
+        public enum TraceType
+        {
+            HiZTrace = 0,
+            LinearTrace = 1
+        };
+        public enum FilterType
+        {
+            NormalBilateral,
+            AdaptionBilateral,
+        }
+        public enum DebugType
+        {
+            Combine,
+            Indirect,
+            Occlusion
+        }
+        public GIType giType;
+        public bool enabled;
+        [Header("SSGI")]
+        public RenderSize rayCastSize;
+        public FilterType filterType;
+        [Range(1, 16)]
+        public int rayNums;
+        [Range(0.05f, 5f)]
+        public float THK;
+        [Range(0, 0.5f)]
+        public float screenFade;
+        public bool traceBehind;
+        public TraceType traceType;
+        [Range(32, 512)]
+        public int Hiz_RaySteps;
+        [Range(0, 0.001f)]
+        public float Hiz_Threshold;
+        [Range(4, 10)]
+        public int Hiz_MaxLevel;
+        [Range(0, 2)]
+        public int Hiz_StartLevel;
+        [Range(0, 2)]
+        public int Hiz_StopLevel;
+        [Range(64, 512)]
+        public int Linear_RaySteps;
+        [Range(5, 20)]
+        public int Linear_StepSize;
+        public Texture2D randomTexture;
+        [Range(1, 128)]
+        public float intensity;
+        [Range(1, 9)]
+        public int SpatioSampler;
+        [Range(0, 0.99f)]
+        public float TemporalWeight;
+        [Range(1, 6f)]
+        public float TemporalScale;
+        public bool deNoise;
+        public DebugType debugType;
+    }
+    public GI gi;
 }

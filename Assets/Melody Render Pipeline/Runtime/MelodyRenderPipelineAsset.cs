@@ -22,7 +22,8 @@ public class MelodyRenderPipelineAsset : RenderPipelineAsset {
         useDepthNormal = false, useDiffuse = false, useSpecular = false,
         fxaa = new CameraBufferSettings.FXAA { fixedThreshold = 0.0833f, relativeThreshold = 0.166f, subpixelBlending = 0.75f },
         ssr = new CameraBufferSettings.SSR { sSRType = CameraBufferSettings.SSR.SSRType.SSR, downSample = 1 },
-        ssao = new CameraBufferSettings.SSAO { aOType = CameraBufferSettings.SSAO.AOType.GTAO, downSample = 1 }
+        ssao = new CameraBufferSettings.SSAO { aOType = CameraBufferSettings.SSAO.AOType.GTAO, downSample = 1 },
+        gi = new CameraBufferSettings.GI { giType = CameraBufferSettings.GI.GIType.SSGI, rayCastSize = CameraBufferSettings.GI.RenderSize.Full }
     };
     public enum ColorLUTResolution { _16 = 16, _32 = 32, _64 = 64 }
     [SerializeField]
