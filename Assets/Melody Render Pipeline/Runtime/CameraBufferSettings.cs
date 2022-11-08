@@ -273,6 +273,7 @@ public struct CameraBufferSettings {
         };
         public enum FilterType
         {
+            BrdfWeight,
             NormalBilateral,
             AdaptionBilateral,
         }
@@ -289,11 +290,12 @@ public struct CameraBufferSettings {
         public FilterType filterType;
         [Range(1, 16)]
         public int rayNums;
-        [Range(0.05f, 5f)]
+        [Range(0, 5f)]
         public float THK;
         [Range(0, 0.5f)]
         public float screenFade;
         public bool traceBehind;
+        public bool rayMask;
         public TraceType traceType;
         [Range(32, 512)]
         public int Hiz_RaySteps;
@@ -312,8 +314,10 @@ public struct CameraBufferSettings {
         public Texture2D randomTexture;
         [Range(1, 128)]
         public float intensity;
-        [Range(1, 9)]
-        public int SpatioSampler;
+        [Range(1, 18)]
+        public int SpatioKernel;
+        [Range(0.1f, 6)]
+        public float SpatioRadius;
         [Range(0, 0.99f)]
         public float TemporalWeight;
         [Range(1, 6f)]

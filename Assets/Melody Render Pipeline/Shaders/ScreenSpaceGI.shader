@@ -54,13 +54,37 @@
 
         Pass 
         {
-            Name "Spatio Filter"
+            Name "Spatio Brdf"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment SpatioFilter
+            #pragma fragment BrdfWeightFilter
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Spatio Bilateral X"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment BilateralFilterX
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Spatio Bilateral X"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment BilateralFilterY
             ENDHLSL
         }
 

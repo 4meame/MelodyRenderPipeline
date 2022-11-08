@@ -21,6 +21,8 @@ public class ScreenSpaceGlobalIllumination
         LinearTrace,
         HizTrace,
         SpatioFilter,
+        BilateralX,
+        BilateralY,
         TemporalFilter,
         Combine
     }
@@ -103,17 +105,25 @@ public class ScreenSpaceGlobalIllumination
                     buffer.SetRenderTarget(SSGI_TraceMask_ID, SSGI_TraceMask_RT[0]);
                     buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.LinearTrace, MeshTopology.Triangles, 3);
                 }
-                //do spatial filter
-                buffer.SetGlobalTexture(SSGI_Spatial_ID, SSGI_Spatial_RT);
-                buffer.SetRenderTarget(SSGI_Spatial_RT);
-                buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.SpatioFilter, MeshTopology.Triangles, 3);
-                CopyTexture(SSGI_Spatial_RT, SSGI_TemporalCurr_RT);
                 //do temporal filter
                 buffer.SetGlobalTexture(SSGI_TemporalPrev_ID, SSGI_TemporalPrev_RT);
                 buffer.SetGlobalTexture(SSGI_TemporalCurr_ID, SSGI_TemporalCurr_RT);
                 buffer.SetRenderTarget(SSGI_TemporalCurr_RT);
                 buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.TemporalFilter, MeshTopology.Triangles, 3);
                 CopyTexture(SSGI_TemporalCurr_RT, SSGI_TemporalPrev_RT);
+                //do spatial filter
+                if (settings.filterType == CameraBufferSettings.GI.FilterType.BrdfWeight) {
+                    buffer.SetRenderTarget(SSGI_Spatial_RT);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.SpatioFilter, MeshTopology.Triangles, 3);
+                    buffer.SetGlobalTexture(SSGI_Spatial_ID, SSGI_Spatial_RT);
+                } else if (settings.filterType == CameraBufferSettings.GI.FilterType.AdaptionBilateral) {
+                    buffer.SetRenderTarget(SSGI_Spatial_RT);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.BilateralX, MeshTopology.Triangles, 3);
+                    buffer.SetGlobalTexture("_SSGI_TemporalPrev_RT", SSGI_Spatial_RT);
+                    buffer.SetRenderTarget(SSGI_TraceMask_ID[0]);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.BilateralY, MeshTopology.Triangles, 3);
+                    buffer.SetGlobalTexture(SSGI_Spatial_ID, SSGI_TraceMask_ID[0]);
+                }
                 ExecuteBuffer();
             }
         } else {
@@ -191,20 +201,15 @@ public class ScreenSpaceGlobalIllumination
         material.SetInt("_SSGI_NumSteps_HiZ", settings.Hiz_RaySteps);
         material.SetInt("_SSGI_NumRays", settings.rayNums);
         material.SetInt("_SSGI_TraceBehind", settings.traceBehind ? 1 : 0);
+        material.SetInt("_SSGI_RayMask", settings.rayMask ? 1 : 0);
         material.SetInt("_SSGI_HiZ_MaxLevel", settings.Hiz_MaxLevel);
         material.SetInt("_SSGI_HiZ_StartLevel", settings.Hiz_StartLevel);
         material.SetInt("_SSGI_HiZ_StopLevel", settings.Hiz_StopLevel);
         material.SetFloat("_SSGI_Threshold_Hiz", settings.Hiz_Threshold);
-        if (settings.deNoise) {
-            material.SetInt("_SSGI_NumResolver", settings.SpatioSampler);
-            material.SetFloat("_SSGI_TemporalScale", settings.TemporalScale);
-            material.SetFloat("_SSGI_TemporalWeight", settings.TemporalWeight);
-        }
-        else {
-            material.SetInt("_SSGI_NumResolver", 1);
-            material.SetFloat("_SSGI_TemporalScale", 0);
-            material.SetFloat("_SSGI_TemporalWeight", 0);
-        }
+        material.SetInt("_SSGI_KernelSize", settings.SpatioKernel);
+        material.SetFloat("_SSGI_KernelRadius", settings.SpatioRadius);
+        material.SetFloat("_SSGI_TemporalScale", settings.TemporalScale);
+        material.SetFloat("_SSGI_TemporalWeight", settings.TemporalWeight);
     }
 
     void UpdateMatricesAndRenderTexture() {

@@ -452,7 +452,7 @@ void GTAO(uint3 id : SV_DispatchThreadID) {
     float3 reflectVector = reflect(viewVector, geometricNormal);
     ro = ReflectionOcclusion(bentNormal, reflectVector, roughness, 0.5);
 
-    AmbientOcclusionRT[id.xy] = float3(ao, pow2(ro), linear01Depth);
+    AmbientOcclusionRT[id.xy] = float3(ao, pow2(ro), linearDepth);
 }
 
 float3 GetSource(float2 screenUV) {
@@ -640,7 +640,7 @@ void AdaptionBilateralUpSample(uint3 id : SV_DispatchThreadID) {
     float2 filteredX0 = lerp(TopLeft_Color * weights.x, TopRight_Color * weights.y, fractCoord.x);
     float2 filteredX1 = lerp(BottomRight_Color * weights.w, BottomLeft_Color * weights.z, fractCoord.x);
     float2 filtered = lerp(filteredX0, filteredX1, fractCoord.y);
-    UpSampleRT[id.xy] = float3(filtered, Eye01Depth);
+    UpSampleRT[id.xy] = float3(filtered, EyeDepth);
 }
 
 //blur with full resolution

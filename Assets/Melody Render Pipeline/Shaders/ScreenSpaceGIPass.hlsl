@@ -25,6 +25,7 @@ float4 _SSGI_Jitter;
 float4 _SSGI_RandomSeed;
 float4 _SSGI_ProjInfo;
 int _SSGI_TraceBehind;
+int _SSGI_RayMask;
 //linear trace
 int _SSGI_NumSteps_Linear;
 int _SSGI_RayStepSize;
@@ -37,7 +38,8 @@ int _SSGI_HiZ_StartLevel;
 int _SSGI_HiZ_StopLevel;
 int _SSGI_HiZ_PrevDepthLevel;
 //denoise
-int _SSGI_NumResolver;
+int _SSGI_KernelSize;
+float _SSGI_KernelRadius;
 float _SSGI_TemporalScale;
 float _SSGI_TemporalWeight;
 //debug
@@ -119,7 +121,7 @@ void GlobalIlluminationLinearTrace(Varyings input, out float4 SSGIColor_Occlusio
 	float2 Out_UV = 0;
 	float4 Out_Color = 0;
 	//begin trace
-	float4 screenTexelSize = float4(1 / _SSGI_ScreenSize.x, 1 / _SSGI_ScreenSize.y, _SSGI_ScreenSize.x, _SSGI_ScreenSize.y);
+	float4 screenTexelSize = float4(1.0 / _SSGI_ScreenSize.x, 1.0 / _SSGI_ScreenSize.y, _SSGI_ScreenSize.x, _SSGI_ScreenSize.y);
 	float3 Ray_Origin_VS = GetPosition(_CameraDepthTexture, screenTexelSize, _SSGI_ProjInfo, uv);
 	float Ray_Bump = max(-0.01 * Ray_Origin_VS.z, 0.001);
 	float2 blueNoise = SAMPLE_TEXTURE2D_LOD(_SSGI_Noise, sampler_point_repeat, float2((uv + _SSGI_Jitter.zw) * _SSGI_RayCastSize.xy / _SSGI_NoiseSize.xy), 0).xy;
@@ -167,7 +169,12 @@ void GlobalIlluminationLinearTrace(Varyings input, out float4 SSGIColor_Occlusio
 	Out_UV /= _SSGI_NumRays;
 	Out_Occlusion /= _SSGI_NumRays;
 
-	SSGIColor_Occlusion = float4(Out_Color.rgb, Out_Occlusion);
+	if(_SSGI_RayMask == 1){
+		SSGIColor_Occlusion = float4(Out_Color.rgb * saturate(Out_Mask * 2), Out_Occlusion);
+	}
+	else {
+		SSGIColor_Occlusion = float4(Out_Color.rgb, Out_Occlusion);
+	}
 	Mask_Depth_HitUV = float4(Square(Out_Mask), Out_RayDepth, Out_UV);
 }
 
@@ -189,7 +196,7 @@ void GlobalIlluminationHierarchicalZ(Varyings input, out float4 SSGIColor_Occlus
 	float4 Out_Color = 0;
 	//begin trace
 	float3 screenPos = GetScreenSpacePos(uv, sceneDepth);
-	float4 screenTexelSize = float4(1 / _SSGI_ScreenSize.x, 1 / _SSGI_ScreenSize.y, _SSGI_ScreenSize.x, _SSGI_ScreenSize.y);
+	float4 screenTexelSize = float4(1.0 / _SSGI_ScreenSize.x, 1.0 / _SSGI_ScreenSize.y, _SSGI_ScreenSize.x, _SSGI_ScreenSize.y);
 	float3 Ray_Origin_VS = GetPosition(_CameraDepthTexture, screenTexelSize, _SSGI_ProjInfo, uv);
 	//loop all multi rays
 	for (uint i = 0; i < (uint)_SSGI_NumRays; i++) {
@@ -229,7 +236,12 @@ void GlobalIlluminationHierarchicalZ(Varyings input, out float4 SSGIColor_Occlus
 	Out_UV /= _SSGI_NumRays;
 	Out_Occlusion /= _SSGI_NumRays;
 
-	SSGIColor_Occlusion = float4(Out_Color.rgb, Out_Occlusion);
+	if (_SSGI_RayMask == 1) {
+		SSGIColor_Occlusion = float4(Out_Color.rgb * saturate(Out_Mask * 2), Out_Occlusion);
+	}
+	else {
+		SSGIColor_Occlusion = float4(Out_Color.rgb, Out_Occlusion);
+	}
 	Mask_Depth_HitUV = float4(Square(Out_Mask), Out_RayDepth, Out_UV);
 }
 
@@ -247,7 +259,7 @@ static const int2 offset2[9] = {
 };
 
 //spatio filter weight by brdf
-float4 SpatioFilter(Varyings input) : SV_TARGET {
+float4 BrdfWeightFilter(Varyings input) : SV_TARGET {
 	float2 uv = input.screenUV;
 	//sample buffers' properties
 	float roughness = clamp(SAMPLE_TEXTURE2D_LOD(_CameraSpecularTexture, sampler_point_clamp, uv, 0).a, 0.02, 1);
@@ -264,33 +276,36 @@ float4 SpatioFilter(Varyings input) : SV_TARGET {
 	float NumWeight, Weight;
 	float2 Offset_UV, Neighbor_UV;
 	float3 Hit_ViewPos;
-	float4 SampleColor, ReflecttionColor;
-	for (int i = 0; i < _SSGI_NumResolver; i++) {
+	float4 SampleColor, FilterColor;
+	for (int i = 0; i < _SSGI_KernelSize; i++) {
 		Offset_UV = mul(offsetRotationMatrix, offset2[i] * (1 / _SSGI_ScreenSize.xy));
 		Neighbor_UV = uv + Offset_UV;
-		//_SSGI_RayCastRT stores rg : hit uv b : depth a : pdf
-		float PDF = SAMPLE_TEXTURE2D_LOD(_SSGI_RayCastRT, sampler_point_clamp, Neighbor_UV, 0).a;
+		//_SSGI_RayCastRT stores rg : hit uv b : depth
 		float4 Hit_Mask_Depth_UV = SAMPLE_TEXTURE2D_LOD(_SSGI_RayMask_RT, sampler_point_clamp, Neighbor_UV, 0);
 		float3 Hit_ViewPos = GetViewSpacePos(float3(Hit_Mask_Depth_UV.ba, Hit_Mask_Depth_UV.g), _SSGI_InverseProjectionMatrix);
 		//spatio sampler
-		Weight = SSGI_BRDF(normalize(-viewPos), normalize(Hit_ViewPos - viewPos), viewNormal, roughness) / max(1e-5, PDF);
+		Weight = SSGI_BRDF(normalize(-viewPos), normalize(Hit_ViewPos - viewPos), viewNormal, roughness);
 		SampleColor.rgb = SAMPLE_TEXTURE2D_LOD(_SSGI_RayCastRT, sampler_linear_clamp, Neighbor_UV, 0).rgb;
 		SampleColor.a = SAMPLE_TEXTURE2D_LOD(_SSGI_RayMask_RT, sampler_point_clamp, Neighbor_UV, 0).r;
 		//calculate weight
-		ReflecttionColor += SampleColor * Weight;
+		FilterColor += SampleColor * Weight;
 		NumWeight += Weight;
 	}
-	ReflecttionColor /= NumWeight;
-	ReflecttionColor = max(1e-5, ReflecttionColor);
-	return ReflecttionColor;
+	FilterColor /= NumWeight;
+	FilterColor = max(1e-5, FilterColor);
+	return FilterColor;
+}
+
+float Luma4(float3 Color) {
+	return (Color.g * 2) + (Color.r + Color.b);
+}
+
+float HdrWeight4(float3 Color, float Exposure) {
+	return rcp(Luma4(Color) * Exposure + 4);
 }
 
 float4 TemporalFilter(Varyings input) : SV_TARGET {
 	float2 uv = input.screenUV;
-	float hitDepth = SAMPLE_TEXTURE2D_LOD(_SSGI_RayMask_RT, sampler_point_clamp, uv, 0).g;
-	float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
-	float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
-	float3 worldNormal = mul(_SSGI_CameraToWorldMatrix, float4(viewNormal, 0)).xyz;
 	//get reprojection velocity
 	float2 velocity = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorTexture, sampler_point_clamp, uv, 0).rg;
 	//AABB clipping
@@ -299,8 +314,17 @@ float4 TemporalFilter(Varyings input) : SV_TARGET {
 	float4 SSGI_MinColor, SSGI_MaxColor;
 	float4 SampleColors[9];
 	for (uint i = 0; i < 9; i++) {
-		SampleColors[i] = SAMPLE_TEXTURE2D_LOD(_SSGI_Spatial_RT, sampler_linear_clamp, uv + (offset1[i] / _SSGI_ScreenSize.xy), 0);
+		SampleColors[i] = SAMPLE_TEXTURE2D_LOD(_SSGI_RayCastRT, sampler_linear_clamp, uv + (offset1[i] / _SSGI_ScreenSize.xy), 0);
 	}
+	float SampleWeights[9];
+	for (uint j = 0; j < 9; j++) {
+		SampleWeights[j] = HdrWeight4(SampleColors[j].rgb, 10);
+	}
+	float TotalWeight = 0;
+	for (uint k = 0; k < 9; k++) {
+		TotalWeight += SampleWeights[k];
+	}
+	SampleColors[4] = (SampleColors[0] * SampleWeights[0] + SampleColors[1] * SampleWeights[1] + SampleColors[2] * SampleWeights[2] + SampleColors[3] * SampleWeights[3] + SampleColors[4] * SampleWeights[4] + SampleColors[5] * SampleWeights[5] + SampleColors[6] * SampleWeights[6] + SampleColors[7] * SampleWeights[7] + SampleColors[8] * SampleWeights[8]) / TotalWeight;
 	float4 m1 = 0.0;
 	float4 m2 = 0.0;
 	for (uint x = 0; x < 9; x++) {
@@ -324,13 +348,74 @@ float4 TemporalFilter(Varyings input) : SV_TARGET {
 	float4 SSGI_PrevColor = SAMPLE_TEXTURE2D_LOD(_SSGI_TemporalPrev_RT, sampler_linear_clamp, uv - velocity, 0);
 	SSGI_PrevColor = clamp(SSGI_PrevColor, SSGI_MinColor, SSGI_MaxColor);
 	//combine
-	float Temporal_BlendWeight = saturate(_SSGI_TemporalWeight * (1 - length(velocity) * 8));
-	float4 ReflectionColor = lerp(SSGI_CurrColor, SSGI_PrevColor, Temporal_BlendWeight);
-	return ReflectionColor;
+	float Temporal_BlendWeight = saturate(_SSGI_TemporalWeight * (1 - length(velocity) * 2));
+	float4 FilterColor = lerp(SSGI_CurrColor, SSGI_PrevColor, Temporal_BlendWeight);
+	return FilterColor;
+}
+
+void GetGI_Depth(TEXTURE2D(_SourceTexture), float2 uv, inout float3 Gi, inout float Depth) {
+	Gi = SAMPLE_TEXTURE2D_LOD(_SourceTexture, sampler_linear_clamp, uv, 0).xyz;
+	Depth = LinearEyeDepth(SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r, _ZBufferParams);
+}
+
+float CrossBilateralWeight(float r, float d, float d0) {
+	float blurSigma = (float)_SSGI_KernelSize * 0.5;
+	float blurFalloff = 1 / (2 * blurSigma * blurSigma);
+	float dz = (d0 - d) * _ProjectionParams.z * 0.25;
+	return exp2(-r * r * blurFalloff - dz * dz);
+}
+
+void ProcessSample(float4 Gi_Depth, float r, float d0, inout float3 totalGi, inout float totalW) {
+	float w = CrossBilateralWeight(r, d0, Gi_Depth.w);
+	totalW += w;
+	totalGi += w * Gi_Depth.xyz;
+}
+
+void ProcessRadius(TEXTURE2D(_SourceTexture), float2 uv0, float2 deltaUV, float d0, inout float3 totalGi, inout float totalW) {
+	float r = 1.0;
+	float z = 0.0;
+	float2 uv = 0.0;
+	float3 Gi = 0.0;
+	for (; r <= _SSGI_KernelSize / 2; r += 1) {
+		uv = uv0 + r * deltaUV;
+		GetGI_Depth(_SourceTexture, uv, Gi, z);
+		ProcessSample(float4(Gi, z), r, d0, totalGi, totalW);
+	}
+	for (; r <= _SSGI_KernelSize; r += 2) {
+		uv = uv0 + (r + 0.5) * deltaUV;
+		GetGI_Depth(_SourceTexture, uv, Gi, z);
+		ProcessSample(float4(Gi, z), r, d0, totalGi, totalW);
+	}
+}
+
+float4 BilateralFilterX(Varyings input) : SV_TARGET{
+	float2 uv = input.screenUV;
+	float2 deltaUV = _SSGI_KernelRadius * float2(1.0 / _SSGI_ScreenSize.x, 0);
+	float depth;
+	float3 totalGi;
+	GetGI_Depth(_SSGI_TemporalPrev_RT, uv, totalGi, depth);
+	float totalW = 1;
+	ProcessRadius(_SSGI_TemporalPrev_RT, uv, -deltaUV, depth, totalGi, totalW);
+	ProcessRadius(_SSGI_TemporalPrev_RT, uv, deltaUV, depth, totalGi, totalW);
+	totalGi /= totalW;
+	return float4(totalGi, depth);
+}
+
+float4 BilateralFilterY(Varyings input) : SV_TARGET{
+	float2 uv = input.screenUV;
+	float2 deltaUV = _SSGI_KernelRadius * float2(0, 1.0 / _SSGI_ScreenSize.y);
+	float depth;
+	float3 totalGi;
+	GetGI_Depth(_SSGI_TemporalPrev_RT, uv, totalGi, depth);
+	float totalW = 1;
+	ProcessRadius(_SSGI_TemporalPrev_RT, uv, -deltaUV, depth, totalGi, totalW);
+	ProcessRadius(_SSGI_TemporalPrev_RT, uv, deltaUV, depth, totalGi, totalW);
+	totalGi /= totalW;
+	return float4(totalGi, depth);
 }
 
 float4 CombineGlobalIllumination(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV;
-	return SAMPLE_TEXTURE2D_LOD(_SSGI_TemporalCurr_RT, sampler_linear_clamp, uv, 0);;
+	return SAMPLE_TEXTURE2D_LOD(_SSGI_Spatial_RT, sampler_linear_clamp, uv, 0);;
 }
 #endif
