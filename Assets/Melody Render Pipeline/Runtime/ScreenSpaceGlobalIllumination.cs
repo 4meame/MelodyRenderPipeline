@@ -124,11 +124,12 @@ public class ScreenSpaceGlobalIllumination
                     buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.BilateralY, MeshTopology.Triangles, 3);
                     buffer.SetGlobalTexture(SSGI_Spatial_ID, SSGI_TraceMask_ID[0]);
                 }
-                ExecuteBuffer();
+                buffer.SetGlobalTexture("_SSGI_Filtered", SSGI_TraceMask_ID[0]);
             }
         } else {
             
         }
+        ExecuteBuffer();
     }
 
     public void Combine(int sourceId) {
@@ -142,9 +143,6 @@ public class ScreenSpaceGlobalIllumination
                     break;
                 case CameraBufferSettings.GI.DebugType.Indirect:
                     material.SetInt("_DebugPass", 1);
-                    break;
-                case CameraBufferSettings.GI.DebugType.Occlusion:
-                    material.SetInt("_DebugPass", 2);
                     break;
                 default:
                     break;
@@ -206,10 +204,19 @@ public class ScreenSpaceGlobalIllumination
         material.SetInt("_SSGI_HiZ_StartLevel", settings.Hiz_StartLevel);
         material.SetInt("_SSGI_HiZ_StopLevel", settings.Hiz_StopLevel);
         material.SetFloat("_SSGI_Threshold_Hiz", settings.Hiz_Threshold);
-        material.SetInt("_SSGI_KernelSize", settings.SpatioKernel);
-        material.SetFloat("_SSGI_KernelRadius", settings.SpatioRadius);
-        material.SetFloat("_SSGI_TemporalScale", settings.TemporalScale);
-        material.SetFloat("_SSGI_TemporalWeight", settings.TemporalWeight);
+        material.SetFloat("_SSGI_Intensity", settings.intensity);
+        if (settings.deNoise) {
+            material.SetInt("_SSGI_KernelSize", settings.SpatioKernel);
+            material.SetFloat("_SSGI_KernelRadius", settings.SpatioRadius);
+            material.SetFloat("_SSGI_TemporalScale", settings.TemporalScale);
+            material.SetFloat("_SSGI_TemporalWeight", settings.TemporalWeight);
+        }
+        else {
+            material.SetInt("_SSGI_KernelSize", 1);
+            material.SetFloat("_SSGI_KernelRadius", 1f);
+            material.SetFloat("_SSGI_TemporalScale", 0f);
+            material.SetFloat("_SSGI_TemporalWeight", 0f);
+        }
     }
 
     void UpdateMatricesAndRenderTexture() {

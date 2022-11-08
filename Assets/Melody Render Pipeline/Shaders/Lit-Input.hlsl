@@ -18,6 +18,8 @@ TEXTURE2D(_SSR_Filtered);
 SAMPLER(sampler_SSR_Filtered);
 TEXTURE2D(_SSAO_Filtered);
 SAMPLER(sampler_SSAO_Filtered);
+TEXTURE2D(_SSGI_Filtered);
+SAMPLER(sampler_SSGI_Filtered);
 
 //Support per-instance material data, replace variable with an array reference WHEN NEEDED
 UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)

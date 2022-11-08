@@ -16,6 +16,7 @@ Texture2D _SSGI_HierarchicalDepth_RT; SamplerState sampler_SSGI_HierarchicalDept
 
 float _SSGI_ScreenFade;
 float _SSGI_Thickness;
+float _SSGI_Intensity;
 int _SSGI_NumRays;
 float3 _SSGI_CameraClipInfo;
 float4 _SSGI_ScreenSize;
@@ -44,7 +45,6 @@ float _SSGI_TemporalScale;
 float _SSGI_TemporalWeight;
 //debug
 int _DebugPass;
-int _SSGI_ReflectionOcclusion;
 
 float4x4 _SSGI_ProjectionMatrix;
 float4x4 _SSGI_InverseProjectionMatrix;
@@ -353,6 +353,124 @@ float4 TemporalFilter(Varyings input) : SV_TARGET {
 	return FilterColor;
 }
 
+//normal weight bilateral
+float4 GetSource(float2 screenUV) {
+	return SAMPLE_TEXTURE2D_LOD(_SSGI_TemporalPrev_RT, sampler_linear_clamp, screenUV, 0);
+}
+
+float GetDepth(float2 screenUV) {
+	return SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_point_clamp, screenUV, 0).r;
+}
+
+float3 GetNormal(float2 screenUV) {
+	float4 depthNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, screenUV, 0);
+	float3 normal = DecodeViewNormalStereo(depthNormal);
+	return normal;
+}
+
+float CompareNormal(float3 normal0, float3 normal1) {
+	return smoothstep(0.95, 1.0, dot(normal0, normal1));
+}
+
+float2 GetValidUV(float2 uv, float2 delta) {
+	float2 deltaUV = uv + delta;
+	if (deltaUV.x > 1 || deltaUV.y > 1 || deltaUV.x < 0 || deltaUV.y < 0) {
+		return uv;
+	}
+	else {
+		return deltaUV;
+	}
+}
+
+float4 NormalBilateralFilterX(Varyings input) : SV_TARGET{
+	float2 delta = _SSGI_KernelRadius * float2(1.0 / _SSGI_ScreenSize.x, 0);
+	float2 uv = input.screenUV;
+	float2 uv0a = GetValidUV(uv, -delta);
+	float2 uv0b = GetValidUV(uv, +delta);
+	float2 uv1a = GetValidUV(uv, -2.0 * delta);
+	float2 uv1b = GetValidUV(uv, +2.0 * delta);
+	float2 uv2a = GetValidUV(uv, -3.0 * delta);
+	float2 uv2b = GetValidUV(uv, +3.0 * delta);
+	//get normal
+	float3 normal = GetNormal(uv);
+	float3 normal0a = GetNormal(uv0a);
+	float3 normal0b = GetNormal(uv0b);
+	float3 normal1a = GetNormal(uv1a);
+	float3 normal1b = GetNormal(uv1b);
+	float3 normal2a = GetNormal(uv2a);
+	float3 normal2b = GetNormal(uv2b);
+	//get source
+	float4 source = GetSource(uv);
+	float4 source0a = GetSource(uv0a);
+	float4 source0b = GetSource(uv0b);
+	float4 source1a = GetSource(uv1a);
+	float4 source1b = GetSource(uv1b);
+	float4 source2a = GetSource(uv2a);
+	float4 source2b = GetSource(uv2b);
+	//calculate weight
+	float w = 0.37004005286;
+	float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
+	float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
+	float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
+	float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
+	float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
+	float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
+	float4 result = w * source;
+	result += w0a * source0a;
+	result += w0b * source0b;
+	result += w1a * source1a;
+	result += w1b * source1b;
+	result += w2a * source2a;
+	result += w2b * source2b;
+	result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
+	return result;
+}
+
+float4 NormalBilateralFilterY(Varyings input) : SV_TARGET{
+	float2 delta = _SSGI_KernelRadius * float2(0, 1.0 / _SSGI_ScreenSize.y);
+	float2 uv = input.screenUV;
+	float2 uv0a = GetValidUV(uv, -delta);
+	float2 uv0b = GetValidUV(uv, +delta);
+	float2 uv1a = GetValidUV(uv, -2.0 * delta);
+	float2 uv1b = GetValidUV(uv, +2.0 * delta);
+	float2 uv2a = GetValidUV(uv, -3.0 * delta);
+	float2 uv2b = GetValidUV(uv, +3.0 * delta);
+	//get normal
+	float3 normal = GetNormal(uv);
+	float3 normal0a = GetNormal(uv0a);
+	float3 normal0b = GetNormal(uv0b);
+	float3 normal1a = GetNormal(uv1a);
+	float3 normal1b = GetNormal(uv1b);
+	float3 normal2a = GetNormal(uv2a);
+	float3 normal2b = GetNormal(uv2b);
+	//get source
+	float4 source = GetSource(uv);
+	float4 source0a = GetSource(uv0a);
+	float4 source0b = GetSource(uv0b);
+	float4 source1a = GetSource(uv1a);
+	float4 source1b = GetSource(uv1b);
+	float4 source2a = GetSource(uv2a);
+	float4 source2b = GetSource(uv2b);
+	//calculate weight
+	float w = 0.37004005286;
+	float w0a = CompareNormal(normal, normal0a) * 0.31718061674;
+	float w0b = CompareNormal(normal, normal0b) * 0.31718061674;
+	float w1a = CompareNormal(normal, normal1a) * 0.19823788546;
+	float w1b = CompareNormal(normal, normal1b) * 0.19823788546;
+	float w2a = CompareNormal(normal, normal2a) * 0.11453744493;
+	float w2b = CompareNormal(normal, normal2b) * 0.11453744493;
+	float4 result = w * source;
+	result += w0a * source0a;
+	result += w0b * source0b;
+	result += w1a * source1a;
+	result += w1b * source1b;
+	result += w2a * source2a;
+	result += w2b * source2b;
+	result = result / (w + w0a + w0b + w1a + w1b + w2a + w2b);
+	return result;
+}
+
+//adaption bilateral filter from battlefield3 of frostbite
 void GetGI_Depth(TEXTURE2D(_SourceTexture), float2 uv, inout float3 Gi, inout float Depth) {
 	Gi = SAMPLE_TEXTURE2D_LOD(_SourceTexture, sampler_linear_clamp, uv, 0).xyz;
 	Depth = LinearEyeDepth(SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, uv, 0).r, _ZBufferParams);
@@ -388,7 +506,7 @@ void ProcessRadius(TEXTURE2D(_SourceTexture), float2 uv0, float2 deltaUV, float 
 	}
 }
 
-float4 BilateralFilterX(Varyings input) : SV_TARGET{
+float4 AdaptiveBilateralFilterX(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV;
 	float2 deltaUV = _SSGI_KernelRadius * float2(1.0 / _SSGI_ScreenSize.x, 0);
 	float depth;
@@ -401,7 +519,7 @@ float4 BilateralFilterX(Varyings input) : SV_TARGET{
 	return float4(totalGi, depth);
 }
 
-float4 BilateralFilterY(Varyings input) : SV_TARGET{
+float4 AdaptiveBilateralFilterY(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV;
 	float2 deltaUV = _SSGI_KernelRadius * float2(0, 1.0 / _SSGI_ScreenSize.y);
 	float depth;
@@ -416,6 +534,13 @@ float4 BilateralFilterY(Varyings input) : SV_TARGET{
 
 float4 CombineGlobalIllumination(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV;
-	return SAMPLE_TEXTURE2D_LOD(_SSGI_Spatial_RT, sampler_linear_clamp, uv, 0);;
+	float4 BaseColor = SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, uv, 0);
+	float4 SceneColor = SAMPLE_TEXTURE2D_LOD(_SSGI_SceneColor_RT, sampler_linear_clamp, uv, 0);
+	float4 GI = SAMPLE_TEXTURE2D_LOD(_SSGI_Spatial_RT, sampler_linear_clamp, uv, 0);
+	if (_DebugPass == 0)
+		SceneColor.rgb += BaseColor.rgb * GI.rgb * _SSGI_Intensity;
+	else if (_DebugPass == 1)
+		SceneColor.rgb = GI.rgb * _SSGI_Intensity;
+	return SceneColor;
 }
 #endif
