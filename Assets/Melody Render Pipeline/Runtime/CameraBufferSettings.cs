@@ -281,7 +281,9 @@ public struct CameraBufferSettings {
         {
             Combine,
             Indirect,
-            Occlusion
+            Occlusion,
+            Mask,
+            RayDepth
         }
         public GIType giType;
         public bool enabled;
@@ -299,8 +301,6 @@ public struct CameraBufferSettings {
         public TraceType traceType;
         [Range(32, 512)]
         public int Hiz_RaySteps;
-        [Range(0, 0.001f)]
-        public float Hiz_Threshold;
         [Range(4, 10)]
         public int Hiz_MaxLevel;
         [Range(0, 2)]

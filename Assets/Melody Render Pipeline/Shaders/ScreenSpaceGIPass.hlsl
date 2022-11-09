@@ -200,7 +200,7 @@ void GlobalIlluminationHierarchicalZ(Varyings input, out float4 SSGIColor_Occlus
 	float3 Ray_Origin_VS = GetPosition(_CameraDepthTexture, screenTexelSize, _SSGI_ProjInfo, uv);
 	//loop all multi rays
 	for (uint i = 0; i < (uint)_SSGI_NumRays; i++) {
-		float2 hash = SAMPLE_TEXTURE2D_LOD(_SSGI_Noise, sampler_point_repeat, float2((uv + sin( 1 +_SSGI_Jitter.zw)) * _SSGI_ScreenSize.xy / _SSGI_NoiseSize.xy), 0).xy;
+		float2 hash = SAMPLE_TEXTURE2D_LOD(_SSGI_Noise, sampler_point_repeat, float2((uv + sin( i +_SSGI_Jitter.zw)) * _SSGI_ScreenSize.xy / _SSGI_NoiseSize.xy), 0).xy;
 		//calculate light dir by uniform sample disk
 		float3 L;
 		L.xy = UniformSampleDiskConcentric(hash);
@@ -212,7 +212,7 @@ void GlobalIlluminationHierarchicalZ(Varyings input, out float4 SSGIColor_Occlus
 		float4 Ray_Proj = mul(_SSGI_ProjectionMatrix, float4(Ray_Origin_VS + Ray_Dir_VS, 1.0));
 		float3 Ray_Dir = normalize((Ray_Proj.xyz / Ray_Proj.w) - screenPos);
 		Ray_Dir.xy *= 0.5;
-		float4 Ray_Hit_Data = HierarchicalZTrace(_SSGI_HiZ_MaxLevel, _SSGI_HiZ_StartLevel, _SSGI_HiZ_StopLevel, _SSGI_NumSteps_HiZ, _SSGI_Thickness, _SSGI_TraceBehind == 1, _SSGI_Threshold_Hiz, _SSGI_ScreenSize.xy, Ray_Start, Ray_Dir, _SSGI_HierarchicalDepth_RT);
+		float4 Ray_Hit_Data = HierarchicalZTrace(_SSGI_HiZ_MaxLevel, _SSGI_HiZ_StartLevel, _SSGI_HiZ_StopLevel, _SSGI_NumSteps_HiZ, _SSGI_Thickness, 1 / _SSGI_ScreenSize.xy, Ray_Start, Ray_Dir, _SSGI_HierarchicalDepth_RT, sampler_SSGI_HierarchicalDepth_RT);
 		//calculate reflect color, last frame reflect color can be the light source for this frame
 		float4 SampleColor = SAMPLE_TEXTURE2D_LOD(_SSGI_SceneColor_RT, sampler_linear_clamp, Ray_Hit_Data.xy, 0);
 		float4 SampleNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, Ray_Hit_Data.xy, 0);
@@ -536,11 +536,18 @@ float4 CombineGlobalIllumination(Varyings input) : SV_TARGET{
 	float2 uv = input.screenUV;
 	float4 BaseColor = SAMPLE_TEXTURE2D_LOD(_CameraDiffuseTexture, sampler_linear_clamp, uv, 0);
 	float4 SceneColor = SAMPLE_TEXTURE2D_LOD(_SSGI_SceneColor_RT, sampler_linear_clamp, uv, 0);
-	float4 GI = SAMPLE_TEXTURE2D_LOD(_SSGI_Spatial_RT, sampler_linear_clamp, uv, 0);
+	float4 RayCast = SAMPLE_TEXTURE2D_LOD(_SSGI_Spatial_RT, sampler_linear_clamp, uv, 0);
+	float4 RayMask = SAMPLE_TEXTURE2D_LOD(_SSGI_RayMask_RT, sampler_linear_clamp, uv, 0);
 	if (_DebugPass == 0)
-		SceneColor.rgb += BaseColor.rgb * GI.rgb * _SSGI_Intensity;
+		SceneColor.rgb += BaseColor.rgb * RayCast.rgb * _SSGI_Intensity;
 	else if (_DebugPass == 1)
-		SceneColor.rgb = GI.rgb * _SSGI_Intensity;
+		SceneColor.rgb = RayCast.rgb * _SSGI_Intensity;
+	else if (_DebugPass == 2)
+		SceneColor.rgb = RayCast.aaa;
+	else if (_DebugPass == 3)
+		SceneColor.rgb = RayMask.xxx;
+	else if (_DebugPass == 4)
+		SceneColor.rgb = RayMask.yyy;
 	return SceneColor;
 }
 #endif

@@ -20,9 +20,11 @@ public class ScreenSpaceGlobalIllumination
         PrepareHiz,
         LinearTrace,
         HizTrace,
-        SpatioFilter,
-        BilateralX,
-        BilateralY,
+        SpatioBrdf,
+        NormalBilateralX,
+        NormalBilateralY,
+        AdaptiveBilateralX,
+        AdaptiveBilateralY,
         TemporalFilter,
         Combine
     }
@@ -79,7 +81,7 @@ public class ScreenSpaceGlobalIllumination
             return;
         }
         if (settings.enabled) {
-            if(settings.giType == CameraBufferSettings.GI.GIType.SSGI) {
+            if (settings.giType == CameraBufferSettings.GI.GIType.SSGI) {
                 randomSampler = GenerateRandomOffset();
                 UpdateMatricesAndRenderTexture();
                 //bilt scene depth
@@ -114,16 +116,23 @@ public class ScreenSpaceGlobalIllumination
                 //do spatial filter
                 if (settings.filterType == CameraBufferSettings.GI.FilterType.BrdfWeight) {
                     buffer.SetRenderTarget(SSGI_Spatial_RT);
-                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.SpatioFilter, MeshTopology.Triangles, 3);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.SpatioBrdf, MeshTopology.Triangles, 3);
                     buffer.SetGlobalTexture(SSGI_Spatial_ID, SSGI_Spatial_RT);
-                } else if (settings.filterType == CameraBufferSettings.GI.FilterType.AdaptionBilateral) {
+                } else if (settings.filterType == CameraBufferSettings.GI.FilterType.NormalBilateral) {
                     buffer.SetRenderTarget(SSGI_Spatial_RT);
-                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.BilateralX, MeshTopology.Triangles, 3);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.NormalBilateralX, MeshTopology.Triangles, 3);
                     buffer.SetGlobalTexture("_SSGI_TemporalPrev_RT", SSGI_Spatial_RT);
                     buffer.SetRenderTarget(SSGI_TraceMask_ID[0]);
-                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.BilateralY, MeshTopology.Triangles, 3);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.NormalBilateralY, MeshTopology.Triangles, 3);
                     buffer.SetGlobalTexture(SSGI_Spatial_ID, SSGI_TraceMask_ID[0]);
-                }
+                } else if (settings.filterType == CameraBufferSettings.GI.FilterType.AdaptionBilateral) {
+                    buffer.SetRenderTarget(SSGI_Spatial_RT);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.AdaptiveBilateralX, MeshTopology.Triangles, 3);
+                    buffer.SetGlobalTexture("_SSGI_TemporalPrev_RT", SSGI_Spatial_RT);
+                    buffer.SetRenderTarget(SSGI_TraceMask_ID[0]);
+                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.AdaptiveBilateralY, MeshTopology.Triangles, 3);
+                    buffer.SetGlobalTexture(SSGI_Spatial_ID, SSGI_TraceMask_ID[0]);
+            }
                 buffer.SetGlobalTexture("_SSGI_Filtered", SSGI_TraceMask_ID[0]);
             }
         } else {
@@ -143,6 +152,15 @@ public class ScreenSpaceGlobalIllumination
                     break;
                 case CameraBufferSettings.GI.DebugType.Indirect:
                     material.SetInt("_DebugPass", 1);
+                    break;
+                case CameraBufferSettings.GI.DebugType.Occlusion:
+                    material.SetInt("_DebugPass", 2);
+                    break;
+                case CameraBufferSettings.GI.DebugType.Mask:
+                    material.SetInt("_DebugPass", 3);
+                    break;
+                case CameraBufferSettings.GI.DebugType.RayDepth:
+                    material.SetInt("_DebugPass", 4);
                     break;
                 default:
                     break;
@@ -203,7 +221,6 @@ public class ScreenSpaceGlobalIllumination
         material.SetInt("_SSGI_HiZ_MaxLevel", settings.Hiz_MaxLevel);
         material.SetInt("_SSGI_HiZ_StartLevel", settings.Hiz_StartLevel);
         material.SetInt("_SSGI_HiZ_StopLevel", settings.Hiz_StopLevel);
-        material.SetFloat("_SSGI_Threshold_Hiz", settings.Hiz_Threshold);
         material.SetFloat("_SSGI_Intensity", settings.intensity);
         if (settings.deNoise) {
             material.SetInt("_SSGI_KernelSize", settings.SpatioKernel);

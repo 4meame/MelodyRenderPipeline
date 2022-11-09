@@ -276,4 +276,38 @@ float4 HierarchicalZTrace(int HizMaxLevel, int HizStartLevel, int HizStopLevel, 
     return float4(ray.xy, -ray.z, mask);
 }
 
+float GetMarchSize(float2 start, float2 end, float2 SamplerPos) {
+    float2 dir = abs(end - start);
+    return length(float2(min(dir.x, SamplerPos.x), min(dir.y, SamplerPos.y)));
+}
+
+float4 HierarchicalZTrace(int HizMaxLevel, int HizStartLevel, int HizStopLevel, int numSteps, float thickness, float2 bufferSize, float3 rayOrigin, float3 rayDir, Texture2D SceneDepth, SamplerState SceneDepth_Sampler) {
+    float samplerSize = GetMarchSize(rayOrigin.xy, rayOrigin.xy + rayDir.xy, bufferSize);
+    float3 samplePos = rayOrigin + rayDir * (samplerSize);
+    int level = HizStartLevel; 
+    float mask = 0.0;
+    [loop]
+    for (int i = 0; i < numSteps; i++) {
+        float2 cellCount = bufferSize * exp2(level + 1.0);
+        float newSamplerSize = GetMarchSize(samplePos.xy, samplePos.xy + rayDir.xy, cellCount);
+        float3 newSamplePos = samplePos + rayDir * newSamplerSize;
+        float sampleMinDepth = SceneDepth.SampleLevel(SceneDepth_Sampler, newSamplePos.xy, level);
+        [flatten]
+        if (sampleMinDepth < newSamplePos.z) {
+            level = min(HizMaxLevel, level + 1.0);
+            samplePos = newSamplePos;
+        }
+        else {
+            level--;
+        }
+        [branch]
+        if (level < HizStopLevel) {
+            float delta = (-LinearEyeDepth(sampleMinDepth, _ZBufferParams)) - (-LinearEyeDepth(samplePos.z, _ZBufferParams));
+            mask = delta <= thickness && i > 0.0;
+            return float4(samplePos, mask);
+        }
+    }
+    return float4(samplePos, mask);
+}
+
 #endif

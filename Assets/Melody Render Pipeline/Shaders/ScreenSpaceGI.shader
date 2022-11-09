@@ -64,27 +64,51 @@
             ENDHLSL
         }
 
-        Pass
+            Pass
         {
-            Name "Spatio Bilateral X"
+            Name "Spatio Normal Bilateral X"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment BilateralFilterX
+            #pragma fragment NormalBilateralFilterX
             ENDHLSL
         }
 
         Pass
         {
-            Name "Spatio Bilateral X"
+            Name "Spatio Normal Bilateral Y"
 
             //note: DO NOT use HLSLINCLUDE
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
-            #pragma fragment BilateralFilterY
+            #pragma fragment NormalBilateralFilterY
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Spatio Adaptive Bilateral X"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment AdaptiveBilateralFilterX
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Spatio Adaptive Bilateral Y"
+
+            //note: DO NOT use HLSLINCLUDE
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment AdaptiveBilateralFilterY
             ENDHLSL
         }
 
