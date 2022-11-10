@@ -141,7 +141,6 @@ void GlobalIlluminationLinearTrace(Varyings input, out float4 SSGIColor_Occlusio
 		float3 Ray_HitPoint = 0.0;
 		bool hit = Linear2D_Trace(_CameraDepthTexture, Ray_Origin_VS + viewNormal * Ray_Bump, Ray_Dir_VS, _SSGI_ProjectToPixelMatrix, _SSGI_ScreenSize, Jitter, _SSGI_NumSteps_Linear, _SSGI_Thickness, _SSGI_TraceDistance, Ray_HitUV, _SSGI_RayStepSize, _SSGI_TraceBehind == 1, Ray_HitPoint, Ray_NumMarch);
 		Ray_HitUV /= _SSGI_ScreenSize;
-		UNITY_BRANCH
 		if (hit) {
 			Ray_HitMask = Square(1 - max(2 * float(Ray_NumMarch) / float(_SSGI_NumSteps_Linear) - 1, 0));
 			Ray_HitMask *= saturate(((_SSGI_TraceDistance - dot(Ray_HitPoint - Ray_Origin_VS, Ray_Dir_VS))));
@@ -175,7 +174,7 @@ void GlobalIlluminationLinearTrace(Varyings input, out float4 SSGIColor_Occlusio
 	else {
 		SSGIColor_Occlusion = float4(Out_Color.rgb, Out_Occlusion);
 	}
-	Mask_Depth_HitUV = float4(Square(Out_Mask), Out_RayDepth, Out_UV);
+	Mask_Depth_HitUV = float4(Out_Mask, Out_RayDepth, Out_UV);
 }
 
 //Hiz trace sampler
@@ -242,7 +241,7 @@ void GlobalIlluminationHierarchicalZ(Varyings input, out float4 SSGIColor_Occlus
 	else {
 		SSGIColor_Occlusion = float4(Out_Color.rgb, Out_Occlusion);
 	}
-	Mask_Depth_HitUV = float4(Square(Out_Mask), Out_RayDepth, Out_UV);
+	Mask_Depth_HitUV = float4(Out_Mask, Out_RayDepth, Out_UV);
 }
 
 
