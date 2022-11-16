@@ -477,5 +477,23 @@ namespace Crest
         BufferedData<PerCascadeInstanceData[]> _perCascadeInstanceData;
         public int BufferSize { get; private set; }
 
+        public static int FrameCount
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (!EditorApplication.isPlaying)
+                {
+                    return _editorFrames;
+                }
+                else
+#endif
+                {
+                    return Time.frameCount;
+                }
+            }
+        }
+
+
     }
 }
