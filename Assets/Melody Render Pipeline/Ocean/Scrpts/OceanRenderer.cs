@@ -477,6 +477,8 @@ namespace Crest
         BufferedData<PerCascadeInstanceData[]> _perCascadeInstanceData;
         public int BufferSize { get; private set; }
 
+
+
         public static int FrameCount
         {
             get

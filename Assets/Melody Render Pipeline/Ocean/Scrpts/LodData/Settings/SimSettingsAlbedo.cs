@@ -1,18 +1,29 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class SimSettingsAlbedo : MonoBehaviour
+namespace Crest
 {
-    // Start is called before the first frame update
-    void Start()
+    [CreateAssetMenu(fileName = "SettingsAlbedo", menuName = "Crest/Albedo Settings", order = 10000)]
+    public class SimSettingsAlbedo : SimSettingsBase
     {
-        
-    }
+        /// <summary>
+        /// The version of this asset. Can be used to migrate across versions. This value should
+        /// only be changed when the editor upgrades the version.
+        /// </summary>
+        [SerializeField, HideInInspector]
+#pragma warning disable 414
+        int _version = 0;
+#pragma warning restore 414
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        /// <summary>
+        /// Resolution control. Set higher for sharper results, at the cost of increased memory usage.
+        /// </summary>
+        [Delayed]
+        public int _resolution = 768;
+
+        public override void AddToSettingsHash(ref int settingsHash)
+        {
+            base.AddToSettingsHash(ref settingsHash);
+            Hashy.AddInt(_resolution, ref settingsHash);
+        }
     }
 }
