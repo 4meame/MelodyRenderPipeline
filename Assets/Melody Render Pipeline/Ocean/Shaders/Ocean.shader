@@ -204,7 +204,7 @@ Shader "Crest/Ocean"
 		{
 			// Tell Unity we're going to render water in forward manner and we're going to do lighting and it will set
 			// the appropriate uniforms.
-			"LightMode"="ForwardBase"
+			"LightMode"="MelodyDeferred"
 			// Unity treats anything after Geometry+500 as transparent, and will render it in a forward manner and copy
 			// out the gbuffer data and do post processing before running it. Discussion of this in issue #53.
 			"Queue"="Geometry+510"

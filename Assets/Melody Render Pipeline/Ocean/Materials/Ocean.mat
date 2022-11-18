@@ -10,12 +10,18 @@ Material:
   m_Name: Ocean
   m_Shader: {fileID: 4800000, guid: 668aecf91371c8b4997e42c0c7b19527, type: 3}
   m_ValidKeywords:
+  - _APPLYNORMALMAPPING_ON
   - _CAUSTICS_ON
   - _CLIPSURFACE_ON
   - _COMPUTEDIRECTIONALLIGHT_ON
   - _DEBUGVISUALISE_NONE
+  - _FLOW_ON
   - _FOAM3DLIGHTING_ON
   - _FOAM_ON
+  - _PLANARREFLECTIONS_ON
+  - _SHADOWS_ON
+  - _SUBSURFACESCATTERING_ON
+  - _SUBSURFACESHALLOWCOLOUR_ON
   - _TRANSPARENCY_ON
   m_InvalidKeywords:
   - _COMPILESHADERWITHDEBUGINFO_ON
@@ -91,7 +97,7 @@ Material:
     m_Floats:
     - _Albedo: 0
     - _ApplyFlowToNormals: 0
-    - _ApplyNormalMapping: 0
+    - _ApplyNormalMapping: 1
     - _BumpAmt: 0.514
     - _Caustics: 1
     - _CausticsBase: 0.07
@@ -121,7 +127,7 @@ Material:
     - _DirectionalLightFallOffFar: 42
     - _DirectionalLightFarDistance: 137
     - _DirectionalLightVaryRoughness: 0
-    - _Flow: 0
+    - _Flow: 1
     - _Foam: 1
     - _Foam3DLighting: 1
     - _FoamBubbleParallax: 0.1
@@ -137,7 +143,7 @@ Material:
     - _OverrideReflectionCubemap: 0
     - _PlanarReflectionIntensity: 1
     - _PlanarReflectionNormalsStrength: 1
-    - _PlanarReflections: 0
+    - _PlanarReflections: 1
     - _ProceduralSky: 0
     - _Projection: 0
     - _RefractAmt: 0
@@ -146,7 +152,7 @@ Material:
     - _RefractiveIndexOfWater: 1.333
     - _Roughness: 0
     - _S: 1
-    - _Shadows: 0
+    - _Shadows: 1
     - _ShorelineFoamMinDepth: 0.27
     - _SkyDirectionality: 0.875
     - _Specular: 1
@@ -158,8 +164,8 @@ Material:
     - _SubSurfaceHeightLerp: 1
     - _SubSurfaceHeightMax: 24.9
     - _SubSurfaceHeightPower: 1.68
-    - _SubSurfaceScattering: 0
-    - _SubSurfaceShallowColour: 0
+    - _SubSurfaceScattering: 1
+    - _SubSurfaceShallowColour: 1
     - _SubSurfaceSun: 1.13
     - _SubSurfaceSunFallOff: 7.11
     - _TexelSize: 0.125
