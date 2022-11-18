@@ -249,6 +249,10 @@ public partial class CameraRender {
             ssgi.Render();
             ssr.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+            //NOTE : a rude method that just copys again to support transparent depth, drawing additional object pass is a better way
+            if (useColorTexture || useDepthTexture) {
+                CopyAttachments();
+            }
         }
         //draw volumetric light
         volumetricLight.PreRenderVolumetric(depthAttachmentId);
@@ -288,7 +292,7 @@ public partial class CameraRender {
         }
         DrawGizmosAfterFX();
         //get this frame depth and motion for the next frame
-        taa.CopyLastFrameRT(depthTextureId, motionVectorTextureId);
+        taa.CopyLastFrameRT(depthTextureId, motionVectorTextureId, cameraSettings.finalBlendMode);
         CleanUp();
         Submit();
 

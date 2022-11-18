@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.20990637, g: 0.27687374, b: 0.34441888, a: 0}
+  m_AmbientSkyColor: {r: 0.21265325, g: 0.28087434, b: 0.3489435, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -232,7 +232,7 @@ MonoBehaviour:
   _heightQueries: 1
   _forceBatchMode: 0
   _forceNoGPU: 0
-  _attachDebugGUI: 0
+  _attachDebugGUI: 1
   _hideOceanTileGameObjects: 1
   _uniformTiles: 0
   _disableSkirt: 0
@@ -262,6 +262,7 @@ GameObject:
   - component: {fileID: 1128481002}
   - component: {fileID: 1128481001}
   - component: {fileID: 1128481003}
+  - component: {fileID: 1128481004}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -326,7 +327,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: 6.8922027e+16}
+  m_BoundingSphereOverride: {x: 1.0999765e+27, y: NaN, z: 7.650833e-39, w: 1e-45}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -441,6 +442,33 @@ MonoBehaviour:
   sampleCount: 32
   occlusionOffset: 0.05
   allowOffScreen: 0
+--- !u!114 &1128481004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1128481000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ec7cc914eb698e4e803c4034d6807ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sampleCount: 8
+  scatteringCoef: 0.193
+  extinctionCoef: 0.0078
+  skyBackgroundExtinctionCoef: 0.9
+  mieG: 0.177
+  HeightFog: 0
+  heightScale: 0.1
+  groundHeight: 0
+  useNoise: 0
+  noiseScale: 0.015
+  noiseIntensity: 1
+  noiseIntensityOffset: 0.3
+  noiseVelocity: {x: 3, y: 3}
+  material: {fileID: 2049816683}
+  maxRayLength: 400
 --- !u!1 &1603468011
 GameObject:
   m_ObjectHideFlags: 0
@@ -553,7 +581,7 @@ MonoBehaviour:
     allowSSR: 0
     allowGI: 0
     allowVolumetricCloud: 1
-    allowVolumetricLight: 1
+    allowVolumetricLight: 0
     allowAtmosFog: 1
     allowPhyscialCamera: 1
     renderScaleMode: 0
@@ -657,3 +685,27 @@ MonoBehaviour:
   _timeResolution: 4
   _smallestWavelengthRequired: 2
   _timeLoopLength: 32
+--- !u!21 &2049816683
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hidden/Melody RP/VolumetricLight
+  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors: []
+  m_BuildTextureStacks: []

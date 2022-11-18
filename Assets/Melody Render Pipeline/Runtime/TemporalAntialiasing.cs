@@ -150,7 +150,7 @@ public class TemporalAntialiasing : MonoBehaviour {
         }
     }
 
-    public void CopyLastFrameRT(int lastDepth, int lastMV) {
+    public void CopyLastFrameRT(int lastDepth, int lastMV, CameraSettings.FinalBlendMode finalBlendMode) {
         if (camera.cameraType != CameraType.Game) {
             return;
         }
@@ -167,6 +167,11 @@ public class TemporalAntialiasing : MonoBehaviour {
             } else {
                 buffer.name = "Copy Motion Vector";
                 Draw(lastMV, historyMV);
+                ExecuteBuffer();
+            }
+            if (!copyTextureSupported) {
+                //NOTE : because Draw changes the render target, we have to set render target back
+                buffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget, finalBlendMode.destination == BlendMode.Zero ? RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                 ExecuteBuffer();
             }
         }
