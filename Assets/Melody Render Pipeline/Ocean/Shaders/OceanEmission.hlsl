@@ -160,7 +160,7 @@ half3 OceanEmission
 	in const half3 i_view,
 	in const half3 i_n_pixel,
 	in const float3 i_lightDir,
-	in const half4 i_grabPos,
+	in const real3 i_grabPos,
 	in const float i_pixelZ,
 	const float i_rawPixelZ,
 	in const half2 i_uvDepth,
@@ -183,7 +183,7 @@ half3 OceanEmission
 
 	// View ray intersects geometry surface either above or below ocean surface
 
-	const half2 uvBackground = i_grabPos.xy / i_grabPos.w;
+	const half2 uvBackground = i_grabPos.xy / i_grabPos.z;
 	half3 sceneColour;
 	half3 alpha = 0.;
 	float depthFogDistance;
@@ -214,7 +214,7 @@ half3 OceanEmission
 			uvBackgroundRefract = uvBackground;
 		}
 
-		sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_BackgroundTexture, uvBackgroundRefract).rgb;
+		sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraColorTexture, uvBackgroundRefract).rgb;
 #if _CAUSTICS_ON
 		float3 scenePos = _WorldSpaceCameraPos - i_view * i_sceneZ / dot(unity_CameraToWorld._m02_m12_m22, -i_view);
 		ApplyCaustics(_CausticsTiledTexture, _CausticsDistortionTiledTexture, i_positionSS, scenePos, i_lightDir, i_sceneZ, i_underwater, sceneColour, _LD_SliceIndex + 1, cascadeData1);
@@ -224,7 +224,7 @@ half3 OceanEmission
 	else
 	{
 		half2 uvBackgroundRefractSky = uvBackground + _RefractionStrength * i_n_pixel.xz;
-		sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_BackgroundTexture, uvBackgroundRefractSky).rgb;
+		sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraColorTexture, uvBackgroundRefractSky).rgb;
 		depthFogDistance = i_pixelZ;
 		// keep alpha at 0 as UnderwaterReflection shader handles the blend
 		// appropriately when looking at water from below

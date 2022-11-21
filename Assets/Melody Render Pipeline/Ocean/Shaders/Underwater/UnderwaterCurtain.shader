@@ -215,7 +215,7 @@ Shader "Crest/Underwater Curtain"
 
 				const half3 scatterCol = ScatterColour(seaFloorDepth, shadow, sss, view, _CrestAmbientLighting, lightDir, lightCol, true);
 
-				half3 sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_BackgroundTexture, input.grabPos.xy / input.grabPos.w).rgb;
+				half3 sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraColorTexture, input.grabPos.xy / input.grabPos.w).rgb;
 
 #if _CAUSTICS_ON
 				if (sceneZ01 != 0.0)

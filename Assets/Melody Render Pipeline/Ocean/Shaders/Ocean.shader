@@ -665,7 +665,7 @@ Shader "Crest/Ocean"
 					view,
 					n_pixel,
 					lightDir,
-					input.grabPos,
+					screenPos,
 					pixelZ,
 					input.positionCS.z,
 					uvDepth,
