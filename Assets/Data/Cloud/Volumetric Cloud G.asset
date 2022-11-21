@@ -125,7 +125,7 @@ MonoBehaviour:
   ambientScale: 0.02
   sunRayLength: 0.188
   coneRadius: 0.532
-  density: 4.5
+  density: 2.4
   forwardScatteringG: 0.839
   backwardScatteringG: -0.409
   darkOutlineScalar: 1

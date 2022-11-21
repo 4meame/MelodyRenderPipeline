@@ -32,7 +32,7 @@ MonoBehaviour:
       atlasSize: 4096
       filter: 3
   atmosphere: {fileID: 11400000, guid: 21777d4397c8a5842bd9927000c6afc3, type: 2}
-  cloud: {fileID: 11400000, guid: 730e556ca83280c41a942b15f8619d83, type: 2}
+  cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
   fog:
     enabled: 1
     resolution: 1
@@ -60,8 +60,8 @@ MonoBehaviour:
       motionVectorEnabled: 1
       jitterScale: 1
       sharpness: 0.2
-      staticBlending: 0.97
-      motionBlending: 0.953
+      staticBlending: 0.984
+      motionBlending: 0.965
       staticAABBScale: 2
       motionAABBScale: 2.65
       feedBack: 0
@@ -109,7 +109,7 @@ MonoBehaviour:
       BlueNoise: {fileID: 2800000, guid: 8c73ffcfcde66e14586a946ee802a1bf, type: 3}
       PreintegratedGF: {fileID: 2800000, guid: a4757db3355bd3d4e9536edd00d3a6bd, type: 3}
       SpatioSampler: 9
-      TemporalWeight: 0.97
+      TemporalWeight: 0.99
       TemporalScale: 1.5
       deNoise: 1
       debugMode: 0
@@ -136,7 +136,32 @@ MonoBehaviour:
       numSlice: 4
       thickness: 0.85
       gtaoStrength: 0.98
-      multipleBounce: 0
+      multipleBounce: 1
+    gi:
+      giType: 0
+      enabled: 1
+      rayCastSize: 1
+      filterType: 1
+      rayNums: 3
+      THK: 0
+      screenFade: 0
+      traceBehind: 0
+      rayMask: 0
+      traceType: 0
+      Hiz_RaySteps: 40
+      Hiz_MaxLevel: 10
+      Hiz_StartLevel: 1
+      Hiz_StopLevel: 0
+      Linear_RaySteps: 64
+      Linear_StepSize: 15
+      randomTexture: {fileID: 2800000, guid: 8c73ffcfcde66e14586a946ee802a1bf, type: 3}
+      intensity: 2
+      SpatioKernel: 12
+      SpatioRadius: 2.5
+      TemporalWeight: 0.99
+      TemporalScale: 1.5
+      deNoise: 1
+      debugType: 0
   colorLUTResolution: 64
   cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
     type: 3}

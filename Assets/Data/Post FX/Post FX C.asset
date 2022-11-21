@@ -75,20 +75,20 @@ MonoBehaviour:
     exposure: 1.045
     bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}
   motionBlurSetting:
-    mode: 2
+    mode: 0
     shutterAngle: 200
     sampleCount: 8
-    frameBlending: 0.8
+    frameBlending: 0.3
   autoExposureSetting:
     autoExposure: {fileID: 7200000, guid: 9ab31004dd070044dad9f84fe059d67a, type: 3}
     logHistogram: {fileID: 7200000, guid: a13a6250b9b3e714fb4ba6e365397836, type: 3}
-    metering: 0
+    metering: 1
     meteringMask: 1
     mask: {fileID: 0}
     minEV: -10
     maxEV: 10
-    lowPercent: 30
-    highPercent: 99
+    lowPercent: 10
+    highPercent: 90
     compensation: 0
     adaptation: 1
     speedUp: 3
@@ -108,18 +108,19 @@ MonoBehaviour:
     focusMode: 2
     focusDistanceMode: 1
     resolution: 2
-    taaEnabled: 0
+    taaEnabled: 1
     focusDistance: 0.1
     nearRangeStart: 0
     nearRangeEnd: 4
     farRangeStart: 10
     farRangeEnd: 20
     nearBlurSampleCount: 5
-    nearBlurMaxRadius: 5
+    nearBlurMaxRadius: 2
     farBlurSampleCount: 8
-    farBlurMaxRadius: 7
+    farBlurMaxRadius: 3
     dofAdvanced: {fileID: 7200000, guid: 9d1da698c5b72744a876fe64886cf47a, type: 3}
     useAdvanced: 0
+    debugTile: 0
   lensFlareSetting:
     lensFlareShader: {fileID: 4800000, guid: 22920c1d1d86e394b8a09b15a538dd7b, type: 3}
     mergeOcclusion: {fileID: 7200000, guid: 0d0a3f5b9cd287f4598e549236f3e518, type: 3}
