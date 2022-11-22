@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #ifndef CREST_OCEAN_SHADER_DATA_INCLUDED
 #define CREST_OCEAN_SHADER_DATA_INCLUDED
@@ -10,20 +10,22 @@
 /////////////////////////////
 // Samplers
 
+#if defined(UNITY_DECLARE_SCREENSPACE_TEXTURE)
 TEXTURE2D_X(_CameraDepthTexture); SAMPLER(sampler_CameraDepthTexture);
-UNITY_DECLARE_SCREENSPACE_TEXTURE(_CameraColorTexture);
+UNITY_DECLARE_SCREENSPACE_TEXTURE(_BackgroundTexture);
+#elif defined(TEXTURE2D_X)
+SAMPLER(sampler_CameraDepthTexture); SAMPLER(sampler_CameraColorTexture);
+#endif
 
 half3 _CrestAmbientLighting;
-
-float4 _CameraDepthTexture_TexelSize;
 
 TEXTURE2D_X(_CrestScreenSpaceShadowTexture);
 float4 _CrestScreenSpaceShadowTexture_TexelSize;
 
 sampler2D _ReflectionTex;
-#if _OVERRIDEREFLECTIONCUBEMAP_ON
-samplerCUBE _ReflectionCubemapOverride;
-#endif
+// #if _OVERRIDEREFLECTIONCUBEMAP_ON
+// samplerCUBE _ReflectionCubemapOverride;
+// #endif
 
 /////////////////////////////
 // Constant buffer: CrestPerMaterial
@@ -93,18 +95,17 @@ half3 _SubSurfaceShallowColShadow;
 // ----------------------------------------------------------------------------
 
 half _Specular;
-half _Roughness;
+half _ReflectionBlur; // Roughness
 half _FresnelPower;
 float _RefractiveIndexOfAir;
 float _RefractiveIndexOfWater;
+half _LightIntensityMultiplier; // _DirectionalLightBoost
 
-#if _COMPUTEDIRECTIONALLIGHT_ON
-half _DirectionalLightFallOff;
-half _DirectionalLightBoost;
-#if _DIRECTIONALLIGHTVARYROUGHNESS_ON
-half _DirectionalLightFarDistance;
-half _DirectionalLightFallOffFar;
-#endif
+half _Smoothness;
+#if _VARYSMOOTHNESSOVERDISTANCE_ON
+half _SmoothnessFar; // _DirectionalLightFarDistance
+half _SmoothnessFarDistance; // _DirectionalLightFarDistance
+half _SmoothnessPower; // _DirectionalLightFallOff
 #endif
 
 #if _PLANARREFLECTIONS_ON

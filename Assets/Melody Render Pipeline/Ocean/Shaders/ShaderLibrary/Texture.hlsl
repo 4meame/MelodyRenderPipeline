@@ -1,13 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
-
-// The const keyword for PSSL solves the following:
-// > Shader error in '<Shader>': Program '<Program>', member function '<FunctionName>' not viable: 'this' argument has
-// > type '<Type> const', but function is not marked const
-// This appears to be PSSL only feature as the fix throws a compiler error elsewhere (comprehensive test not done). I
-// tried putting const at the beginning of the function signature which compiles but did not solve the problem on PSSL
-// so must be different.
+// Copyright 2022 Wave Harmonic Ltd
 
 #ifndef CREST_TEXTURE_INCLUDED
 #define CREST_TEXTURE_INCLUDED
@@ -46,38 +39,32 @@ namespace WaveHarmonic
 			}
 
 			half4 Sample(float2 uv)
-#ifdef SHADER_API_PSSL
-	const
-#endif
 			{
 				return _texture.Sample(_sampler, uv);
 			}
 
 			half4 SampleLevel(float2 uv, float lod)
-#ifdef SHADER_API_PSSL
-	const
-#endif
 			{
 				return _texture.SampleLevel(_sampler, uv, lod);
 			}
 
 #if CREST_FLOATING_ORIGIN
 			float2 FloatingOriginOffset()
-#ifdef SHADER_API_PSSL
-	const
-#endif
 			{
 				// Safely assumes a square texture.
 				return _CrestFloatingOriginOffset.xz % (_scale * _size * _texel);
 			}
 
 			float2 FloatingOriginOffset(const CascadeParams i_cascadeData)
-#ifdef SHADER_API_PSSL
-	const
-#endif
 			{
 				// Safely assumes a square texture.
 				return _CrestFloatingOriginOffset.xz % (_scale * _size * i_cascadeData._texelWidth);
+			}
+
+			float2 FloatingOriginOffset(const float4 i_oceanParams)
+			{
+				// Safely assumes a square texture.
+				return _CrestFloatingOriginOffset.xz % (_scale * _size * i_oceanParams.x);
 			}
 #endif // CREST_FLOATING_ORIGIN
 		};

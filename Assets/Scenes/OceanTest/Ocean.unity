@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.21478187, g: 0.28105867, b: 0.34852248, a: 0}
+  m_AmbientSkyColor: {r: 0.19103077, g: 0.24830414, b: 0.291503, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 1128481001}
-  m_IndirectSpecularColor: {r: 0.04714165, g: 0.07639847, b: 0.11632813, a: 1}
+  m_IndirectSpecularColor: {r: 0.054863855, g: 0.070395835, b: 0.077605635, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -156,6 +156,71 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &595845152
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 595845153}
+  - component: {fileID: 595845154}
+  m_Layer: 0
+  m_Name: Reflection Probe
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &595845153
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 595845152}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1603468014}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!215 &595845154
+ReflectionProbe:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 595845152}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Type: 0
+  m_Mode: 1
+  m_RefreshMode: 2
+  m_TimeSlicingMode: 0
+  m_Resolution: 128
+  m_UpdateFrequency: 0
+  m_BoxSize: {x: 10000, y: 10000, z: 10000}
+  m_BoxOffset: {x: 0, y: 0, z: 0}
+  m_NearClip: 0.3
+  m_FarClip: 100000
+  m_ShadowDistance: 100
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 256
+  m_IntensityMultiplier: 1
+  m_BlendDistance: 1
+  m_HDR: 1
+  m_BoxProjection: 0
+  m_RenderDynamicObjects: 0
+  m_UseOcclusionCulling: 1
+  m_Importance: 1
+  m_CustomBakedTexture: {fileID: 0}
 --- !u!1 &741267859
 GameObject:
   m_ObjectHideFlags: 0
@@ -206,21 +271,23 @@ MonoBehaviour:
   _geometryDownSampleFactor: 2
   _lodCount: 7
   _extentsSizeMultiplier: 100
-  _simSettingsAnimatedWaves: {fileID: 11400000, guid: cb9a4d7b30098e8488792d6d5d3dcca0,
+  _simSettingsAnimatedWaves: {fileID: 11400000, guid: a4b94b50ee9e03943bae31977a59478e,
     type: 2}
   _createSeaFloorDepthData: 1
-  _simSettingsSeaFloorDepth: {fileID: 0}
+  _simSettingsSeaFloorDepth: {fileID: 11400000, guid: 6d49781c906a2304cbf585e8f3e9ce3d,
+    type: 2}
   _createFoamSim: 1
-  _simSettingsFoam: {fileID: 11400000, guid: 1e9215cfe8eb13840885521b9c1f94b7, type: 2}
+  _simSettingsFoam: {fileID: 11400000, guid: 2262b175cd1569f408e30b29eb4c156a, type: 2}
   _createDynamicWaveSim: 1
-  _simSettingsDynamicWaves: {fileID: 11400000, guid: f3ea47810fecba44aadea5e1f7d98928,
+  _simSettingsDynamicWaves: {fileID: 11400000, guid: 159c1b01a90431c4eab32eb66372fe9e,
     type: 2}
   _createFlowSim: 1
-  _simSettingsFlow: {fileID: 11400000, guid: 330e0bafbea81264998be44919a972a3, type: 2}
+  _simSettingsFlow: {fileID: 11400000, guid: 971c4f97e2811a645ba5436ed650d6bc, type: 2}
   _createShadowData: 1
-  _simSettingsShadow: {fileID: 11400000, guid: 2be1825191b69674aa750f61d857a13a, type: 2}
+  _simSettingsShadow: {fileID: 11400000, guid: 0910af86248aaaf49800a417a9d80287, type: 2}
   _createClipSurfaceData: 1
-  _simSettingsClipSurface: {fileID: 0}
+  _simSettingsClipSurface: {fileID: 11400000, guid: 6c6071f98c17a924fbee0bdac8ce9bb5,
+    type: 2}
   _defaultClippingState: 0
   _createAlbedoData: 0
   _settingsAlbedo: {fileID: 0}
@@ -251,6 +318,30 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!21 &834076068
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hidden/Melody RP/VolumetricLight
+  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors: []
+  m_BuildTextureStacks: []
 --- !u!1 &1128481000
 GameObject:
   m_ObjectHideFlags: 0
@@ -281,8 +372,8 @@ Light:
   serializedVersion: 10
   m_Type: 1
   m_Shape: 0
-  m_Color: {r: 0.6013969, g: 0.58201927, b: 0.54733473, a: 1}
-  m_Intensity: 3.5803142
+  m_Color: {r: 0.6505217, g: 0.5864586, b: 0.48258448, a: 1}
+  m_Intensity: 3.0605803
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -327,7 +418,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 1e-45}
+  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: 6.8922027e+16}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -339,14 +430,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1128481000}
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
+  m_LocalRotation: {x: -0.007857316, y: -0.9906318, z: 0.1198796, w: -0.06492937}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 13.8, y: -187.5, z: 0}
 --- !u!114 &1128481003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -467,34 +558,8 @@ MonoBehaviour:
   noiseIntensity: 1
   noiseIntensityOffset: 0.3
   noiseVelocity: {x: 3, y: 3}
-  material: {fileID: 1330040389}
+  material: {fileID: 834076068}
   maxRayLength: 400
---- !u!21 &1330040389
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Hidden/Melody RP/VolumetricLight
-  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
-  m_ValidKeywords:
-  - _DIRECTION
-  - _RECEIVE_SHADOWS
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs: []
-    m_Ints: []
-    m_Floats: []
-    m_Colors: []
-  m_BuildTextureStacks: []
 --- !u!1 &1603468011
 GameObject:
   m_ObjectHideFlags: 0
@@ -577,7 +642,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 10, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 595845153}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -607,7 +673,7 @@ MonoBehaviour:
     allowSSR: 0
     allowGI: 0
     allowVolumetricCloud: 1
-    allowVolumetricLight: 1
+    allowVolumetricLight: 0
     allowAtmosFog: 1
     allowPhyscialCamera: 1
     renderScaleMode: 0
@@ -688,7 +754,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a57126133720c243a7af00a156c9ee8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _spectrum: {fileID: 11400000, guid: b080b2f2453fe1f428136ee31a5f5efd, type: 2}
+  _spectrum: {fileID: 11400000, guid: 7df935b1f6c4482488079a1064778cce, type: 2}
   _spectrumFixedAtRuntime: 1
   _waveDirectionHeadingAngle: 0
   _overrideGlobalWindSpeed: 0

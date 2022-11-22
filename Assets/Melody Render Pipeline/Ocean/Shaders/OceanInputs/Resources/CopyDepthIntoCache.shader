@@ -1,26 +1,26 @@
-﻿// Crest Ocean System
+// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 Shader "Crest/Copy Depth Buffer Into Cache"
 {
 	SubShader
 	{
-		Tags { "RenderType" = "Opaque" }
+		Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
 
 		Pass
 		{
 			Name "CopyDepthBufferIntoCache"
 			ZTest Always ZWrite Off Blend Off
 
-			CGPROGRAM
+			HLSLPROGRAM
 			// Required to compile gles 2.0 with standard srp library
 			#pragma prefer_hlslcc gles
 			#pragma exclude_renderers d3d11_9x
 			#pragma vertex vert
 			#pragma fragment frag
 
-			#include "UnityCG.cginc"
+			#include "../../../../ShaderLibrary/Common.hlsl"
 
 			#include "../../OceanGlobals.hlsl"
 
@@ -47,7 +47,7 @@ Shader "Crest/Copy Depth Buffer Into Cache"
 			{
 				Varyings output;
 				output.uv = input.uv;
-				output.positionCS = UnityObjectToClipPos(input.positionOS);
+				output.positionCS = TransformObjectToHClip(input.positionOS);
 				return output;
 			}
 
@@ -72,7 +72,7 @@ Shader "Crest/Copy Depth Buffer Into Cache"
 				return float4(altitude, 0.0, 0.0, 1.0);
 			}
 
-			ENDCG
+			ENDHLSL
 		}
 	}
 }

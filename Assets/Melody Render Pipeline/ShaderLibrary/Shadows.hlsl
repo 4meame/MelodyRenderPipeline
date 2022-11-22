@@ -34,7 +34,7 @@ TEXTURE2D_SHADOW(_DirectionalShadowAtlas); TEXTURE2D_SHADOW(_OtherShadowAtlas);
 #define SHADOW_SAMPLER sampler_linear_clamp_compare
 SAMPLER_CMP(SHADOW_SAMPLER);
 
-CBUFFER_START(_ChickenShadows)
+CBUFFER_START(_MelodyShadows)
 	float4x4 _DirectionalShadowMatrices[MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT * MAX_CASCADE_COUNT];
 	float4x4 _OtherShadowMatrices[MAX_SHADOWED_OTHER_LIGHT_COUNT];
 	int _CascadeCount;

@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 Shader "Hidden/Crest/OceanProxy"
 {
@@ -15,8 +15,6 @@ Shader "Hidden/Crest/OceanProxy"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
 
@@ -28,7 +26,6 @@ Shader "Hidden/Crest/OceanProxy"
 
             struct v2f
             {
-                UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
             };
 
@@ -36,17 +33,12 @@ Shader "Hidden/Crest/OceanProxy"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                UNITY_TRANSFER_FOG(o, o.vertex);
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col = fixed4(0.0, 0.3, 1.0, 0.5);
-
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-
                 return col;
             }
             ENDCG

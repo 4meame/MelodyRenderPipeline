@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #pragma kernel CSMain
 
@@ -10,7 +10,7 @@
 StructuredBuffer<float3> _QueryPositions_MinGridSizes;
 RWStructuredBuffer<float3> _ResultFlows;
 
-#include "HLSLSupport.cginc"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 #include "../OceanGlobals.hlsl"
 #include "../OceanInputsDriven.hlsl"

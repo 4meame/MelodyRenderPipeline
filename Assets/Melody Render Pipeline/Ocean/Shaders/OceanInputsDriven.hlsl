@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #ifndef CREST_INPUTS_DRIVEN_H
 #define CREST_INPUTS_DRIVEN_H
@@ -27,6 +27,18 @@ struct CascadeParams
 
 StructuredBuffer<CascadeParams> _CrestCascadeData;
 StructuredBuffer<CascadeParams> _CrestCascadeDataSource;
+
+CascadeParams MakeCascadeParams(float3 posScale, float4 params)
+{
+	CascadeParams result;
+	result._posSnapped = posScale.xy;
+	result._scale = posScale.z;
+	result._texelWidth = params.x;
+	result._textureRes = params.y;
+	result._weight = params.z;
+	result._oneOverTextureRes = params.w;
+	return result;
+}
 
 // This must exactly match struct with same name in C#
 // :PerCascadeInstanceData

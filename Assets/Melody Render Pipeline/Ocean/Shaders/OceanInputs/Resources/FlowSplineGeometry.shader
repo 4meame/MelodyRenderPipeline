@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2021 Wave Harmonic Ltd
 
 // Generates waves from geometry that is rendered into the water simulation from a top down camera. Expects
 // following data on verts:

@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #if _PROCEDURALSKY_ON
 half3 SkyProceduralDP(in const half3 i_refl, in const half3 i_lightDir)
@@ -22,8 +22,9 @@ half3 SkyProceduralDP(in const half3 i_refl, in const half3 i_lightDir)
 void PlanarReflection(in const half4 i_screenPos, in const half3 i_n_pixel, inout half3 io_colour)
 {
 	half4 screenPos = i_screenPos;
+	// This should probably convert normal from world space to view space or something like that.
 	screenPos.xy += _PlanarReflectionNormalsStrength * i_n_pixel.xz;
-	half4 refl = tex2Dproj(_ReflectionTex, UNITY_PROJ_COORD(screenPos));
+	half4 refl = tex2Dproj(_ReflectionTex, screenPos);
 	// If more than four layers are used on terrain, they will appear black if HDR is enabled on the planar reflection
 	// camera. Reflection alpha is probably a negative value.
 	io_colour = lerp(io_colour, refl.rgb, _PlanarReflectionIntensity * saturate(refl.a));
@@ -49,69 +50,63 @@ void ApplyReflectionSky
 	in const half4 i_screenPos,
 	in const float i_pixelZ,
 	in const half i_weight,
+	in Surface surfaceData,
 	inout half3 io_col
 )
 {
-	// Reflection
-	half3 refl = reflect(-i_view, i_n_pixel);
-	// Dont reflect below horizon
-	refl.y = max(refl.y, 0.0);
-
 	half3 skyColour;
 
+	// Reflection
+	half3 refl = reflect(-i_view, i_n_pixel);
+	// Don't reflect below horizon
+	refl.y = max(refl.y, 0.0);
+
+	// Sharp reflection
+	const real mip = _ReflectionBlur;
 
 #if _PROCEDURALSKY_ON
-	// procedural sky cubemap
 	skyColour = SkyProceduralDP(refl, i_lightDir);
+//#elif _OVERRIDEREFLECTIONCUBEMAP_ON
+//	// User-provided cubemap - TODO figure out how to unpack HDR values from this
+//	half4 encodedIrradiance = SAMPLE_TEXTURECUBE_LOD(_ReflectionCubemapOverride, samplerunity_SpecCube0, refl, mip);
+//#if !defined(UNITY_USE_NATIVE_HDR)
+//	skyColour = DecodeHDREnvironment(encodedIrradiance, unity_SpecCube0_HDR);
+//#else
+//	skyColour = encodedIrradiance.rbg;
+//#endif
 #else
 
-	// sample sky cubemap
-#if _OVERRIDEREFLECTIONCUBEMAP_ON
-	// User-provided cubemap
-	half4 val = texCUBE(_ReflectionCubemapOverride, refl);
-	skyColour = val.rgb;
+	// Unity sky
+	half4 encodedIrradiance = SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, refl, mip);
+#if !defined(UNITY_USE_NATIVE_HDR)
+	skyColour = DecodeHDREnvironment(encodedIrradiance, unity_SpecCube0_HDR);
 #else
-	Unity_GlossyEnvironmentData envData;
-	envData.roughness = _Roughness;
-	envData.reflUVW = refl;
-	float3 probe0 = Unity_GlossyEnvironment(UNITY_PASS_TEXCUBE(unity_SpecCube0), unity_SpecCube0_HDR, envData);
-	#if UNITY_SPECCUBE_BLENDING
-	float interpolator = unity_SpecCube0_BoxMin.w;
-	// Branch optimization recommended by: https://catlikecoding.com/unity/tutorials/rendering/part-8/
-	UNITY_BRANCH
-	if (interpolator < 0.99999)
-	{
-		float3 probe1 = Unity_GlossyEnvironment(UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1, unity_SpecCube0), unity_SpecCube1_HDR, envData);
-		skyColour = lerp(probe1, probe0, interpolator);
-	}
-	else
-	{
-		skyColour = probe0;
-	}
-	#else
-	skyColour = probe0;
-	#endif
+	skyColour = encodedIrradiance.rbg;
 #endif
 
 #endif
 
-	// Override with anything in the planar reflections
 #if _PLANARREFLECTIONS_ON
 	PlanarReflection(i_screenPos, i_n_pixel, skyColour);
 #endif
 
-	// Add primary light
-#if _COMPUTEDIRECTIONALLIGHT_ON
-#if _DIRECTIONALLIGHTVARYROUGHNESS_ON
-	half fallOffAlpha = saturate(i_pixelZ / _DirectionalLightFarDistance);
-	fallOffAlpha = sqrt(fallOffAlpha);
-	half fallOff = lerp(_DirectionalLightFallOff, _DirectionalLightFallOffFar, fallOffAlpha);
-#else
-	half fallOff = _DirectionalLightFallOff;
+	// Specular from sun light
+
+	// Surface smoothness
+	surfaceData.smoothness = _Smoothness;
+#if _VARYSMOOTHNESSOVERDISTANCE_ON
+	surfaceData.smoothness = lerp(surfaceData.smoothness, _SmoothnessFar, pow(saturate(i_pixelZ / _SmoothnessFarDistance), _SmoothnessPower));
 #endif
 
-	skyColour += pow(max(0., dot(refl, i_lightDir)), fallOff) * _DirectionalLightBoost * _LightColor0 * i_shadow;
-#endif
+	//init brdf data to rely on pipeline bilut-in method for now
+	BRDF brdf = GetBRDF(surfaceData);
+	//init gi data to rely on pipeline bilut-in method for now
+	GI gi = GetGI(GI_FRAGMENT_DATA(input), surfaceData, brdf);
+	half3 lightColor = GetLighting(surfaceData, brdf, gi) * i_shadow * _LightIntensityMultiplier;
+
+	// Multiply Specular here because it the BRDF doesn't seem to use it..
+	skyColour += lightColor;
+
 
 	// Fresnel
 	float R_theta = CalculateFresnelReflectionCoefficient(max(dot(i_n_pixel, i_view), 0.0));

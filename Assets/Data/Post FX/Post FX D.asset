@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27b41432c03b3234aaef4f47937520f9, type: 3}
+  m_Name: Post FX D
+  m_EditorClassIdentifier: 
+  shader: {fileID: 4800000, guid: 94b6d1a1245ff2142b12e2b3962e91b9, type: 3}
+  bloom:
+    maxIterations: 5
+    downscaleLimit: 10
+    bicubicUpsampling: 1
+    threshold: 1
+    thresholdKnee: 0.512
+    fadeFireflies: 1
+    mode: 1
+    intensity: 0.8
+    scatter: 0.81
+    ignoreRenderScale: 1
+  colorAdjustment:
+    postExposure: 0
+    constrat: 0
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    hueShift: 0
+    saturation: 0
+  whiteBalance:
+    Temperature: 0
+    Tint: 0
+  splitToning:
+    shadows: {r: 0.5, g: 0.5, b: 0.5, a: 0}
+    highlights: {r: 1, g: 1, b: 1, a: 1}
+    balance: 0
+  channelMixer:
+    red: {x: 1, y: 0, z: 0}
+    green: {x: 0, y: 1, z: 0}
+    blue: {x: 0, y: 0, z: 1}
+  shadowMidtonesHighlight:
+    shadows: {r: 1, g: 1, b: 1, a: 1}
+    midtones: {r: 1, g: 1, b: 1, a: 1}
+    highlights: {r: 1, g: 1, b: 1, a: 1}
+    shadowsStart: 0
+    shadowsEnd: 0.3
+    highlightsStart: 0.55
+    highlightsEnd: 1
+  posterize:
+    colorRamp: 255
+    rampGamma: 0.3
+  toneMapping:
+    mode: 3
+  outlineSetting:
+    enable: 0
+    color: {r: 0, g: 0, b: 0, a: 1}
+    outlineScale: 1
+    ColorThreshold: 1
+    depthThreshold: 2.48
+    normalThreshold: 0.265
+    depthNormalThreshold: 0.447
+    depthNormalThresholdScale: 4.92
+  lightShaftsSetting:
+    mode: 0
+    enable: 0
+    Downsample: 4
+    lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
+    radialBlurParameters: {x: 0, y: 0.6, z: 0.17, w: 0}
+    density: 0.983
+    weight: 0.735
+    decay: 0.949
+    exposure: 1.045
+    bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}
+  motionBlurSetting:
+    mode: 2
+    shutterAngle: 120
+    sampleCount: 8
+    frameBlending: 0.3
+  autoExposureSetting:
+    autoExposure: {fileID: 7200000, guid: 9ab31004dd070044dad9f84fe059d67a, type: 3}
+    logHistogram: {fileID: 7200000, guid: a13a6250b9b3e714fb4ba6e365397836, type: 3}
+    metering: 1
+    meteringMask: 1
+    mask: {fileID: 0}
+    minEV: -10
+    maxEV: 10
+    lowPercent: 10
+    highPercent: 90
+    compensation: 0
+    adaptation: 0
+    speedUp: 3
+    speedDown: 1
+  depthOfFieldSetting:
+    dofKernel: {fileID: 7200000, guid: d9b98df42efd8ce4aa11bf968b2ed068, type: 3}
+    dofCoc: {fileID: 7200000, guid: e076caf963fc9d244bf635e64a782ca2, type: 3}
+    dofReproj: {fileID: 7200000, guid: b2ef0a01fb4ea9348935e83013547c99, type: 3}
+    dofPrefitler: {fileID: 7200000, guid: 32d0a21b343f999429a1d5a23d253032, type: 3}
+    dofMipGen: {fileID: 7200000, guid: b959d60cc2587f24ca1ae6a583df7031, type: 3}
+    dofTileMax: {fileID: 7200000, guid: ea30ac8571f308f49b7b8be861c54c76, type: 3}
+    dofClear: {fileID: 7200000, guid: 5a53f140564d7874a868d6e794b81ccf, type: 3}
+    dofDilate: {fileID: 7200000, guid: f8d44f1acfdf0ed48876c63b94a9888a, type: 3}
+    dofGather: {fileID: 7200000, guid: 8460e9c174f886a43a0693ed115df3db, type: 3}
+    dofPreCombine: {fileID: 7200000, guid: 2336e1bd867d3b4429a5d752b25f1613, type: 3}
+    dofCombine: {fileID: 7200000, guid: 0688f2b097264e04a995691e63f3f7f3, type: 3}
+    focusMode: 2
+    focusDistanceMode: 1
+    resolution: 1
+    taaEnabled: 1
+    focusDistance: 5
+    nearRangeStart: 0
+    nearRangeEnd: 4
+    farRangeStart: 10
+    farRangeEnd: 20
+    nearBlurSampleCount: 5
+    nearBlurMaxRadius: 7
+    farBlurSampleCount: 8
+    farBlurMaxRadius: 13
+    dofAdvanced: {fileID: 7200000, guid: 9d1da698c5b72744a876fe64886cf47a, type: 3}
+    useAdvanced: 0
+    debugTile: 0
+  lensFlareSetting:
+    lensFlareShader: {fileID: 4800000, guid: 22920c1d1d86e394b8a09b15a538dd7b, type: 3}
+    mergeOcclusion: {fileID: 7200000, guid: 0d0a3f5b9cd287f4598e549236f3e518, type: 3}
+    mode: 1
+    antiAliasing: 1

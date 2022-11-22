@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #ifndef CREST_OCEAN_VERT_HELPERS_H
 #define CREST_OCEAN_VERT_HELPERS_H
@@ -37,7 +37,14 @@ void SnapAndTransitionVertLayout(in const float i_meshScaleAlpha, in const Casca
 
 	// snap the verts to the grid
 	// The snap size should be twice the original size to keep the shape of the eight triangles (otherwise the edge layout changes).
-	io_worldPos.xz -= frac(UNITY_MATRIX_M._m03_m23 / GRID_SIZE_2) * GRID_SIZE_2; // caution - sign of frac might change in non-hlsl shaders
+	float2 objectPosXZWS = UNITY_MATRIX_M._m03_m23;
+
+	// Relative world space - add camera pos to get back out to world. Would be nice if we could operate in RWS..
+#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
+		objectPosXZWS += _WorldSpaceCameraPos.xz;
+#endif
+
+	io_worldPos.xz -= frac(objectPosXZWS / GRID_SIZE_2) * GRID_SIZE_2; // caution - sign of frac might change in non-hlsl shaders
 
 	// compute lod transition alpha
 	o_lodAlpha = ComputeLodAlpha(io_worldPos, i_meshScaleAlpha, i_cascadeData0);

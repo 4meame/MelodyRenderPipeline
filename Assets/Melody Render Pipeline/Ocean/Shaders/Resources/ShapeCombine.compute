@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Compute shader to perform combine of displacements. Reads and writes to texture array which saves
 // needing to do ping pong of render targets. Unfortunately reading/writing float4s is not supported
@@ -15,7 +15,7 @@
 #pragma kernel ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON _FLOW_ON _DYNAMIC_WAVE_SIM_ON
 #pragma kernel ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE _FLOW_ON _DYNAMIC_WAVE_SIM_ON _DISABLE_COMBINE
 
-#include "HLSLSupport.cginc"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 #include "../OceanConstants.hlsl"
 #include "../OceanGlobals.hlsl"
@@ -29,7 +29,7 @@ RWTexture2DArray<half4> _LD_TexArray_AnimatedWaves_Compute;
 
 void Flow(in const CascadeParams cascadeData, out float2 offsets, out float2 weights)
 {
-	const float period = max(3.0 * _CrestCascadeData[_LD_SliceIndex]._texelWidth, 1.0);
+	const float period = 3.0 * _CrestCascadeData[_LD_SliceIndex]._texelWidth;
 	const float half_period = period / 2.0;
 	offsets = fmod(float2(_CrestTime, _CrestTime + half_period), period);
 	weights.x = offsets.x / half_period;

@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #ifndef CREST_OCEAN_EMISSION_INCLUDED
 #define CREST_OCEAN_EMISSION_INCLUDED
@@ -14,6 +14,7 @@ half3 ScatterColour
 	in const half3 i_ambientLighting,
 	in const half3 i_lightDir,
 	in const half3 i_lightCol,
+	in const half3 i_additionalLightCol,
 	in const bool i_underwater
 )
 {
@@ -36,13 +37,18 @@ half3 ScatterColour
 		col = lerp(col, shallowCol, shallowness);
 #endif
 
-		col *= i_ambientLighting;
+		col *= i_ambientLighting + i_lightCol;
 
 		// Approximate subsurface scattering - add light when surface faces viewer. Use geometry normal - don't need high freqs.
 		half towardsSun = pow(max(0., dot(i_lightDir, -i_view)), _SubSurfaceSunFallOff);
+		// URP version was: col += (_SubSurfaceBase + _SubSurfaceSun * towardsSun) * _SubSurfaceColour.rgb * i_lightCol * shadow;
 		half3 subsurface = (_SubSurfaceBase + _SubSurfaceSun * towardsSun) * _SubSurfaceColour.rgb * i_lightCol * i_shadow;
 		if (!i_underwater)
 		{
+#if _ADDITIONAL_LIGHTS
+			// Already includes attenuation from distance and shadows. Exclude from underwater.
+			subsurface += _SubSurfaceColour.rgb * i_additionalLightCol;
+#endif
 			subsurface *= (1.0 - v * v) * sss;
 		}
 		col += subsurface;
@@ -65,7 +71,8 @@ void ApplyCaustics
 	in const bool i_underwater,
 	inout half3 io_sceneColour,
 	in const int i_sliceIndex,
-	in const CascadeParams cascadeData
+	in const CascadeParams cascadeData,
+	in Surface surfaceData
 )
 {
 	// could sample from the screen space shadow texture to attenuate this..
@@ -115,7 +122,10 @@ void ApplyCaustics
 		);
 	}
 
-	// Apply distortion.
+	// We'll use this distortion code for above water in single pass due to refraction bug.
+#if !defined(UNITY_SINGLE_PASS_STEREO) && !defined(UNITY_STEREO_INSTANCING_ENABLED)
+	if (i_underwater)
+#endif
 	{
 		float2 surfacePosXZ = i_scenePos.xz;
 
@@ -137,10 +147,11 @@ void ApplyCaustics
 	{
 		// Apply shadow maps to caustics.
 		{
-			// Normally, we would use SHADOW_ATTENUATION(), but SHADOWS_SCREEN and UNITY_NO_SCREENSPACE_SHADOWS are not
-			// handled for the transparent pass.
-			// Null texture is a small white texture which will be smaller than the screen size.
-			causticsStrength *= LOAD_TEXTURE2D_X(_CrestScreenSpaceShadowTexture,  min(i_positionSS, (int2)_CrestScreenSpaceShadowTexture_TexelSize.zw - 1)).r;
+			// We could skip GetMainLight but this is recommended approach which is likely more robust to API changes.
+			ShadowData shadowData;
+			shadowData = GetShadowData(surfaceData);
+			Light mainLight = GetMainLight(surfaceData, shadowData);
+			causticsStrength *= mainLight.shadowAttenuation;
 		}
 	}
 #endif // _SHADOWS_ON
@@ -154,13 +165,12 @@ void ApplyCaustics
 }
 #endif // _CAUSTICS_ON
 
-
 half3 OceanEmission
 (
 	in const half3 i_view,
 	in const half3 i_n_pixel,
 	in const float3 i_lightDir,
-	in const real3 i_grabPos,
+	in const real3 i_grabPosXYW,
 	in const float i_pixelZ,
 	const float i_rawPixelZ,
 	in const half2 i_uvDepth,
@@ -171,7 +181,8 @@ half3 OceanEmission
 	in const bool i_underwater,
 	in const half3 i_scatterCol,
 	in const CascadeParams cascadeData0,
-	in const CascadeParams cascadeData1
+	in const CascadeParams cascadeData1,
+	in Surface surfaceData
 )
 {
 	half3 col = i_scatterCol;
@@ -183,7 +194,7 @@ half3 OceanEmission
 
 	// View ray intersects geometry surface either above or below ocean surface
 
-	const half2 uvBackground = i_grabPos.xy / i_grabPos.z;
+	const half2 uvBackground = i_grabPosXYW.xy / i_grabPosXYW.z;
 	half3 sceneColour;
 	half3 alpha = 0.;
 	float depthFogDistance;
@@ -214,17 +225,24 @@ half3 OceanEmission
 			uvBackgroundRefract = uvBackground;
 		}
 
-		sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraColorTexture, uvBackgroundRefract).rgb;
+		sceneColour = SAMPLE_TEXTURE2D_X(_CameraColorTexture, sampler_CameraColorTexture, uvBackgroundRefract).rgb;
 #if _CAUSTICS_ON
-		float3 scenePos = _WorldSpaceCameraPos - i_view * i_sceneZ / dot(unity_CameraToWorld._m02_m12_m22, -i_view);
-		ApplyCaustics(_CausticsTiledTexture, _CausticsDistortionTiledTexture, i_positionSS, scenePos, i_lightDir, i_sceneZ, i_underwater, sceneColour, _LD_SliceIndex + 1, cascadeData1);
+		// Refractions don't work correctly in single pass. Use same code from underwater instead for now.
+#if defined(UNITY_SINGLE_PASS_STEREO) || defined(UNITY_STEREO_INSTANCING_ENABLED)
+		float3 scenePos = (((i_view) / dot(i_view, unity_CameraToWorld._m02_m12_m22)) * i_sceneZ) + _WorldSpaceCameraPos;
+#else
+		float3 scenePos = ComputeWorldSpacePosition(uvBackgroundRefract, rawDepth, UNITY_MATRIX_I_VP);
+#endif
+		ApplyCaustics(_CausticsTiledTexture, _CausticsDistortionTiledTexture, i_positionSS, scenePos, i_lightDir, i_sceneZ, i_underwater, sceneColour, _LD_SliceIndex + 1, cascadeData1, surfaceData);
 #endif
 		alpha = 1.0 - exp(-_DepthFogDensity.xyz * depthFogDistance);
 	}
 	else
 	{
-		half2 uvBackgroundRefractSky = uvBackground + _RefractionStrength * i_n_pixel.xz;
-		sceneColour = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraColorTexture, uvBackgroundRefractSky).rgb;
+		const half2 refractOffset = _RefractionStrength * i_n_pixel.xz;
+		const half2 uvBackgroundRefract = uvBackground + refractOffset;
+
+		sceneColour = SAMPLE_TEXTURE2D_X(_CameraColorTexture, sampler_CameraColorTexture, uvBackgroundRefract).rgb;
 		depthFogDistance = i_pixelZ;
 		// keep alpha at 0 as UnderwaterReflection shader handles the blend
 		// appropriately when looking at water from below

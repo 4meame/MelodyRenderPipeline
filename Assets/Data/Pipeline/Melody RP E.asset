@@ -1,0 +1,167 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5329e00abca0d1a48a72def97f368009, type: 3}
+  m_Name: Melody RP E
+  m_EditorClassIdentifier: 
+  useDynamicBachting: 0
+  useInstancing: 1
+  useSRPBatcher: 0
+  useLightsPerObject: 1
+  shadows:
+    maxDistance: 50
+    distanceFade: 0.303
+    directional:
+      atlasSize: 4096
+      filter: 3
+      cascadeCount: 4
+      cascadeRatio1: 0.478
+      cascadeRatio2: 0.624
+      cascadeRatio3: 0.799
+      cascadeFade: 0.237
+      cascadeBlend: 1
+    other:
+      atlasSize: 4096
+      filter: 3
+  atmosphere: {fileID: 11400000, guid: 21777d4397c8a5842bd9927000c6afc3, type: 2}
+  cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
+  fog:
+    enabled: 1
+    resolution: 1
+  postFXSettings: {fileID: 11400000, guid: e089f744ec6e2f242afd88eabd41e272, type: 2}
+  cameraBufferSettings:
+    allowHDR: 1
+    renderScale: 1
+    rescalingMode: 2
+    renderingPath: 1
+    copyDepth: 1
+    copyDepthReflections: 0
+    copyColor: 1
+    copyColorReflections: 0
+    useDepthNormal: 0
+    useDiffuse: 0
+    useSpecular: 0
+    fxaa:
+      enabled: 1
+      fixedThreshold: 0.0359
+      relativeThreshold: 0.068
+      subpixelBlending: 0.793
+      quality: 2
+    taa:
+      mode: 2
+      motionVectorEnabled: 1
+      jitterScale: 1
+      sharpness: 0.2
+      staticBlending: 0.9
+      motionBlending: 0.965
+      staticAABBScale: 1
+      motionAABBScale: 3
+      feedBack: 0
+    sspr:
+      enabled: 0
+      computeShader: {fileID: 7200000, guid: f2a4c2a9bafc08c4bb76a19c765becc6, type: 3}
+      reflectionTextureSize: 1024
+      ApplyFillHoleFix: 1
+      HorizontalReflectionPlaneHeightWS: 0.01
+      FadeOutScreenBorderWidthVerticle: 0.119
+      FadeOutScreenBorderWidthHorizontal: 0.088
+      ScreenLRStretchIntensity: 0
+      ScreenLRStretchThreshold: 1
+      TintColor: {r: 1.7411011, g: 1.7411011, b: 1.7411011, a: 1}
+    ssr:
+      enabled: 1
+      computeShader: {fileID: 7200000, guid: fc4533c4e714f09429a1b95aac7ed56b, type: 3}
+      sSRType: 1
+      downSample: 1
+      maxDistance: 25
+      iterations: 128
+      binarySearchIterations: 8
+      pixelStrideSize: 4
+      pixelStrideZCuttoff: 11
+      thickness: 0.07
+      screenEdgeFade: 0.918
+      eyeFadeStart: 0.024
+      eyeFadeEnd: 1
+      traceMethod: 0
+      rayCastSize: 1
+      rayNums: 1
+      BRDFBias: 0.7
+      THK: 0.1
+      screenFade: 0.1
+      traceBehind: 1
+      traceTowardRay: 1
+      ReflectionOcclusion: 0
+      Hiz_RaySteps: 128
+      Hiz_Threshold: 0.000172
+      Hiz_MaxLevel: 9
+      Hiz_StartLevel: 1
+      Hiz_StopLevel: 0
+      Linear_RaySteps: 128
+      Linear_StepSize: 10
+      BlueNoise: {fileID: 2800000, guid: 8c73ffcfcde66e14586a946ee802a1bf, type: 3}
+      PreintegratedGF: {fileID: 2800000, guid: a4757db3355bd3d4e9536edd00d3a6bd, type: 3}
+      SpatioSampler: 9
+      TemporalWeight: 0.99
+      TemporalScale: 1.5
+      deNoise: 1
+      debugMode: 0
+    ssao:
+      aOType: 3
+      filterType: 0
+      debugType: 0
+      enabled: 1
+      computeShader: {fileID: 7200000, guid: 292fa2e92df0b4640a68ab2c61571f6e, type: 3}
+      randomTexture: {fileID: 2800000, guid: f10eee24281a9bf48b542d9b20bf466a, type: 3}
+      downSample: 2
+      sampleCount: 4
+      aoRadius: 0.6
+      filterRadius: 2.15
+      filterFactor: 0.949
+      kernelSize: 8
+      pureDepthAOParameters: {x: 0.001, y: 1, z: 0.96, w: 0.15}
+      SSAOParameters: {x: 0.001, y: 0.1, z: 0.22, w: 11.55}
+      numDirection: 12
+      maxRadiusPixel: 20
+      tanBias: 0.014
+      hbaoStrength: 1.2
+      fadeParams: {x: 0, y: 0, z: 0, w: 0}
+      numSlice: 4
+      thickness: 0.85
+      gtaoStrength: 0.98
+      multipleBounce: 1
+    gi:
+      giType: 0
+      enabled: 1
+      rayCastSize: 1
+      filterType: 1
+      rayNums: 3
+      THK: 0
+      screenFade: 0
+      traceBehind: 0
+      rayMask: 0
+      traceType: 0
+      Hiz_RaySteps: 40
+      Hiz_MaxLevel: 10
+      Hiz_StartLevel: 1
+      Hiz_StopLevel: 0
+      Linear_RaySteps: 64
+      Linear_StepSize: 15
+      randomTexture: {fileID: 2800000, guid: 8c73ffcfcde66e14586a946ee802a1bf, type: 3}
+      intensity: 2
+      SpatioKernel: 12
+      SpatioRadius: 2.5
+      TemporalWeight: 0.99
+      TemporalScale: 1.5
+      deNoise: 1
+      debugType: 0
+  colorLUTResolution: 64
+  cameraRendererShader: {fileID: 4800000, guid: 81a13a263b206274b84a09ad365d6a24,
+    type: 3}

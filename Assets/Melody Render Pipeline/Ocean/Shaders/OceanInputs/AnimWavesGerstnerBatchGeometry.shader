@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Renders gerstner waves from geometry. Allows localised wave areas. Can fade waves based on UVs - fades to 0
 // as U or V approach 0 or 1, with configurable feather width. Can also take weight from vertex colour (red channel).

@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Helpers that use 'driven' data - i.e. has backing C# to set shader parameters like the slice index and etc. An
 // example of this setup code can be found in OceanChunkRenderer.OnWillRenderObject().

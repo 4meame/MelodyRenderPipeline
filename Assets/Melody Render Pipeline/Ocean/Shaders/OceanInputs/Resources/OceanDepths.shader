@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Renders ocean depth - signed distance from sea level to sea floor
 Shader "Crest/Inputs/Depth/Ocean Depth From Geometry"

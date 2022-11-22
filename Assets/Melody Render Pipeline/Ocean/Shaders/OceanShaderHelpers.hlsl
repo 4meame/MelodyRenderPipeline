@@ -1,15 +1,24 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Helpers that will only be used for shaders (eg depth, lighting etc).
 
 #ifndef CREST_OCEAN_SHADER_HELPERS_H
 #define CREST_OCEAN_SHADER_HELPERS_H
 
+// Silence Unity errors in SG editor.
+#ifdef SHADERGRAPH_PREVIEW
+#define LOAD_DEPTH_TEXTURE_X(a, b) 0
+#define SAMPLE_DEPTH_TEXTURE_X(a, b, c) 0
+#define TEXTURE2D_X(t) Texture2D t
+Texture2D _CameraDepthTexture;
+SamplerState sampler_CameraDepthTexture;
+#else
 // Unity does not define these.
 #define SAMPLE_DEPTH_TEXTURE_X(textureName, samplerName, coord2) SAMPLE_TEXTURE2D_X(textureName, samplerName, coord2).r
 #define LOAD_DEPTH_TEXTURE_X(textureName, coord2) LOAD_TEXTURE2D_X(textureName, coord2).r
+#endif
 
 // Sample depth macros for all pipelines. Use macros as HDRP depth is a mipchain which can change according to:
 // com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl
@@ -37,7 +46,11 @@ float CrestLinearEyeDepth(const float i_rawDepth)
 {
 #if !defined(_PROJECTION_ORTHOGRAPHIC)
 	// Handles UNITY_REVERSED_Z for us.
+#if defined(UNITY_CG_INCLUDED)
 	float perspective = LinearEyeDepth(i_rawDepth);
+#elif defined(UNITY_COMMON_INCLUDED)
+	float perspective = LinearEyeDepth(i_rawDepth, _ZBufferParams);
+#endif
 #endif // _PROJECTION
 
 #if !defined(_PROJECTION_PERSPECTIVE)

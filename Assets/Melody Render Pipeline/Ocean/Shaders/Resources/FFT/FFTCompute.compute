@@ -32,8 +32,7 @@ RWTexture2DArray<float2> _Output1;
 RWTexture2DArray<float2> _Output2;
 RWTexture2DArray<float2> _Output3;
 #else
-// Write zero to W to clear garbage.
-RWTexture2DArray<float4> _Output;
+RWTexture2DArray<float3> _Output;
 #endif
 
 groupshared float2 _IntermediatesH[SIZE];
@@ -168,7 +167,6 @@ void ComputeFFT(uint3 id : SV_DispatchThreadID)
 #else
 	const float sign = ((id.x + id.y) % 2) == 1 ? -1.0 : 1.0;
 	const float3 res = float3(sign * resultX.x, sign * resultH.x, sign * resultZ.x);
-	// Write zero to W to clear garbage.
-	_Output[id] = float4(sign * resultX.x, sign * resultH.x, sign * resultZ.x, 0.0);
+	_Output[id] = float3(sign * resultX.x, sign * resultH.x, sign * resultZ.x);
 #endif
 }

@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Renders alpha geometry overlaid on ocean surface. Samples the ocean shape texture in the vertex shader to track
 // the surface. Requires the right texture to be assigned (see RenderAlphaOnSurface script).
@@ -28,12 +28,11 @@ Shader "Crest/Ocean Surface Alpha"
 			// the ludicrously large value below seems to work in most of my tests.
 			Offset 0, -1000000
 
-			CGPROGRAM
+			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment Frag
-			#pragma multi_compile_fog
 
-			#include "UnityCG.cginc"
+			#include "../../ShaderLibrary/Common.hlsl"
 
 			#include "OceanConstants.hlsl"
 			#include "OceanGlobals.hlsl"
@@ -56,10 +55,9 @@ Shader "Crest/Ocean Surface Alpha"
 			struct Varyings
 			{
 				float4 positionCS : SV_POSITION;
-				float2 uv : TEXCOORD0;
+				float2 uv: TEXCOORD0;
 				float3 worldPos : TEXCOORD1;
 				float lodAlpha : TEXCOORD2;
-				UNITY_FOG_COORDS(3)
 
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -69,7 +67,6 @@ Shader "Crest/Ocean Surface Alpha"
 				Varyings o;
 
 				UNITY_SETUP_INSTANCE_ID(input);
-				UNITY_INITIALIZE_OUTPUT(Varyings, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
 				const CascadeParams cascadeData0 = _CrestCascadeData[_LD_SliceIndex];
@@ -77,7 +74,7 @@ Shader "Crest/Ocean Surface Alpha"
 
 				// move to world
 				float3 worldPos;
-				worldPos.xz = mul(unity_ObjectToWorld, float4(input.positionOS, 1.0)).xz;
+				worldPos.xz = TransformObjectToWorld(input.positionOS).xz;
 				worldPos.y = 0.0;
 
 				// vertex snapping and lod transition
@@ -123,24 +120,22 @@ Shader "Crest/Ocean Surface Alpha"
 				o.lodAlpha = lodAlpha;
 
 				o.uv = TRANSFORM_TEX(input.uv, _MainTex);
-				UNITY_TRANSFER_FOG(o, o.positionCS);
+
 				return o;
 			}
 
-			half4 Frag(Varyings input) : SV_Target
+			real4 Frag(Varyings input) : SV_Target
 			{
 				// We don't want decals etc floating on nothing
 				ApplyOceanClipSurface(input.worldPos, input.lodAlpha);
 
-				half4 col = tex2D(_MainTex, input.uv);
-
-				UNITY_APPLY_FOG(input.fogCoord, col);
+				real4 col = tex2D(_MainTex, input.uv);
 
 				col.a *= _Alpha;
 
 				return col;
 			}
-			ENDCG
+			ENDHLSL
 		}
 	}
 }

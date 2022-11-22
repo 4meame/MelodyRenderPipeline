@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Adds Gerstner waves everywhere. Must be given batch prepared by ShapeGerstnerBatched.cs.
 Shader "Hidden/Crest/Inputs/Animated Waves/Gerstner Batch Global"

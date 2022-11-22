@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #ifndef CREST_OCEAN_FOAM_INCLUDED
 #define CREST_OCEAN_FOAM_INCLUDED
@@ -79,7 +79,9 @@ void ComputeFoam
 	float i_pixelZ,
 	float i_sceneZ,
 	half3 i_view,
-	float3 i_lightDir,
+	half3 i_lightDir,
+	half3 i_lightCol,
+	half3 i_additionalLightCol,
 	half i_shadow,
 	half lodVal,
 	out half3 o_bubbleCol,
@@ -135,11 +137,12 @@ void ComputeFoam
 	half3 fN = normalize(i_n + _WaveFoamNormalStrength * half3(-dfdx, 0., -dfdz));
 	// do simple NdL and phong lighting
 	half foamNdL = max(0., dot(fN, i_lightDir));
-	o_whiteFoamCol.rgb = _FoamWhiteColor.rgb * (WaveHarmonic::Crest::AmbientLight() + _WaveFoamLightScale * _LightColor0 * foamNdL * i_shadow);
+	o_whiteFoamCol.rgb = _FoamWhiteColor.rgb * (WaveHarmonic::Crest::AmbientLight() + _WaveFoamLightScale * (i_lightCol * foamNdL * i_shadow + i_additionalLightCol));
 	half3 refl = reflect(-i_view, fN);
-	o_whiteFoamCol.rgb += pow(max(0., dot(refl, i_lightDir)), _WaveFoamSpecularFallOff) * _WaveFoamSpecularBoost * _LightColor0 * i_shadow;
+	// We could apply i_additionalLightCol like i_lightCol, but we would have to loop over the lights again to do it properly.
+	o_whiteFoamCol.rgb += pow(max(0., dot(refl, i_lightDir)), _WaveFoamSpecularFallOff) * _WaveFoamSpecularBoost * i_lightCol * i_shadow;
 #else // _FOAM3DLIGHTING_ON
-	o_whiteFoamCol.rgb = _FoamWhiteColor.rgb * (WaveHarmonic::Crest::AmbientLight() + _WaveFoamLightScale * _LightColor0 * i_shadow);
+	o_whiteFoamCol.rgb = _FoamWhiteColor.rgb * (WaveHarmonic::Crest::AmbientLight() + _WaveFoamLightScale * (i_lightCol * i_shadow + i_additionalLightCol));
 #endif // _FOAM3DLIGHTING_ON
 
 	o_whiteFoamCol.a = _FoamWhiteColor.a * whiteFoam;
@@ -156,7 +159,9 @@ void ComputeFoamWithFlow
 	float i_pixelZ,
 	float i_sceneZ,
 	half3 i_view,
-	float3 i_lightDir,
+	half3 i_lightDir,
+	half3 i_lightCol,
+	half3 i_additionalLightCol,
 	half i_shadow,
 	half lodVal,
 	out half3 o_bubbleCol,
@@ -181,8 +186,8 @@ void ComputeFoamWithFlow
 	half3 o_bubbleCol2 = half3(0, 0, 0);
 	half4 o_whiteFoamCol2 = half4(0, 0, 0, 0);
 
-	ComputeFoam(i_texture, i_foam, i_worldXZ, i_worldXZUndisplaced, flow * sample1_offset, i_n, i_pixelZ, i_sceneZ, i_view, i_lightDir, i_shadow, lodVal, o_bubbleCol1, o_whiteFoamCol1, cascadeData0, cascadeData1);
-	ComputeFoam(i_texture, i_foam, i_worldXZ, i_worldXZUndisplaced, flow * sample2_offset, i_n, i_pixelZ, i_sceneZ, i_view, i_lightDir, i_shadow, lodVal, o_bubbleCol2, o_whiteFoamCol2, cascadeData0, cascadeData1);
+	ComputeFoam(i_texture, i_foam, i_worldXZ, i_worldXZUndisplaced, flow * sample1_offset, i_n, i_pixelZ, i_sceneZ, i_view, i_lightDir, i_lightCol, i_additionalLightCol, i_shadow, lodVal, o_bubbleCol1, o_whiteFoamCol1, cascadeData0, cascadeData1);
+	ComputeFoam(i_texture, i_foam, i_worldXZ, i_worldXZUndisplaced, flow * sample2_offset, i_n, i_pixelZ, i_sceneZ, i_view, i_lightDir, i_lightCol, i_additionalLightCol, i_shadow, lodVal, o_bubbleCol2, o_whiteFoamCol2, cascadeData0, cascadeData1);
 	o_bubbleCol = (sample1_weight * o_bubbleCol1) + (sample2_weight * o_bubbleCol2);
 	o_whiteFoamCol = (sample1_weight * o_whiteFoamCol1) + (sample2_weight * o_whiteFoamCol2);
 }

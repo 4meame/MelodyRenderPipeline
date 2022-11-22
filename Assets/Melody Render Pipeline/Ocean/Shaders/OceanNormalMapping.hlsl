@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 #ifndef CREST_OCEAN_NORMAL_MAPPING_INCLUDED
 #define CREST_OCEAN_NORMAL_MAPPING_INCLUDED

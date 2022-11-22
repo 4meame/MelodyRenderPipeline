@@ -1,8 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
-
-// Soft shadow term is red, hard shadow term is green.
+// Copyright 2021 Wave Harmonic Ltd
 
 #include "../OceanConstants.hlsl"
 #include "../OceanGlobals.hlsl"
@@ -23,36 +21,16 @@ CBUFFER_END
 
 struct Attributes
 {
-	uint id : SV_VertexID;
-	UNITY_VERTEX_INPUT_INSTANCE_ID
+	float3 positionOS : POSITION;
 };
 
 struct Varyings
 {
 	float4 positionCS : SV_POSITION;
 	float3 positionWS : TEXCOORD0;
-	UNITY_VERTEX_OUTPUT_STEREO
 };
 
-Varyings Vert(Attributes input)
-{
-	// This will work for all pipelines.
-	Varyings output = (Varyings)0;
-	UNITY_SETUP_INSTANCE_ID(input);
-	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-
-	output.positionCS = GetFullScreenTriangleVertexPosition(input.id);
-	float2 uv = GetFullScreenTriangleTexCoord(input.id);
-
-	// World position from UV.
-	output.positionWS.xyz = float3(uv.x - 0.5, 0.0, uv.y - 0.5) * _Scale * 4.0 + _CenterPos;
-	output.positionWS.y = _OceanCenterPosWorld.y;
-
-	return output;
-}
-
 half CrestSampleShadows(const float4 i_positionWS);
-half CrestComputeShadowFade(const float4 i_positionWS);
 
 // Compiler shows warning when using intermediate returns, disable this.
 #pragma warning(push)
@@ -187,7 +165,7 @@ half2 Frag(Varyings input) : SV_Target
 		);
 #endif
 
-		shadowThisFrame = (half2)1.0 - saturate(shadowThisFrame + CrestComputeShadowFade(positionWS));
+		shadowThisFrame = (half2)1.0 - saturate(shadowThisFrame);
 
 		shadow = lerp(shadow, shadowThisFrame, _JitterDiameters_CurrentFrameWeights.zw * _SimDeltaTime * 60.0);
 	}

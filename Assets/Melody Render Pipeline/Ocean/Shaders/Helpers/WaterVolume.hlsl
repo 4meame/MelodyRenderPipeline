@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2022 Wave Harmonic Ltd
 
 #ifndef CREST_WATER_VOLUME_INCLUDED
 #define CREST_WATER_VOLUME_INCLUDED

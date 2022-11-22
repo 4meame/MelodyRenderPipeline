@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 // Renders a specific slice of a 2D Texture Array
 // https://docs.unity3d.com/Manual/SL-TextureArrays.html
