@@ -36,7 +36,7 @@ MonoBehaviour:
   fog:
     enabled: 1
     resolution: 1
-  postFXSettings: {fileID: 11400000, guid: b4828196f5e88184d928f696687e89a2, type: 2}
+  postFXSettings: {fileID: 11400000, guid: e089f744ec6e2f242afd88eabd41e272, type: 2}
   cameraBufferSettings:
     allowHDR: 1
     renderScale: 1
