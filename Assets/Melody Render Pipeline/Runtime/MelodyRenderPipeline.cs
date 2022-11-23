@@ -36,7 +36,9 @@ public partial class MelodyRenderPipeline : RenderPipeline {
 
     protected override void Render(ScriptableRenderContext context, Camera[] cameras) {
         foreach (Camera camera in cameras) {
+            BeginCameraRendering(context, camera);
             renderer.Render(context, camera, useDynamicBatching, useInstancing, useLightsPerObject, shadowSettings, atmosphereSettings, cloudSettings, fogSettings, postFXSettings, cameraBufferSettings, colorLUTResolution);
+            EndCameraRendering(context, camera);
         }
     }
 }

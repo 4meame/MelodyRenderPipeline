@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Crest;
 
 public partial class CameraRender {
     ScriptableRenderContext context;
@@ -51,6 +52,7 @@ public partial class CameraRender {
 
     #region Utility Params
     static int cameraFOVId = Shader.PropertyToID("_CurrentCameraFOV");
+    static int invVPMatrixId = Shader.PropertyToID("_InvViewProjMatrix");
     #endregion
     #region Render Scale
     bool useScaledRendering;
@@ -183,6 +185,12 @@ public partial class CameraRender {
         #region Utility Params
         float cameraFOV = camera.fieldOfView;
         buffer.SetGlobalFloat(cameraFOVId, cameraFOV);
+        //from hdrp
+        var proj = camera.projectionMatrix;
+        var view = camera.worldToCameraMatrix;
+        var gpuNonJitteredProj = GL.GetGPUProjectionMatrix(proj, true);
+        Matrix4x4 viewProjMatrix = gpuNonJitteredProj * view;
+        buffer.SetGlobalMatrix(invVPMatrixId, viewProjMatrix.inverse);
         #endregion
         #region Render Scale
         buffer.SetGlobalVector(bufferSizeId, new Vector4(1.0f / bufferSize.x, 1.0f / bufferSize.y, bufferSize.x, bufferSize.y));
@@ -244,6 +252,7 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
+            SamplingShadow.SampleShadowPass(context, camera);
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssao.Render();
             ssgi.Render();

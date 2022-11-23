@@ -4,16 +4,24 @@
 
 Shader "Hidden/Crest/Simulation/Update Shadow"
 {
+	Properties
+	{
+		[Toggle(_RECEIVE_SHADOWS)] _ReceiveShadows("Receive Shadows", Float) = 1
+	}
+
 	SubShader
 	{
 		Pass
 		{
+
+			Name "Update Ocean Shadow"
+
 			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment Frag
 			// #pragma enable_d3d11_debug_symbols
 
-			#pragma multi_compile_fragment _ _RECEIVE_SHADOWS
+			#pragma multi_compile _ _RECEIVE_SHADOWS
 			#pragma multi_compile _ _DIRECTIONAL_PCF3 _DIRECTIONAL_PCF5 _DIRECTIONAL_PCF7
 			#pragma multi_compile _ _OTHER_PCF3 _OTHER_PCF5 _OTHER_PCF7
 			#pragma multi_compile _ _CASCADE_BLEND_SOFT _CASCADE_BLEND_DITHER

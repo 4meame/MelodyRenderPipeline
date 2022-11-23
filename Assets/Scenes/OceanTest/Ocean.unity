@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.19103077, g: 0.24830414, b: 0.291503, a: 0}
+  m_AmbientSkyColor: {r: 0.1964723, g: 0.25412893, b: 0.29767072, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -156,6 +156,32 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!21 &479330587
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hidden/Melody RP/VolumetricLight
+  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
+  m_ValidKeywords:
+  - _DIRECTION
+  - _RECEIVE_SHADOWS
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors: []
+  m_BuildTextureStacks: []
 --- !u!1 &595845152
 GameObject:
   m_ObjectHideFlags: 0
@@ -318,30 +344,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &834076068
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Hidden/Melody RP/VolumetricLight
-  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs: []
-    m_Ints: []
-    m_Floats: []
-    m_Colors: []
-  m_BuildTextureStacks: []
 --- !u!1 &1128481000
 GameObject:
   m_ObjectHideFlags: 0
@@ -550,15 +552,15 @@ MonoBehaviour:
   extinctionCoef: 0.0078
   skyBackgroundExtinctionCoef: 0.9
   mieG: 0.177
-  HeightFog: 0
-  heightScale: 0.1
+  HeightFog: 1
+  heightScale: 0.212
   groundHeight: 0
   useNoise: 0
   noiseScale: 0.015
   noiseIntensity: 1
   noiseIntensityOffset: 0.3
   noiseVelocity: {x: 3, y: 3}
-  material: {fileID: 834076068}
+  material: {fileID: 479330587}
   maxRayLength: 400
 --- !u!1 &1603468011
 GameObject:
@@ -673,7 +675,7 @@ MonoBehaviour:
     allowSSR: 0
     allowGI: 0
     allowVolumetricCloud: 1
-    allowVolumetricLight: 0
+    allowVolumetricLight: 1
     allowAtmosFog: 1
     allowPhyscialCamera: 1
     renderScaleMode: 0

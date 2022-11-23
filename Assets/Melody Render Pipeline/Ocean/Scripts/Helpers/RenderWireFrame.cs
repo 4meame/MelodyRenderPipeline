@@ -17,22 +17,4 @@ public class RenderWireFrame : MonoBehaviour
     Camera _cam;
     CameraClearFlags _defaultClearFlags;
 
-    void Start()
-    {
-        _cam = GetComponent<Camera>();
-        _defaultClearFlags = _cam.clearFlags;
-    }
-
-    void Update()
-    {
-        _cam.clearFlags = _wireFrame ? CameraClearFlags.SolidColor : _defaultClearFlags;
-    }
-
-    void OnPreRender()
-    {
-        if (enabled)
-        {
-            GL.wireframe = _wireFrame;
-        }
-    }
 }

@@ -39,8 +39,6 @@ namespace Crest
 
         // SRP version needs access to this externally, hence public get
         public CommandBuffer BufCopyShadowMap { get; private set; }
-        CommandBuffer _screenSpaceShadowMapCommandBuffer;
-        CommandBuffer _deferredShadowMapCommandBuffer;
 
         PropertyWrapperMaterial[] _renderMaterial;
 
@@ -95,10 +93,7 @@ namespace Crest
             var isShadowsDisabled = false;
 
             {
-                if (QualitySettings.shadows == ShadowQuality.Disable)
-                {
-                    isShadowsDisabled = true;
-                }
+
             }
 
             if (isShadowsDisabled)
@@ -106,6 +101,8 @@ namespace Crest
                 Debug.LogError("Crest: Shadows must be enabled in the quality settings to enable ocean shadowing.", OceanRenderer.Instance);
                 return;
             }
+
+            SamplingShadow.Enable();
         }
 
         internal override void OnEnable()
@@ -113,6 +110,8 @@ namespace Crest
             base.OnEnable();
 
             CleanUpShadowCommandBuffers();
+
+            SamplingShadow.Enable();
         }
 
         internal override void OnDisable()
@@ -121,10 +120,7 @@ namespace Crest
 
             CleanUpShadowCommandBuffers();
 
-            for (var index = 0; index < _renderMaterial.Length; index++)
-            {
-                Helpers.Destroy(_renderMaterial[index].material);
-            }
+            SamplingShadow.Disable();
         }
 
         protected override void InitData()
@@ -233,64 +229,14 @@ namespace Crest
             BufCopyShadowMap = new CommandBuffer();
             BufCopyShadowMap.name = "Shadow data";
 
-            {
-                _mainLight.AddCommandBuffer(LightEvent.BeforeScreenspaceMask, BufCopyShadowMap);
-
-                // Call this regardless of rendering path as it has no negative consequences for forward.
-                SetUpDeferredShadows();
-                SetUpScreenSpaceShadows();
-            }
         }
 
         void CleanUpShadowCommandBuffers()
         {
             if (BufCopyShadowMap != null)
             {
-                if (_mainLight != null) _mainLight.RemoveCommandBuffer(LightEvent.BeforeScreenspaceMask, BufCopyShadowMap);
                 BufCopyShadowMap.Release();
-                BufCopyShadowMap = null;
             }
-
-            CleanUpDeferredShadows();
-            CleanUpScreenSpaceShadows();
-        }
-
-        void SetUpScreenSpaceShadows()
-        {
-            // Make the screen-space shadow texture available for the ocean shader for caustic occlusion.
-            _screenSpaceShadowMapCommandBuffer = new CommandBuffer()
-            {
-                name = "Screen-Space Shadow Data"
-            };
-            _screenSpaceShadowMapCommandBuffer.SetGlobalTexture(sp_CrestScreenSpaceShadowTexture, BuiltinRenderTextureType.CurrentActive);
-            _mainLight.AddCommandBuffer(LightEvent.AfterScreenspaceMask, _screenSpaceShadowMapCommandBuffer);
-        }
-
-        void CleanUpScreenSpaceShadows()
-        {
-            if (_screenSpaceShadowMapCommandBuffer == null) return;
-            if (_mainLight != null) _mainLight.RemoveCommandBuffer(LightEvent.AfterScreenspaceMask, _screenSpaceShadowMapCommandBuffer);
-            _screenSpaceShadowMapCommandBuffer.Release();
-            _screenSpaceShadowMapCommandBuffer = null;
-        }
-
-        void SetUpDeferredShadows()
-        {
-            // Make the screen-space shadow texture available for the ocean shader for caustic occlusion.
-            _deferredShadowMapCommandBuffer = new CommandBuffer()
-            {
-                name = "Deferred Shadow Data"
-            };
-            _deferredShadowMapCommandBuffer.SetGlobalTexture("_ShadowMapTexture", BuiltinRenderTextureType.CurrentActive);
-            _mainLight.AddCommandBuffer(LightEvent.AfterShadowMap, _deferredShadowMapCommandBuffer);
-        }
-
-        void CleanUpDeferredShadows()
-        {
-            if (_deferredShadowMapCommandBuffer == null) return;
-            if (_mainLight != null) _mainLight.RemoveCommandBuffer(LightEvent.AfterShadowMap, _deferredShadowMapCommandBuffer);
-            _deferredShadowMapCommandBuffer.Release();
-            _deferredShadowMapCommandBuffer = null;
         }
 
         public override void BuildCommandBuffer(OceanRenderer ocean, CommandBuffer buf)
@@ -355,11 +301,6 @@ namespace Crest
                 return;
             }
 
-#if CREST_SRP
-#pragma warning disable 618
-            using (new ProfilingSample(BufCopyShadowMap, "CrestSampleShadows"))
-#pragma warning restore 618
-#endif
             {
                 var lt = OceanRenderer.Instance._lodTransform;
                 for (var lodIdx = lt.LodCount - 1; lodIdx >= 0; lodIdx--)
@@ -380,16 +321,8 @@ namespace Crest
 
                     LodDataMgrSeaFloorDepth.Bind(_renderMaterial[lodIdx]);
 
-                    Helpers.Blit(BufCopyShadowMap, new RenderTargetIdentifier(_targets.Current, 0, CubemapFace.Unknown, lodIdx), _renderMaterial[lodIdx].material, -1);
+                    BufCopyShadowMap.Blit(Texture2D.blackTexture, _targets.Current, _renderMaterial[lodIdx].material, -1, lodIdx);
                 }
-
-#if ENABLE_VR && ENABLE_VR_MODULE
-                // Disable for XR SPI otherwise input will not have correct world position.
-                if (XRSettings.enabled && XRSettings.stereoRenderingMode == XRSettings.StereoRenderingMode.SinglePassInstanced)
-                {
-                    BufCopyShadowMap.DisableShaderKeyword("STEREO_INSTANCING_ON");
-                }
-#endif
 
                 // Process registered inputs.
                 for (var lodIdx = lt.LodCount - 1; lodIdx >= 0; lodIdx--)
@@ -397,14 +330,6 @@ namespace Crest
                     BufCopyShadowMap.SetRenderTarget(_targets.Current, _targets.Current.depthBuffer, 0, CubemapFace.Unknown, lodIdx);
                     SubmitDraws(lodIdx, BufCopyShadowMap);
                 }
-
-#if ENABLE_VR && ENABLE_VR_MODULE
-                // Restore XR SPI as we cannot rely on remaining pipeline to do it for us.
-                if (XRSettings.enabled && XRSettings.stereoRenderingMode == XRSettings.StereoRenderingMode.SinglePassInstanced)
-                {
-                    BufCopyShadowMap.EnableShaderKeyword("STEREO_INSTANCING_ON");
-                }
-#endif
 
                 // Set the target texture as to make sure we catch the 'pong' each frame
                 Shader.SetGlobalTexture(GetParamIdSampler(), _targets.Current);
