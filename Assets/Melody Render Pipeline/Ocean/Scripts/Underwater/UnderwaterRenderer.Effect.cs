@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2021 Wave Harmonic Ltd
 
 namespace Crest
 {
@@ -10,7 +10,6 @@ namespace Crest
 
     public partial class UnderwaterRenderer
     {
-        const string k_ShaderPathUnderwaterEffect = "Hidden/Crest/Underwater/Underwater Effect";
         internal const string k_KeywordFullScreenEffect = "_FULL_SCREEN_EFFECT";
         internal const string k_KeywordDebugViewOceanMask = "_DEBUG_VIEW_OCEAN_MASK";
         internal const string k_KeywordDebugViewStencil = "_DEBUG_VIEW_STENCIL";
@@ -76,131 +75,6 @@ namespace Crest
         {
             internal Color[] _ambientLighting = new Color[1];
             internal Vector3[] _shDirections = { new Vector3(0.0f, 0.0f, 0.0f) };
-        }
-
-        void SetupUnderwaterEffect()
-        {
-            if (_underwaterEffectMaterial?.material == null)
-            {
-                _underwaterEffectMaterial = new PropertyWrapperMaterial(k_ShaderPathUnderwaterEffect);
-            }
-
-            if (_underwaterEffectCommandBuffer == null)
-            {
-                _underwaterEffectCommandBuffer = new CommandBuffer()
-                {
-                    name = "Underwater Pass",
-                };
-            }
-        }
-
-        void OnPreRenderUnderwaterEffect()
-        {
-#if UNITY_EDITOR
-            if (!IsFogEnabledForEditorCamera(_camera))
-            {
-                _underwaterEffectCommandBuffer?.Clear();
-                return;
-            }
-#endif
-
-            RenderTextureDescriptor descriptor = XRHelpers.GetRenderTextureDescriptor(_camera);
-            descriptor.useDynamicScale = _camera.allowDynamicResolution;
-
-            // Format must be correct for CopyTexture to work. Hopefully this is good enough.
-            if (_camera.allowHDR)
-            {
-                descriptor.colorFormat = RenderTextureFormat.DefaultHDR;
-            }
-
-            var temporaryColorBuffer = RenderTexture.GetTemporary(descriptor);
-            temporaryColorBuffer.name = "_CrestCameraColorTexture";
-
-            UpdatePostProcessMaterial(
-                _mode,
-                _camera,
-                _underwaterEffectMaterial,
-                _sphericalHarmonicsData,
-                _meniscus,
-                _firstRender || _copyOceanMaterialParamsEachFrame,
-                _debug._viewOceanMask,
-                _debug._viewStencil,
-                _filterOceanData,
-                ref _currentOceanMaterial,
-                _enableShaderAPI
-            );
-
-            // Call after UpdatePostProcessMaterial as it copies material from ocean which will overwrite this.
-            SetInverseViewProjectionMatrix(_underwaterEffectMaterial.material);
-
-            _underwaterEffectCommandBuffer.Clear();
-
-            if (RenderSettings.sun != null)
-            {
-                // Unity does not set up lighting for us so we will get the last value which could incorrect.
-                // SetGlobalColor is just an alias for SetGlobalVector (no color space conversion like Material.SetColor):
-                // https://docs.unity3d.com/2017.4/Documentation/ScriptReference/Shader.SetGlobalColor.html
-                _underwaterEffectCommandBuffer.SetGlobalVector(ShaderIDs.s_LightColor0, (RenderSettings.sun.color * RenderSettings.sun.intensity).linear);
-                _underwaterEffectCommandBuffer.SetGlobalVector(ShaderIDs.s_WorldSpaceLightPos0, -RenderSettings.sun.transform.forward);
-            }
-
-            // Create a separate stencil buffer context by copying the depth texture.
-            if (UseStencilBufferOnEffect)
-            {
-                descriptor.colorFormat = RenderTextureFormat.Depth;
-                descriptor.depthBufferBits = 24;
-                // bindMS is necessary in this case for depth.
-                descriptor.SetMSAASamples(_camera);
-                descriptor.bindMS = descriptor.msaaSamples > 1;
-
-                _underwaterEffectCommandBuffer.GetTemporaryRT(ShaderIDs.s_CrestWaterVolumeStencil, descriptor);
-
-                // Use blit for MSAA. We should be able to use CopyTexture. Might be the following bug:
-                // https://issuetracker.unity3d.com/product/unity/issues/guid/1308132
-                if (Helpers.IsMSAAEnabled(_camera))
-                {
-                    // Blit with a depth write shader to populate the depth buffer.
-                    Helpers.Blit(_underwaterEffectCommandBuffer, _depthStencilTarget, Helpers.UtilityMaterial, (int)Helpers.UtilityPass.CopyDepth);
-                }
-                else
-                {
-                    // Copy depth then clear stencil.
-                    _underwaterEffectCommandBuffer.CopyTexture(BuiltinRenderTextureType.Depth, _depthStencilTarget);
-                    Helpers.Blit(_underwaterEffectCommandBuffer, _depthStencilTarget, Helpers.UtilityMaterial, (int)Helpers.UtilityPass.ClearStencil);
-                }
-            }
-
-            // Copy the color buffer into a texture.
-            if (Helpers.IsMSAAEnabled(_camera))
-            {
-                // Use blit if MSAA is active because transparents were not included with CopyTexture.
-                // This appears to be a bug. CopyTexture + MSAA works fine when the stencil is required.
-                _underwaterEffectCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, temporaryColorBuffer);
-            }
-            else
-            {
-                // Copy the frame buffer as we cannot read/write at the same time. If it causes problems, replace with Blit.
-                _underwaterEffectCommandBuffer.CopyTexture(BuiltinRenderTextureType.CameraTarget, temporaryColorBuffer);
-            }
-
-            if (UseStencilBufferOnEffect)
-            {
-                _underwaterEffectCommandBuffer.SetRenderTarget(_colorTarget, _depthStencilTarget);
-            }
-            else
-            {
-                _underwaterEffectCommandBuffer.SetRenderTarget(_colorTarget);
-            }
-
-            _underwaterEffectMaterial.SetTexture(ShaderIDs.s_CrestCameraColorTexture, temporaryColorBuffer);
-
-            ExecuteEffect(_underwaterEffectCommandBuffer, _underwaterEffectMaterial.material);
-
-            RenderTexture.ReleaseTemporary(temporaryColorBuffer);
-            if (UseStencilBufferOnEffect)
-            {
-                _underwaterEffectCommandBuffer.ReleaseTemporaryRT(ShaderIDs.s_CrestWaterVolumeStencil);
-            }
         }
 
         internal void ExecuteEffect(CommandBuffer buffer, Material material, MaterialPropertyBlock properties = null)

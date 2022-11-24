@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2021 Wave Harmonic Ltd
 
 Shader "Hidden/Crest/Underwater/Ocean Mask"
 {
@@ -25,7 +25,7 @@ Shader "Hidden/Crest/Underwater/Ocean Mask"
 				Comp Equal
 			}
 
-			CGPROGRAM
+			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment Frag
 			// for VFACE
@@ -33,13 +33,10 @@ Shader "Hidden/Crest/Underwater/Ocean Mask"
 
 			#pragma multi_compile_local _ CREST_WATER_VOLUME
 
-			#include "UnityCG.cginc"
-
-			#include "../../Helpers/BIRP/Core.hlsl"
-			#include "../../Helpers/BIRP/InputsDriven.hlsl"
+			#include "../../../../ShaderLibrary/Common.hlsl"
 
 			#include "../UnderwaterMaskShared.hlsl"
-			ENDCG
+			ENDHLSL
 		}
 
 		Pass
@@ -56,18 +53,14 @@ Shader "Hidden/Crest/Underwater/Ocean Mask"
 				Comp Equal
 			}
 
-			CGPROGRAM
+			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment Frag
 
-			#include "UnityCG.cginc"
-
-			#include "../../Helpers/BIRP/Core.hlsl"
-			#include "../../Helpers/BIRP/InputsDriven.hlsl"
-			#include "../../FullScreenTriangle.hlsl"
+			#include "../../../../ShaderLibrary/Common.hlsl"
 
 			#include "../UnderwaterMaskHorizonShared.hlsl"
-			ENDCG
+			ENDHLSL
 		}
 	}
 }

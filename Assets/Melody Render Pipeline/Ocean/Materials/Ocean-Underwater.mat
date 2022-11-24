@@ -13,17 +13,19 @@ Material:
   - _APPLYNORMALMAPPING_ON
   - _CAUSTICS_ON
   - _CLIPSURFACE_ON
-  - _COMPUTEDIRECTIONALLIGHT_ON
-  - _DEBUGVISUALISE_NONE
-  - _DIRECTIONALLIGHTVARYROUGHNESS_ON
+  - _FLOW_ON
   - _FOAM3DLIGHTING_ON
   - _FOAM_ON
+  - _RECEIVE_SHADOWS
   - _SHADOWS_ON
   - _SUBSURFACESCATTERING_ON
   - _TRANSPARENCY_ON
   - _UNDERWATER_ON
   m_InvalidKeywords:
+  - _COMPUTEDIRECTIONALLIGHT_ON
   - _DEBUGMULTIPLYBYLIGHT0COLOR_ON
+  - _DEBUGVISUALISE_NONE
+  - _DIRECTIONALLIGHTVARYROUGHNESS_ON
   - _PROJECTION_BOTH
   - _SUBSURFACEHEIGHTLERP_ON
   m_LightmapFlags: 5
@@ -125,7 +127,7 @@ Material:
     - _DirectionalLightFallOffFar: 42
     - _DirectionalLightFarDistance: 137
     - _DirectionalLightVaryRoughness: 1
-    - _Flow: 0
+    - _Flow: 1
     - _Foam: 1
     - _Foam3DLighting: 1
     - _FoamBubbleParallax: 0.14
@@ -133,6 +135,7 @@ Material:
     - _ForceUnderwater: 0
     - _FresnelPower: 5
     - _Invert: 1
+    - _LightIntensityMultiplier: 1
     - _MipBias: 0
     - _Moving: 0.17
     - _NormalsScale: 40
@@ -145,6 +148,8 @@ Material:
     - _PlanarReflections: 0
     - _ProceduralSky: 0
     - _Projection: 0
+    - _ReceiveShadows: 1
+    - _ReflectionBlur: 0
     - _RefractAmt: 0
     - _RefractionStrength: 1
     - _RefractiveIndexOfAir: 1
@@ -154,6 +159,10 @@ Material:
     - _Shadows: 1
     - _ShorelineFoamMinDepth: 0.27
     - _SkyDirectionality: 0.875
+    - _Smoothness: 0.8
+    - _SmoothnessFar: 0.35
+    - _SmoothnessFarDistance: 2000
+    - _SmoothnessPower: 0.5
     - _Specular: 0.7
     - _StartLevel: 0.157
     - _StencilFunction: 0
@@ -172,6 +181,7 @@ Material:
     - _Transparency: 1
     - _Underwater: 1
     - _Update: 0.083
+    - _VarySmoothnessOverDistance: 0
     - _WaveFoamBubblesCoverage: 1.68
     - _WaveFoamBubblesFeather: 0.32
     - _WaveFoamBubblesStart: 0.115

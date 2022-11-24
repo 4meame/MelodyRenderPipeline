@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2021 Wave Harmonic Ltd
 
 Shader "Hidden/Crest/Underwater/Underwater Effect"
 {
@@ -9,6 +9,10 @@ Shader "Hidden/Crest/Underwater/Underwater Effect"
 	#pragma fragment Frag
 
 	// #pragma enable_d3d11_debug_symbols
+
+	#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+	#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+	#pragma multi_compile _ _SHADOWS_SOFT
 
 	// Use multi_compile because these keywords are copied over from the ocean material. With shader_feature,
 	// the keywords would be stripped from builds. Unused shader variants are stripped using a build processor.
@@ -22,16 +26,16 @@ Shader "Hidden/Crest/Underwater/Underwater Effect"
 	#pragma multi_compile_local __ _DEBUG_VIEW_OCEAN_MASK
 	#pragma multi_compile_local __ _DEBUG_VIEW_STENCIL
 
-	#pragma multi_compile _ CREST_UNDERWATER_BEFORE_TRANSPARENT
 	#pragma multi_compile _ CREST_FLOATING_ORIGIN
 
-	#include "UnityCG.cginc"
-	#include "Lighting.cginc"
+	#include "../../../../ShaderLibrary/Common.hlsl"
+	#include "../../../../ShaderLibrary/Surface.hlsl"
+	#include "../../../../ShaderLibrary/Shadows.hlsl"
+	#include "../../../../ShaderLibrary/Light.hlsl"
 
-	#include "../../Helpers/BIRP/Core.hlsl"
-	#include "../../Helpers/BIRP/InputsDriven.hlsl"
-	#include "../../FullScreenTriangle.hlsl"
-	#include "../../Helpers/BIRP/Lighting.hlsl"
+	// For XR SPI as could not get correct value from unity_CameraToWorld;
+	float3 _CameraForward;
+
 	ENDHLSL
 
 	SubShader

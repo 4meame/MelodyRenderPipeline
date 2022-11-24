@@ -149,6 +149,7 @@ void ApplyCaustics
 		{
 			// We could skip GetMainLight but this is recommended approach which is likely more robust to API changes.
 			ShadowData shadowData;
+			surfaceData.position = i_scenePos;
 			shadowData = GetShadowData(surfaceData);
 			Light mainLight = GetMainLight(surfaceData, shadowData);
 			causticsStrength *= mainLight.shadowAttenuation;

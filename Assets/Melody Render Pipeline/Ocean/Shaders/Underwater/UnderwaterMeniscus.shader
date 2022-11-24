@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2020 Wave Harmonic Ltd
 
 Shader "Crest/Underwater Meniscus"
 {
@@ -11,7 +11,7 @@ Shader "Crest/Underwater Meniscus"
 
 	SubShader
 	{
-		Tags{ "LightMode" = "ForwardBase" "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
+		Tags { "RenderPipeline"="UniversalPipeline" "RenderType"="Transparent" "Queue"="Transparent-99" }
 
 		Pass
 		{
@@ -20,16 +20,19 @@ Shader "Crest/Underwater Meniscus"
 			//Blend SrcAlpha OneMinusSrcAlpha
 			Blend DstColor Zero
 
-			CGPROGRAM
+			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment Frag
 
-			#include "UnityCG.cginc"
+			#include "../../../ShaderLibrary/Common.hlsl"
 
 			#include "../OceanGlobals.hlsl"
 			#include "../OceanInputsDriven.hlsl"
 			#include "../OceanHelpersNew.hlsl"
 			#include "UnderwaterShared.hlsl"
+
+			// @Hack: Work around to unity_CameraToWorld._13_23_33 not being set correctly in URP 7.4+
+			float3 _CameraForward;
 
 			#define MAX_OFFSET 5.0
 
@@ -61,13 +64,13 @@ Shader "Crest/Underwater Meniscus"
 				Varyings o;
 
 				UNITY_SETUP_INSTANCE_ID(input);
-				UNITY_INITIALIZE_OUTPUT(Varyings, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
 				// view coordinate frame for camera
 				const float3 right = unity_CameraToWorld._11_21_31;
 				const float3 up = unity_CameraToWorld._12_22_32;
-				const float3 forward = unity_CameraToWorld._13_23_33;
+				// @Hack: Work around to unity_CameraToWorld._13_23_33 not being set correctly in URP 7.4+
+				const float3 forward = _CameraForward;
 
 				const float3 nearPlaneCenter = _WorldSpaceCameraPos + forward * _ProjectionParams.y * 1.001;
 				// Spread verts across the near plane.
@@ -100,8 +103,8 @@ Shader "Crest/Underwater Meniscus"
 				o.positionCS.z = o.positionCS.w;
 
 				o.foam_screenPos.yzw = ComputeScreenPos(o.positionCS).xyw;
+				o.grabPos = ComputeScreenPos(o.positionCS);
 				o.foam_screenPos.x = 0.0;
-				o.grabPos = ComputeGrabScreenPos(o.positionCS);
 
 				o.uv = input.uv;
 
@@ -115,7 +118,7 @@ Shader "Crest/Underwater Meniscus"
 				alpha = pow(smoothstep(0.5, 0.0, alpha), 0.5);
 				return half4(lerp((half3)1.0, col, alpha), alpha);
 			}
-			ENDCG
+			ENDHLSL
 		}
 	}
 }

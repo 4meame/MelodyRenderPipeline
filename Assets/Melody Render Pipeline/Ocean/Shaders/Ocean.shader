@@ -428,6 +428,7 @@ Shader "Crest/Ocean"
 
 			half4 Frag(const Varyings input, const bool i_isFrontFace : SV_IsFrontFace) : SV_Target
 			{
+
 #if _CLIPSURFACE_ON
 				{
 					// Clip surface

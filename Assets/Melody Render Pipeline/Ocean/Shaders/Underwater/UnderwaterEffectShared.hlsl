@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2021 Wave Harmonic Ltd
 
 #ifndef CREST_UNDERWATER_EFFECT_SHARED_INCLUDED
 #define CREST_UNDERWATER_EFFECT_SHARED_INCLUDED
@@ -165,6 +165,7 @@ void GetOceanSurfaceAndUnderwaterData
 #ifdef CREST_OCEAN_EMISSION_INCLUDED
 half3 ApplyUnderwaterEffect
 (
+	Surface surfaceData,
 	const int2 i_positionSS,
 	const float3 scenePos,
 	half3 sceneColour,
@@ -216,6 +217,7 @@ half3 ApplyUnderwaterEffect
 				_CrestAmbientLighting,
 				lightDir,
 				lightCol,
+				0.0, // No additional light support.
 				true
 			);
 		}
@@ -235,7 +237,8 @@ half3 ApplyUnderwaterEffect
 			true,
 			sceneColour,
 			sliceIndex,
-			_CrestCascadeData[sliceIndex]
+			_CrestCascadeData[sliceIndex],
+			surfaceData
 		);
 	}
 #endif // _CAUSTICS_ON

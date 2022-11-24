@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Melody;
 using Crest;
 
 public partial class CameraRender {
@@ -223,7 +224,9 @@ public partial class CameraRender {
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
         atmosphere.UpdateAll();
-
+        #region Ocean
+        UnderwaterMaskPass.Execute(context, camera, bufferSize);
+        #endregion
         if (!useGBuffers) {
             SetupForward();
             DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
@@ -252,7 +255,9 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
+            #region Ocean
             SamplingShadow.SampleShadowPass(context, camera);
+            #endregion
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssao.Render();
             ssgi.Render();
@@ -260,7 +265,7 @@ public partial class CameraRender {
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
             //NOTE : a rude method that just copys again to support transparent depth, drawing additional object pass is a better way
             if (useColorTexture || useDepthTexture) {
-                CopyAttachments();
+                CopyAttachments(false, true);
             }
         }
         //draw volumetric light
@@ -283,6 +288,13 @@ public partial class CameraRender {
             atmosphere.RenderFog(colorAttachmentId);
         }
         volumetricLight.BilateralFilter(colorAttachmentId);
+        #region Ocean
+        //NOTE : a rude method that just copys again to support current color
+        if (useColorTexture || useDepthTexture) {
+            CopyAttachments(true, false);
+        }
+        UnderwaterEffectPass.Execute(context, camera, bufferSize, useHDR, colorAttachmentId, depthAttachmentId);
+        #endregion
         autoExposure.DoAutoExposure(colorAttachmentId);
         DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
@@ -410,7 +422,7 @@ public partial class CameraRender {
 
         context.DrawSkybox(camera);
         if (useColorTexture || useDepthTexture) {
-            CopyAttachments();
+            CopyAttachments(true, true);
         }
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
@@ -440,7 +452,7 @@ public partial class CameraRender {
 
         context.DrawSkybox(camera);
         if (useColorTexture || useDepthTexture) {
-            CopyAttachments();
+            CopyAttachments(true, true);
         }
     }
 
@@ -634,7 +646,7 @@ public partial class CameraRender {
     }
 
     //Copy buffer attachment
-    void CopyAttachments() {
+    void CopyAttachments(bool useColorTexture, bool useDepthTexture) {
         string name = buffer.name;
         if (useColorTexture) {
                 buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);

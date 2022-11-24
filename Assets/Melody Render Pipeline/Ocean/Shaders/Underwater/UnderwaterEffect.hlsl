@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2022 Wave Harmonic Ltd
 
 #include "../ShaderLibrary/Common.hlsl"
 
@@ -45,7 +45,6 @@ Varyings Vert (Attributes input)
 	Varyings output;
 	ZERO_INITIALIZE(Varyings, output);
 	UNITY_SETUP_INSTANCE_ID(input);
-	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
 #if CREST_WATER_VOLUME
 	// Use actual geometry instead of full screen triangle.
@@ -61,9 +60,6 @@ Varyings Vert (Attributes input)
 
 real4 Frag (Varyings input) : SV_Target
 {
-	// We need this when sampling a screenspace texture.
-	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-
 #if CREST_WATER_VOLUME
 	float2 uv = input.screenPosition.xy / input.screenPosition.w;
 #else
@@ -75,7 +71,7 @@ real4 Frag (Varyings input) : SV_Target
 	float rawDepth = LOAD_TEXTURE2D_X(_CameraDepthTexture, positionSS).r;
 	const float mask = LOAD_TEXTURE2D_X(_CrestOceanMaskTexture, positionSS).r;
 	const float rawOceanDepth = LOAD_TEXTURE2D_X(_CrestOceanMaskDepthTexture, positionSS).r;
-
+	return float4(sceneColour, 1);
 #if _DEBUG_VIEW_STENCIL
 	return DebugRenderStencil(sceneColour);
 #endif
@@ -111,12 +107,29 @@ real4 Frag (Varyings input) : SV_Target
 		// Unity's lead. Fixes caustics stuttering when far from zero.
 		const float3 positionWS = ComputeWorldSpacePosition(uv, rawDepth, UNITY_MATRIX_I_VP);
 		const half3 view = normalize(_WorldSpaceCameraPos - positionWS);
-		float3 scenePos = _WorldSpaceCameraPos - view * sceneZ / dot(UNITY_MATRIX_I_V._13_23_33, view);
+		float3 scenePos = _WorldSpaceCameraPos - view * sceneZ / dot(_CameraForward, -view);
 		const Light lightMain = GetMainLight();
 		const real3 lightDir = lightMain.direction;
 		const real3 lightCol = lightMain.color;
+
+		Surface surfaceData;
+		//init surface data to rely on pipeline bilut-in method for now
+		surfaceData.position = positionWS;
+		surfaceData.normal = float3(0, 1, 0);
+		surfaceData.interpolatedNormal = float3(0, 1, 0);
+		surfaceData.viewDirection = view;
+		surfaceData.depth = -TransformWorldToView(positionWS).z;
+		surfaceData.color = 1.0;
+		surfaceData.alpha = 1.0;
+		surfaceData.metallic = 1.0;
+		surfaceData.occlusion = 1.0;
+		surfaceData.smoothness = 1.0;
+		surfaceData.dither = 0;
+		surfaceData.fresnelStrength = 0.0;
+
 		sceneColour = ApplyUnderwaterEffect
 		(
+			surfaceData,
 			positionSS,
 			scenePos,
 			sceneColour,

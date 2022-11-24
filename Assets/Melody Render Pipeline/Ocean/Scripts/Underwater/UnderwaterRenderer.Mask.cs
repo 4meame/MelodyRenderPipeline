@@ -1,6 +1,6 @@
 // Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2021 Wave Harmonic Ltd
 
 namespace Crest
 {
@@ -10,7 +10,6 @@ namespace Crest
 
     public partial class UnderwaterRenderer
     {
-        const string k_ShaderPathOceanMask = "Hidden/Crest/Underwater/Ocean Mask";
         const string k_ShaderPathWaterVolumeGeometry = "Hidden/Crest/Water Volume Geometry";
         internal const int k_ShaderPassOceanSurfaceMask = 0;
         internal const int k_ShaderPassOceanHorizonMask = 1;
@@ -68,22 +67,6 @@ namespace Crest
         int _fixMaskKernel;
         uint _fixMaskThreadGroupSizeX;
         uint _fixMaskThreadGroupSizeY;
-
-        void SetupOceanMask()
-        {
-            if (_oceanMaskMaterial?.material == null)
-            {
-                _oceanMaskMaterial = new PropertyWrapperMaterial(k_ShaderPathOceanMask);
-            }
-
-            if (_oceanMaskCommandBuffer == null)
-            {
-                _oceanMaskCommandBuffer = new CommandBuffer()
-                {
-                    name = "Ocean Mask",
-                };
-            }
-        }
 
         internal void OnEnableMask()
         {
@@ -201,44 +184,6 @@ namespace Crest
             maskMaterial.SetInt("_StencilRef", UseStencilBufferOnMask ? k_StencilValueVolume : 0);
         }
 
-        void OnPreRenderOceanMask()
-        {
-            _oceanMaskCommandBuffer.Clear();
-
-            RenderTextureDescriptor descriptor = XRHelpers.GetRenderTextureDescriptor(_camera);
-
-            descriptor.useDynamicScale = _camera.allowDynamicResolution;
-
-            // Keywords and other things.
-            SetUpVolume(_oceanMaskMaterial.material);
-            SetUpMaskTextures(descriptor);
-
-            // Populate water volume before mask so we can use the stencil.
-            if (_mode != Mode.FullScreen && _volumeGeometry != null)
-            {
-                SetUpVolumeTextures(descriptor);
-                PopulateVolume(_oceanMaskCommandBuffer, _volumeFrontFaceTarget, _volumeBackFaceTarget);
-                // Copy only the stencil by copying everything and clearing depth.
-                _oceanMaskCommandBuffer.CopyTexture(_mode == Mode.Portal ? _volumeFrontFaceTarget : _volumeBackFaceTarget, _depthTarget);
-                Helpers.Blit(_oceanMaskCommandBuffer, _depthTarget, Helpers.UtilityMaterial, (int)Helpers.UtilityPass.ClearDepth);
-            }
-
-            SetUpMask(_oceanMaskCommandBuffer, _maskTarget, _depthTarget);
-            SetInverseViewProjectionMatrix(_oceanMaskMaterial.material);
-            PopulateOceanMask(
-                _oceanMaskCommandBuffer,
-                _camera,
-                OceanRenderer.Instance.Tiles,
-                _cameraFrustumPlanes,
-                _oceanMaskMaterial.material,
-                _farPlaneMultiplier,
-                _enableShaderAPI,
-                _debug._disableOceanMask
-            );
-
-            FixMaskArtefacts(_oceanMaskCommandBuffer, descriptor, _maskTarget);
-        }
-
         internal void PopulateVolume(CommandBuffer buffer, RenderTargetIdentifier frontTarget, RenderTargetIdentifier backTarget, MaterialPropertyBlock properties = null, Vector2Int targetSize = default)
         {
             // Front faces.
@@ -297,8 +242,7 @@ namespace Crest
             }
 
             buffer.SetComputeTextureParam(_fixMaskComputeShader, _fixMaskKernel, ShaderIDs.s_CrestOceanMaskTexture, target);
-            // XR SPI will have a volume depth of two. If using RTHandles, then set manually as will be two for all cameras.
-            _fixMaskComputeShader.SetKeyword("STEREO_INSTANCING_ON", descriptor.volumeDepth > 1);
+            _fixMaskComputeShader.SetKeyword("STEREO_INSTANCING_ON", XRHelpers.IsSinglePass);
 
             buffer.DispatchCompute
             (

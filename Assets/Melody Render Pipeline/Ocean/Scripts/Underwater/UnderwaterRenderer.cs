@@ -1,6 +1,6 @@
 ﻿// Crest Ocean System
 
-// This file is subject to the MIT License as seen in the root of this folder structure (LICENSE)
+// Copyright 2021 Wave Harmonic Ltd
 
 namespace Crest
 {
@@ -16,11 +16,11 @@ namespace Crest
     ///
     /// For convenience, all shader material settings are copied from the main ocean shader.
     /// </summary>
-    [ExecuteDuringEditMode(ExecuteDuringEditModeAttribute.Include.None)]
+    [ExecuteAlways]
     [RequireComponent(typeof(Camera))]
     [AddComponentMenu(Internal.Constants.MENU_PREFIX_SCRIPTS + "Underwater Renderer")]
     [HelpURL(Internal.Constants.HELP_URL_BASE_USER + "underwater.html" + Internal.Constants.HELP_URL_RP)]
-    public partial class UnderwaterRenderer : CustomMonoBehaviour
+    public partial class UnderwaterRenderer : MonoBehaviour
     {
         /// <summary>
         /// The version of this asset. Can be used to migrate across versions. This value should
@@ -92,7 +92,6 @@ namespace Crest
             }
         }
 
-
         [Header("Geometry")]
 
         [SerializeField, Predicated("_mode", inverted: false, Mode.FullScreen), DecoratedField]
@@ -104,12 +103,18 @@ namespace Crest
         bool _invertCulling = false;
 
 
-        [Header("Advanced")]
+        [Header("Shader API")]
 
         [SerializeField]
         [Tooltip("Renders the underwater effect before the transparent pass (instead of after). So one can apply the underwater fog themselves to transparent objects. Cannot be changed at runtime.")]
         bool _enableShaderAPI = false;
         public bool EnableShaderAPI { get => _enableShaderAPI; set => _enableShaderAPI = value; }
+
+        [SerializeField, Predicated("_enableShaderAPI")]
+        internal LayerMask _transparentObjectLayers;
+
+
+        [Header("Advanced")]
 
         [SerializeField]
         [Tooltip("Copying params each frame ensures underwater appearance stays consistent with ocean material params. Has a small overhead so should be disabled if not needed.")]
@@ -139,12 +144,6 @@ namespace Crest
         internal bool UseStencilBufferOnMask => _mode != Mode.FullScreen;
         internal bool UseStencilBufferOnEffect => _mode == Mode.VolumeFlyThrough;
 
-        Matrix4x4 _gpuInverseViewProjectionMatrix;
-        Matrix4x4 _gpuInverseViewProjectionMatrixRight;
-
-        // XR MP will create two instances of this class so it needs to be static to track the pass/eye.
-        internal static int s_xrPassIndex = -1;
-
 #if UNITY_EDITOR
         List<Camera> _editorCameras = new List<Camera>();
 #endif
@@ -154,11 +153,14 @@ namespace Crest
         // Use instance to denote whether this is active or not. Only one camera is supported.
         public static UnderwaterRenderer Instance { get; private set; }
 
+        // SRP version needs access to this externally, hence public get
+        public CommandBuffer BufUnderwaterMask { get; private set; }
+        public CommandBuffer BufUnderwaterEffect { get; private set; }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void InitStatics()
         {
             Instance = null;
-            s_xrPassIndex = -1;
         }
 
         public bool IsActive
@@ -205,137 +207,65 @@ namespace Crest
 
             Instance = this;
 
-            Enable();
+            if (BufUnderwaterMask == null)
+            {
+                SetUpMaskCommandBuffers();
+            }
+
+            if (BufUnderwaterEffect == null)
+            {
+                SetUpEffectCommandBuffers();
+            }
+
+            CleanUpCommandBuffers();
+
+            UnderwaterMaskPass.Enable(this);
+            UnderwaterEffectPass.Enable(this);
+
         }
 
         void OnDisable()
         {
-            Disable();
+            CleanUpCommandBuffers();
+
+            UnderwaterMaskPass.Disable();
+            UnderwaterEffectPass.Disable();
+
             Instance = null;
         }
 
-        void Enable()
+        void OnDestroy()
         {
-            SetupOceanMask();
-            OnEnableMask();
-            SetupUnderwaterEffect();
-            // Handle both forward and deferred.
-            _camera.AddCommandBuffer(CameraEvent.BeforeDepthTexture, _oceanMaskCommandBuffer);
-            _camera.AddCommandBuffer(CameraEvent.BeforeGBuffer, _oceanMaskCommandBuffer);
-            _camera.AddCommandBuffer(_enableShaderAPI ? CameraEvent.BeforeForwardAlpha : CameraEvent.AfterForwardAlpha, _underwaterEffectCommandBuffer);
+            CleanUpCommandBuffers();
 
-            _currentEnableShaderAPI = _enableShaderAPI;
-
-#if UNITY_EDITOR
-            EnableEditMode();
-#endif
+            UnderwaterEffectPass.CleanUp();
+            DestroyImmediate(_underwaterEffectMaterial.material);
+            UnderwaterMaskPass.CleanUp();
+            DestroyImmediate(_oceanMaskMaterial.material);
         }
 
-        void Disable()
+        void SetUpMaskCommandBuffers()
         {
-            if (_oceanMaskCommandBuffer != null)
-            {
-                // Handle both forward and deferred.
-                _camera.RemoveCommandBuffer(CameraEvent.BeforeDepthTexture, _oceanMaskCommandBuffer);
-                _camera.RemoveCommandBuffer(CameraEvent.BeforeGBuffer, _oceanMaskCommandBuffer);
-            }
-
-            if (_underwaterEffectCommandBuffer != null)
-            {
-                // It could be either event registered at this point. Remove from both for safety.
-                _camera.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, _underwaterEffectCommandBuffer);
-                _camera.RemoveCommandBuffer(CameraEvent.AfterForwardAlpha, _underwaterEffectCommandBuffer);
-            }
-
-            OnDisableMask();
-
-#if UNITY_EDITOR
-            DisableEditMode();
-#endif
+            BufUnderwaterMask = new CommandBuffer();
+            BufUnderwaterMask.name = "Underwater Mask";
         }
 
-        void LateUpdate()
+        void SetUpEffectCommandBuffers()
         {
-            Helpers.SetGlobalKeyword("CREST_UNDERWATER_BEFORE_TRANSPARENT", _enableShaderAPI);
-
-            if (_enableShaderAPI != _currentEnableShaderAPI && _underwaterEffectCommandBuffer != null)
-            {
-                _camera.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, _underwaterEffectCommandBuffer);
-                _camera.RemoveCommandBuffer(CameraEvent.AfterForwardAlpha, _underwaterEffectCommandBuffer);
-                _camera.AddCommandBuffer(_enableShaderAPI ? CameraEvent.BeforeForwardAlpha : CameraEvent.AfterForwardAlpha, _underwaterEffectCommandBuffer);
-                _currentEnableShaderAPI = _enableShaderAPI;
-#if UNITY_EDITOR
-                DisableEditMode();
-                EnableEditMode();
-#endif
-            }
+            BufUnderwaterEffect = new CommandBuffer();
+            BufUnderwaterEffect.name = "Underwater Effect";
         }
 
-        void OnPreRender()
+        void CleanUpCommandBuffers()
         {
-            if (!IsActive)
+            if (BufUnderwaterMask != null)
             {
-                if (Instance != null)
-                {
-                    _oceanMaskCommandBuffer?.Clear();
-                    _underwaterEffectCommandBuffer?.Clear();
-                }
-
-                return;
+                BufUnderwaterMask.Clear();
             }
 
-            if (!Helpers.MaskIncludesLayer(_camera.cullingMask, OceanRenderer.Instance.Layer))
+            if (BufUnderwaterEffect != null)
             {
-                _oceanMaskCommandBuffer?.Clear();
-                _underwaterEffectCommandBuffer?.Clear();
-                return;
-            }
-
-#if UNITY_EDITOR
-            if (GL.wireframe)
-            {
-                _oceanMaskCommandBuffer?.Clear();
-                _underwaterEffectCommandBuffer?.Clear();
-                return;
-            }
-#endif
-
-            if (Instance == null)
-            {
-                OnEnable();
-            }
-
-            XRHelpers.Update(_camera);
-            XRHelpers.UpdatePassIndex(ref s_xrPassIndex);
-
-            // Built-in renderer does not provide these matrices.
-            if (XRHelpers.IsSinglePass)
-            {
-                _gpuInverseViewProjectionMatrix = (GL.GetGPUProjectionMatrix(XRHelpers.LeftEyeProjectionMatrix, false) * XRHelpers.LeftEyeViewMatrix).inverse;
-                _gpuInverseViewProjectionMatrixRight = (GL.GetGPUProjectionMatrix(XRHelpers.RightEyeProjectionMatrix, false) * XRHelpers.RightEyeViewMatrix).inverse;
-            }
-            else
-            {
-                _gpuInverseViewProjectionMatrix = (GL.GetGPUProjectionMatrix(_camera.projectionMatrix, false) * _camera.worldToCameraMatrix).inverse;
-            }
-
-            OnPreRenderOceanMask();
-            OnPreRenderUnderwaterEffect();
-
-            _firstRender = false;
-        }
-
-        void SetInverseViewProjectionMatrix(Material material)
-        {
-            // Have to set these explicitly as the built-in transforms aren't in world-space for the blit function.
-            if (XRHelpers.IsSinglePass)
-            {
-                material.SetMatrix(ShaderIDs.s_InvViewProjection, _gpuInverseViewProjectionMatrix);
-                material.SetMatrix(ShaderIDs.s_InvViewProjectionRight, _gpuInverseViewProjectionMatrixRight);
-            }
-            else
-            {
-                material.SetMatrix(ShaderIDs.s_InvViewProjection, _gpuInverseViewProjectionMatrix);
+                BufUnderwaterEffect.Clear();
             }
         }
     }
@@ -344,40 +274,6 @@ namespace Crest
     // Edit Mode.
     public partial class UnderwaterRenderer
     {
-        void EnableEditMode()
-        {
-            Camera.onPreRender -= OnBeforeRender;
-            Camera.onPreRender += OnBeforeRender;
-        }
-
-        void DisableEditMode()
-        {
-            foreach (var camera in _editorCameras)
-            {
-                // This can happen on recompile. Thankfully, command buffers will be removed for us.
-                if (camera == null)
-                {
-                    continue;
-                }
-
-                if (_oceanMaskCommandBuffer != null)
-                {
-                    // Handle both forward and deferred.
-                    camera.RemoveCommandBuffer(CameraEvent.BeforeDepthTexture, _oceanMaskCommandBuffer);
-                    camera.RemoveCommandBuffer(CameraEvent.BeforeGBuffer, _oceanMaskCommandBuffer);
-                }
-
-                if (_underwaterEffectCommandBuffer != null)
-                {
-                    camera.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, _underwaterEffectCommandBuffer);
-                    camera.RemoveCommandBuffer(CameraEvent.AfterForwardAlpha, _underwaterEffectCommandBuffer);
-                }
-            }
-
-            _editorCameras.Clear();
-            Camera.onPreRender -= OnBeforeRender;
-        }
-
         /// <summary>
         /// Whether the effect is active for the editor only camera (eg scene view). You can check game preview cameras,
         /// but do not check game cameras.
@@ -416,28 +312,6 @@ namespace Crest
             }
 
             return true;
-        }
-
-        void OnBeforeRender(Camera camera)
-        {
-            if (!IsActiveForEditorCamera(camera))
-            {
-                return;
-            }
-
-            if (!_editorCameras.Contains(camera))
-            {
-                _editorCameras.Add(camera);
-                // Handle both forward and deferred.
-                camera.AddCommandBuffer(CameraEvent.BeforeDepthTexture, _oceanMaskCommandBuffer);
-                camera.AddCommandBuffer(CameraEvent.BeforeGBuffer, _oceanMaskCommandBuffer);
-                camera.AddCommandBuffer(_enableShaderAPI ? CameraEvent.BeforeForwardAlpha : CameraEvent.AfterForwardAlpha, _underwaterEffectCommandBuffer);
-            }
-
-            var oldCamera = _camera;
-            _camera = camera;
-            OnPreRender();
-            _camera = oldCamera;
         }
     }
 
@@ -488,9 +362,24 @@ namespace Crest
                         "The underside of the ocean surface will not be rendered.",
                         $"Set <i>Cull Mode</i> to <i>Off</i> (or <i>Front</i>) on <i>{material.name}</i>.",
                         ValidatedHelper.MessageType.Warning, material,
-                        (material) => ValidatedHelper.FixSetMaterialIntProperty(material, "Cull Mode", "_CullMode", (int)CullMode.Off)
+                        (material) =>
+                        {
+                            ValidatedHelper.FixSetMaterialIntProperty(material, "Cull Mode", "_CullMode", (int)CullMode.Off);
+                        }
                     );
                 }
+
+                if (_mode != Mode.FullScreen && showMessage != ValidatedHelper.DebugLog)
+                {
+                    showMessage
+                    (
+                        $"The <i>{_mode}</i> mode is incompatible with SSAO. " +
+                        "We cannot detect whether SSAO is enabled or not so this is general advice and can be ignored.",
+                        "",
+                        ValidatedHelper.MessageType.Info, this
+                    );
+                }
+
 
                 if (_enableShaderAPI && ocean.OceanMaterial.IsKeywordEnabled("_SUBSURFACESHALLOWCOLOUR_ON"))
                 {
@@ -508,12 +397,10 @@ namespace Crest
     }
 
     [CustomEditor(typeof(UnderwaterRenderer)), CanEditMultipleObjects]
-    public class UnderwaterRendererEditor : CustomBaseEditor
+    public class UnderwaterRendererEditor : ValidatedEditor
     {
         public override void OnInspectorGUI()
         {
-            var target = this.target as UnderwaterRenderer;
-
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox("Scene view rendering can be enabled/disabled with the scene view fog toggle in the scene view command bar.", MessageType.Info);
             EditorGUILayout.Space();
