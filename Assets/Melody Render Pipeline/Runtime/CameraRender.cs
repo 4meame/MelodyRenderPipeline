@@ -154,6 +154,7 @@ public partial class CameraRender {
         cameraBufferSettings.fxaa.enabled = cameraBufferSettings.fxaa.enabled && cameraSettings.allowFXAA;
         #endregion
         #region Ocean
+        var renderOcean = OceanRenderer.Instance.isActiveAndEnabled;
         var underWater = false;
         #endregion
         #region Volumetric Cloud
@@ -229,7 +230,7 @@ public partial class CameraRender {
         atmosphere.UpdateAll();
         if (!useGBuffers) {
             SetupForward();
-            DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+            DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject, renderCloud);
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             //for forward path we use screen-space post fx to render indirect illumination
             if (renderSSAO) {
@@ -241,7 +242,7 @@ public partial class CameraRender {
                 ExecuteBuffer();
             }
             if (renderGI) {
-
+                //TODO
             }
             if (renderSSR) {
                 ssr.Render();
@@ -255,6 +256,14 @@ public partial class CameraRender {
             SetupDeferred();
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
+            #region screen space misc copy
+            buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            buffer.GetTemporaryRT(depthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
+            if (renderSSAO || renderSSR || renderGI || renderCloud || renderOcean) {
+                //NOTE : a rude method that just copys again to support transparent depth, drawing additional object pass is a better way
+                CopyAttachments(true, true);
+            }
+            #endregion
             #region Ocean
             //sample ocean lod shadow
             SamplingShadow.SampleShadowPass(context, camera);
@@ -265,9 +274,9 @@ public partial class CameraRender {
             ssao.Render();
             ssgi.Render();
             ssr.Render();
-            DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
+            DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject, renderCloud);
             //NOTE : a rude method that just copys again to support transparent depth, drawing additional object pass is a better way
-            if (useColorTexture || useDepthTexture) {
+            if (renderVolumetricLight) {
                 CopyAttachments(false, true);
             }
         }
@@ -279,9 +288,6 @@ public partial class CameraRender {
         ssao.Combine(colorAttachmentId);
         ssgi.Combine(colorAttachmentId);
         ssr.Combine(colorAttachmentId);
-        if (renderCloud) {
-            volumetricCloud.Render(colorAttachmentId);
-        }
         if (atmosScatter) {
             var backGroundTextureId = Shader.PropertyToID("_BackGroundTexture");
             buffer.GetTemporaryRT(backGroundTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
@@ -293,7 +299,7 @@ public partial class CameraRender {
         volumetricLight.BilateralFilter(colorAttachmentId);
         #region Ocean
         //NOTE : a rude method that just copys again to support current color
-        if (useColorTexture || useDepthTexture) {
+        if (renderOcean) {
             CopyAttachments(true, false);
         }
         UnderwaterEffectPass.Execute(context, camera, bufferSize, useHDR, colorAttachmentId, depthAttachmentId);
@@ -403,7 +409,7 @@ public partial class CameraRender {
         }
     }
 
-    void DrawForwardGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
+    void DrawForwardGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, bool useVolumetricCloud) {
         //per object light will miss some lighting but sometimes it is not neccessary to calculate all light for one fragment
         PerObjectData lightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
         var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
@@ -427,7 +433,17 @@ public partial class CameraRender {
 
         context.DrawSkybox(camera);
         if (useColorTexture || useDepthTexture) {
-            CopyAttachments(true, true);
+            CopyAttachments();
+        }
+        //draw cloud after the skybox
+        if (useVolumetricCloud) {
+            volumetricCloud.Render(colorAttachmentId);
+            //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
+            buffer.SetRenderTarget(colorAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                depthAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            ExecuteBuffer();
         }
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
@@ -454,14 +470,10 @@ public partial class CameraRender {
         };
         var deferredFilteringSettings = new FilteringSettings(RenderQueueRange.opaque);
         context.DrawRenderers(cullingResults, ref deferredDrawingSettings, ref deferredFilteringSettings);
-
         context.DrawSkybox(camera);
-        if (useColorTexture || useDepthTexture) {
-            CopyAttachments(true, true);
-        }
     }
 
-    void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject) {
+    void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, bool useVolumetricCloud) {
         buffer.name = "Draw DeferredGeometry";
         context.SetupCameraProperties(camera);
         //NOTE : order makes sense
@@ -494,6 +506,17 @@ public partial class CameraRender {
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
 
         context.DrawSkybox(camera);
+
+        //draw cloud after the skybox
+        if (useVolumetricCloud) {
+            volumetricCloud.Render(colorAttachmentId);
+            //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
+            buffer.SetRenderTarget(colorAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                depthAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            ExecuteBuffer();
+        }
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
@@ -651,7 +674,7 @@ public partial class CameraRender {
     }
 
     //Copy buffer attachment
-    void CopyAttachments(bool useColorTexture, bool useDepthTexture) {
+    void CopyAttachments() {
         string name = buffer.name;
         if (useColorTexture) {
                 buffer.GetTemporaryRT(colorTextureId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
@@ -664,7 +687,6 @@ public partial class CameraRender {
                 }
         }
         if (useDepthTexture) {
-
                 buffer.GetTemporaryRT(depthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
                 if (copyTextureSupported) {
                     buffer.CopyTexture(depthAttachmentId, depthTextureId);
@@ -673,6 +695,37 @@ public partial class CameraRender {
                     Draw(depthAttachmentId, depthTextureId, true);
                     ExecuteBuffer();
                 }
+        }
+        if (!copyTextureSupported) {
+            //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
+            buffer.SetRenderTarget(colorAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                depthAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.name = name;
+            ExecuteBuffer();
+        }
+    }
+
+    void CopyAttachments(bool useColorTexture, bool useDepthTexture) {
+        string name = buffer.name;
+        if (useColorTexture) {
+            if (copyTextureSupported) {
+                buffer.CopyTexture(colorAttachmentId, colorTextureId);
+            } else {
+                buffer.name = "Copy Color";
+                Draw(colorAttachmentId, colorTextureId);
+                ExecuteBuffer();
+            }
+        }
+        if (useDepthTexture) {
+            if (copyTextureSupported) {
+                buffer.CopyTexture(depthAttachmentId, depthTextureId);
+            } else {
+                buffer.name = "Copy Depth";
+                Draw(depthAttachmentId, depthTextureId, true);
+                ExecuteBuffer();
+            }
         }
         if (!copyTextureSupported) {
             //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
