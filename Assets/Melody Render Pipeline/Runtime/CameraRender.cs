@@ -154,8 +154,11 @@ public partial class CameraRender {
         cameraBufferSettings.fxaa.enabled = cameraBufferSettings.fxaa.enabled && cameraSettings.allowFXAA;
         #endregion
         #region Ocean
-        var renderOcean = OceanRenderer.Instance.isActiveAndEnabled;
-        var underWater = false;
+        bool renderOcean = false;
+        bool underWater = false;
+        if (!ReferenceEquals(OceanRenderer.Instance, null)) {
+            renderOcean = OceanRenderer.Instance.isActiveAndEnabled;
+        }
         #endregion
         #region Volumetric Cloud
         var renderCloud = cloudSettings.enabled && cameraSettings.allowVolumetricCloud;
@@ -274,7 +277,7 @@ public partial class CameraRender {
             ssao.Render();
             ssgi.Render();
             ssr.Render();
-            DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject, renderCloud);
+            DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject, renderCloud, renderOcean);
             //NOTE : a rude method that just copys again to support transparent depth, drawing additional object pass is a better way
             if (renderVolumetricLight) {
                 CopyAttachments(false, true);
@@ -473,7 +476,7 @@ public partial class CameraRender {
         context.DrawSkybox(camera);
     }
 
-    void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, bool useVolumetricCloud) {
+    void DrawDeferredGeometry(bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, bool renderCloud, bool renderOcean) {
         buffer.name = "Draw DeferredGeometry";
         context.SetupCameraProperties(camera);
         //NOTE : order makes sense
@@ -508,7 +511,7 @@ public partial class CameraRender {
         context.DrawSkybox(camera);
 
         //draw cloud after the skybox
-        if (useVolumetricCloud) {
+        if (renderCloud) {
             volumetricCloud.Render(colorAttachmentId);
             //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
             buffer.SetRenderTarget(colorAttachmentId,
@@ -518,6 +521,9 @@ public partial class CameraRender {
             ExecuteBuffer();
         }
 
+        if (renderOcean) {
+            CopyAttachments(true, false);
+        }
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
         filteringSettings.renderQueueRange = RenderQueueRange.transparent;
