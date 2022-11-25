@@ -94,8 +94,6 @@ namespace Crest
             var commandBuffer = UnderwaterRenderer.Instance.BufUnderwaterMask;
 
             commandBuffer.SetRenderTarget(UnderwaterRenderer.Instance._maskTarget, UnderwaterRenderer.Instance._depthTarget);
-            commandBuffer.ClearRenderTarget(true, true, Color.black);
-
             context.ExecuteCommandBuffer(commandBuffer);
             commandBuffer.Clear();
 

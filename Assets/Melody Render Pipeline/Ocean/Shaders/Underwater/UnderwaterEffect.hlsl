@@ -71,7 +71,7 @@ real4 Frag (Varyings input) : SV_Target
 	float rawDepth = LOAD_TEXTURE2D_X(_CameraDepthTexture, positionSS).r;
 	const float mask = LOAD_TEXTURE2D_X(_CrestOceanMaskTexture, positionSS).r;
 	const float rawOceanDepth = LOAD_TEXTURE2D_X(_CrestOceanMaskDepthTexture, positionSS).r;
-	return float4(sceneColour, 1);
+
 #if _DEBUG_VIEW_STENCIL
 	return DebugRenderStencil(sceneColour);
 #endif

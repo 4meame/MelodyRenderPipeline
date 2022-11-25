@@ -242,7 +242,7 @@ namespace Crest
             }
 
             buffer.SetComputeTextureParam(_fixMaskComputeShader, _fixMaskKernel, ShaderIDs.s_CrestOceanMaskTexture, target);
-            _fixMaskComputeShader.SetKeyword("STEREO_INSTANCING_ON", XRHelpers.IsSinglePass);
+            _fixMaskComputeShader.SetKeyword("STEREO_INSTANCING_ON", false);
 
             buffer.DispatchCompute
             (

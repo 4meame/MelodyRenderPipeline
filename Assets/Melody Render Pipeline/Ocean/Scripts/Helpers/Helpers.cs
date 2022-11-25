@@ -77,7 +77,9 @@ namespace Crest
             // Scene view doesn't support MSAA.
             isMSAA = isMSAA && camera.cameraType != CameraType.SceneView;
 #endif
-            return isMSAA && QualitySettings.antiAliasing > 1;
+            //MRP does not support msaa
+            return false;
+            //return isMSAA && QualitySettings.antiAliasing > 1;
         }
 
         public static bool IsMotionVectorsEnabled()

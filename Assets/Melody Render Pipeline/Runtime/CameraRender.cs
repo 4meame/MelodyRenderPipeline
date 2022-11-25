@@ -224,9 +224,6 @@ public partial class CameraRender {
         buffer.EndSample(SampleName);
         atmosphere.PrecomputeAll();
         atmosphere.UpdateAll();
-        #region Ocean
-        UnderwaterMaskPass.Execute(context, camera, bufferSize);
-        #endregion
         if (!useGBuffers) {
             SetupForward();
             DrawForwardGeometry(useDynamicBatching, useInstancing, useLightsPerObject);
@@ -257,6 +254,9 @@ public partial class CameraRender {
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
             #region Ocean
             SamplingShadow.SampleShadowPass(context, camera);
+            #endregion
+            #region Ocean
+            UnderwaterMaskPass.Execute(context, camera, bufferSize);
             #endregion
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssao.Render();

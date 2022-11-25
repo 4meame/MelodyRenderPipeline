@@ -35,7 +35,6 @@ Varyings Vert(Attributes v)
 	// This will work for all pipelines.
 	Varyings output = (Varyings)0;
 	UNITY_SETUP_INSTANCE_ID(v);
-	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
 	const CascadeParams cascadeData0 = _CrestCascadeData[_LD_SliceIndex];
 	const CascadeParams cascadeData1 = _CrestCascadeData[_LD_SliceIndex + 1];
@@ -56,7 +55,7 @@ Varyings Vert(Attributes v)
 	{
 		// Scale up by small "epsilon" to solve numerical issues. Expand slightly about tile center.
 		// :OceanGridPrecisionErrors
-		float2 tileCenterXZ = UNITY_MATRIX_M._m03_m23;
+		float2 tileCenterXZ = unity_ObjectToWorld._m03_m23;
 #if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
 		tileCenterXZ += _WorldSpaceCameraPos.xz;
 #endif
@@ -116,8 +115,6 @@ Varyings Vert(Attributes v)
 
 half4 Frag(const Varyings input, const bool i_isFrontFace : SV_IsFrontFace) : SV_Target
 {
-	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-
 #if CREST_WATER_VOLUME
 	ApplyVolumeToOceanMask(input.positionCS);
 #endif

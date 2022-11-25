@@ -373,25 +373,5 @@ namespace Crest
         {
             Shader.SetGlobalTexture(ParamIdSampler(), s_nullTexture);
         }
-
-        public static void BindScreenSpaceNullToGraphicsShaders(Camera camera)
-        {
-            // Black for shadowed. White for unshadowed. Built-in RP only.
-            if (camera.stereoEnabled && XRHelpers.IsSinglePass)
-            {
-                Shader.SetGlobalTexture(sp_CrestScreenSpaceShadowTexture, XRHelpers.WhiteTexture);
-            }
-            else
-            {
-                Shader.SetGlobalTexture(sp_CrestScreenSpaceShadowTexture, Texture2D.whiteTexture);
-            }
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void InitStatics()
-        {
-            // Init here from 2019.3 onwards
-            s_textureArrayParamIds = new TextureArrayParamIds(s_textureArrayName);
-        }
     }
 }
