@@ -153,11 +153,14 @@ public partial class CameraRender {
         #region FXAA
         cameraBufferSettings.fxaa.enabled = cameraBufferSettings.fxaa.enabled && cameraSettings.allowFXAA;
         #endregion
+        #region Ocean
+        var underWater = false;
+        #endregion
         #region Volumetric Cloud
         var renderCloud = cloudSettings.enabled && cameraSettings.allowVolumetricCloud;
         #endregion
         #region Volumetric Light
-        var useVolumetricLight = fogSettings.enabled && cameraSettings.allowVolumetricLight;
+        var renderVolumetricLight = fogSettings.enabled && cameraSettings.allowVolumetricLight;
         #endregion
         #region Atmosphere Scattering
         var atmosScatter = cameraSettings.allowAtmosFog;
@@ -205,7 +208,7 @@ public partial class CameraRender {
             DrawDepthNormal(useDepthNormalTexture);
         }
         lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
-        volumetricLight.Setup(context, cullingResults, camera, bufferSize, useHDR, useVolumetricLight, fogSettings, shadowSettings);
+        volumetricLight.Setup(context, cullingResults, camera, bufferSize, useHDR, renderVolumetricLight, fogSettings, shadowSettings);
         //motion vector objects
         motionVector.Setup(context, camera, cullingResults, bufferSize, cameraBufferSettings.taa);
         ssao.Setup(context, camera, bufferSize, cameraBufferSettings.ssao, useHDR);
@@ -253,10 +256,10 @@ public partial class CameraRender {
             //draw GBuffers here
             DrawGBuffers(useDynamicBatching, useInstancing, useLightsPerObject);
             #region Ocean
+            //sample ocean lod shadow
             SamplingShadow.SampleShadowPass(context, camera);
-            #endregion
-            #region Ocean
-            UnderwaterMaskPass.Execute(context, camera, bufferSize);
+            //sample underwater mask
+            UnderwaterMaskPass.Execute(context, camera, bufferSize, out underWater);
             #endregion
             motionVector.Render(colorAttachmentId, motionVectorTextureId, depthAttachmentId);
             ssao.Render();
@@ -302,7 +305,9 @@ public partial class CameraRender {
         dof.DoDepthOfField(colorAttachmentId);
         motionBlur.DoMotionBlur(colorAttachmentId);
         motionBlur.Combine(colorAttachmentId);
-        lensFlare.DoLensFlare(colorAttachmentId);
+        if (!underWater) {
+            lensFlare.DoLensFlare(colorAttachmentId);
+        }
         if (postFXStack.IsActive) {
             //do post stack
             postFXStack.Render(colorAttachmentId);

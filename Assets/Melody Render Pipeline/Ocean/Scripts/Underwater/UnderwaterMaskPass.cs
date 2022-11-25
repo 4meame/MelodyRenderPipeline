@@ -53,15 +53,17 @@ namespace Crest
             enabled = false;
         }
 
-        public static void Execute(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize)
+        public static void Execute(ScriptableRenderContext context, Camera camera, Vector2Int bufferSize, out bool underwater)
         {
             if (!enabled)
             {
+                underwater = false;
                 return;
             }
 
             if (!s_instance._underwaterRenderer.IsActive)
             {
+                underwater = false;
                 return;
             }
 
@@ -72,15 +74,18 @@ namespace Crest
                 if (!s_instance._underwaterRenderer.IsActiveForEditorCamera(camera))
 #endif
                 {
+                    underwater = false;
                     return;
                 }
             }
 
             if (!Helpers.MaskIncludesLayer(camera.cullingMask, OceanRenderer.Instance.Layer))
             {
+                underwater = false;
                 return;
             }
 
+            underwater = true;
             var cameraTargetDescriptor = new RenderTextureDescriptor((int)bufferSize.x, (int)bufferSize.y);
             var descriptor = cameraTargetDescriptor;
             // Keywords and other things.
