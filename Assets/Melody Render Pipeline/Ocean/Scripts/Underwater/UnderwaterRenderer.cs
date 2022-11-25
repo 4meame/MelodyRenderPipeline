@@ -239,9 +239,7 @@ namespace Crest
             CleanUpCommandBuffers();
 
             UnderwaterEffectPass.CleanUp();
-            DestroyImmediate(_underwaterEffectMaterial.material);
             UnderwaterMaskPass.CleanUp();
-            DestroyImmediate(_oceanMaskMaterial.material);
         }
 
         void SetUpMaskCommandBuffers()
