@@ -140,7 +140,7 @@ Material:
     - _MipBias: 0
     - _Moving: 0.17
     - _NormalsScale: 40
-    - _NormalsStrength: 0.08
+    - _NormalsStrength: 0.03
     - _NormalsStrengthOverall: 1
     - _Offset: 0.00008
     - _OverrideReflectionCubemap: 0
@@ -153,7 +153,7 @@ Material:
     - _ReflectionBlur: 0
     - _RefractAmt: 0
     - _RefractionStrength: 1
-    - _RefractiveIndexOfAir: 1
+    - _RefractiveIndexOfAir: 1.125
     - _RefractiveIndexOfWater: 1.333
     - _Roughness: 0
     - _S: 1

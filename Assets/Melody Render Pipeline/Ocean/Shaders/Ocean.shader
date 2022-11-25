@@ -200,7 +200,7 @@ Shader "Crest/Ocean"
 
 		Pass
 		{
-			// Following URP code. Apparently this can be not defined according to https://gist.github.com/phi-lira/225cd7c5e8545be602dca4eb5ed111ba
+			// Following pipeline shader tag for now
 			Tags {"LightMode" = "MelodyDeferred"}
 
 			// Need to set this explicitly as we dont rely on built-in pipeline render states anymore.
