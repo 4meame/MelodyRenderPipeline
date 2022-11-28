@@ -305,6 +305,7 @@ public class VolumetricCloud {
             cloudBaseMaterial.SetVector("_CloudBaseColor", settings.cloudBaseColor);
             cloudBaseMaterial.SetVector("_CloudTopColor", settings.cloudTopColor);
             cloudBaseMaterial.SetFloat("_LightScale", settings.sunScale);
+            cloudBaseMaterial.SetVector("_Ambient", RenderSettings.ambientLight);
             cloudBaseMaterial.SetFloat("_AmbientScale", settings.ambientScale);
             //
             cloudBaseMaterial.SetVector("_Random0", randomVectors[0]);

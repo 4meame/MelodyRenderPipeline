@@ -96,6 +96,7 @@ float _BackwardScatteringG;
 float3 _CloudBaseColor;
 float3 _CloudTopColor;
 float _LightScale;
+float3 _Ambient;
 float _AmbientScale;
 //optimization
 float _RayMinimumY;
@@ -372,7 +373,7 @@ float3 SampleLight(float3 origin, float originDensity, float pixelAlpha, float3 
 }
 
 float3 SampleAmbientLight(float heightFraction, float depth) {
-	return lerp(_CloudBaseColor, _CloudTopColor, heightFraction);
+	return _Ambient * lerp(_CloudBaseColor, _CloudTopColor, heightFraction);
 }
 
 float4 debugDrawNoise(float2 uv) {
