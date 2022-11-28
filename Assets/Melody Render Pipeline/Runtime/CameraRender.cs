@@ -264,7 +264,12 @@ public partial class CameraRender {
             buffer.GetTemporaryRT(depthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
             if (renderSSAO || renderSSR || renderGI || renderCloud || renderOcean) {
                 //NOTE : a rude method that just copys again to support transparent depth, drawing additional object pass is a better way
-                CopyAttachments(true, true);
+                CopyAttachments(false, true);
+                //draw cloud after the skybox
+                if (renderCloud) {
+                    volumetricCloud.Render(colorAttachmentId);
+                }
+                CopyAttachments(true, false);
             }
             #endregion
             #region Ocean
@@ -484,7 +489,8 @@ public partial class CameraRender {
             RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
             depthAttachmentId,
             RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-        buffer.ClearRenderTarget(true, true, Color.clear);
+        //preserve skybox so not clear color
+        buffer.ClearRenderTarget(true, false, Color.clear);
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
         //per object light will miss some lighting but sometimes it is not neccessary to calculate all light for one fragment
@@ -507,19 +513,6 @@ public partial class CameraRender {
         drawingSettings.SetShaderPassName(1, deferredShaderTagId);
         var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
-
-        context.DrawSkybox(camera);
-
-        //draw cloud after the skybox
-        if (renderCloud) {
-            volumetricCloud.Render(colorAttachmentId);
-            //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
-            buffer.SetRenderTarget(colorAttachmentId,
-                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                depthAttachmentId,
-                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            ExecuteBuffer();
-        }
 
         if (renderOcean) {
             CopyAttachments(true, false);
