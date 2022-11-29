@@ -17,7 +17,7 @@ public class PhyscialCameraSettings {
 	public int ISO = 20000;
 	[Min(1)]
 	public int shutterSpeed = 16;
-	public Camera.GateFitMode gateFit = Camera.GateFitMode.Horizontal;
+	public Camera.GateFitMode gateFit = Camera.GateFitMode.Vertical;
 	[Header("Lens")]
 	[Min(0.1117f)]
 	public float focalLength = 20.0f;
