@@ -92,6 +92,9 @@ public partial class CameraRender {
     static int srcBlendId = Shader.PropertyToID("_CameraSrcBlend"),
                dstBlendId = Shader.PropertyToID("_CameraDstBlend");
     public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useInstancing, bool useLightsPerObject, ShadowSettings shadowSettings, AtmosphereScatteringSettings atmosphereSettings, VolumetricCloudSettings cloudSettings, VolumetricLightSettings fogSettings, PostFXSettings postFXSettings, CameraBufferSettings cameraBufferSettings, int colorLUTResolution) {
+        #region Depth Camera
+        if (camera.tag == "DepthCamera") return;
+        #endregion
         this.context = context;
         this.camera = camera;
 

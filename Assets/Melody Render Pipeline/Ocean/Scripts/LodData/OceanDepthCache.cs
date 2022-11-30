@@ -4,7 +4,7 @@
 
 using System;
 using UnityEngine;
-
+using UnityEngine.Rendering;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -70,6 +70,9 @@ namespace Crest
         [Tooltip("Hides the depth cache camera, for cleanliness. Disable to make it visible in the Hierarchy."), SerializeField]
         bool _hideDepthCacheCam = true;
 
+        [SerializeField]
+        bool useDeferLighting = true;
+
         [Tooltip("Baked depth cache. Baking button available in play mode."), SerializeField]
 #pragma warning disable 649
         Texture2D _savedCache;
@@ -88,6 +91,24 @@ namespace Crest
         Camera _camDepthCache;
         Material _copyDepthMaterial;
 
+        CommandBuffer commandBuffer;
+        CullingResults cullingResults;
+        static ShaderTagId unlitShaderTagId,
+                           forwardShaderTagId,
+                           deferredShaderTagId;
+        static int depthId = Shader.PropertyToID("_CameraDepthCache");
+
+        void OnEnable()
+        {
+            if (commandBuffer == null)
+            {
+                commandBuffer = new CommandBuffer();
+                commandBuffer.name = "Depth Floor Cache";
+            }
+
+            RenderPipelineManager.beginCameraRendering += BeginCameraRendering;
+        }
+
         void Start()
         {
 #if UNITY_EDITOR
@@ -105,6 +126,16 @@ namespace Crest
             {
                 PopulateCache();
             }
+
+            if (commandBuffer == null)
+            {
+                commandBuffer = new CommandBuffer();
+                commandBuffer.name = "Depth Floor Cache";
+            }
+
+            unlitShaderTagId = new ShaderTagId("MelodyUnlit");
+            forwardShaderTagId = new ShaderTagId("MelodyForward");
+            deferredShaderTagId = new ShaderTagId("MelodyDeferred");
         }
 
 #if UNITY_EDITOR
@@ -119,6 +150,16 @@ namespace Crest
             }
         }
 #endif
+
+        void OnDisable()
+        {
+            if (commandBuffer != null)
+            {
+                commandBuffer.Release();
+                commandBuffer = null;
+            }
+            RenderPipelineManager.beginCameraRendering -= BeginCameraRendering;
+        }
 
         float CalculateCacheCameraOrthographicSize()
         {
@@ -141,7 +182,7 @@ namespace Crest
 
             if (depthStencilTarget)
             {
-                fmt = RenderTextureFormat.Depth;
+                fmt = RenderTextureFormat.RHalf;
             }
             else
             {
@@ -187,6 +228,7 @@ namespace Crest
             if (isDepthCacheCameraCreation)
             {
                 _camDepthCache = new GameObject("DepthCacheCam").AddComponent<Camera>();
+                _camDepthCache.tag = "DepthCamera";
                 _camDepthCache.transform.parent = transform;
                 _camDepthCache.transform.localEulerAngles = 90f * Vector3.right;
                 _camDepthCache.orthographic = true;
@@ -294,22 +336,8 @@ namespace Crest
                 return;
             }
 
-            var oldShadowDistance = 0f;
-
-            // Built-in only.
-            {
-                // Stop shadow passes from executing.
-                oldShadowDistance = QualitySettings.shadowDistance;
-                QualitySettings.shadowDistance = 0f;
-            }
-
             // Render scene, saving depths in depth buffer.
             _camDepthCache.Render();
-
-            // Built-in only.
-            {
-                QualitySettings.shadowDistance = oldShadowDistance;
-            }
 
             if (_copyDepthMaterial == null)
             {
@@ -330,6 +358,96 @@ namespace Crest
 
             // Copy from depth buffer into the cache
             Graphics.Blit(null, _cacheTexture, _copyDepthMaterial);
+
+        }
+
+        public void BeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            if (camera != _camDepthCache)
+                return;
+
+            if (OceanRenderer.Instance == null)
+            {
+                return;
+            }
+
+            RenderSingleCamera(context, _camDepthCache, depthId, false, false, false);
+        }
+
+        bool Cull(ScriptableRenderContext context, Camera camera, float maxShadowDistance)
+        {
+            if (camera.TryGetCullingParameters(out ScriptableCullingParameters p))
+            {
+                p.shadowDistance = Mathf.Min(camera.farClipPlane, maxShadowDistance);
+                cullingResults = context.Cull(ref p);
+                return true;
+            }
+            return false;
+        }
+
+        void RenderSingleCamera(ScriptableRenderContext context, Camera camera, int depthId, bool useDynamicBatching, bool useInstancing, bool useLightsPerObject)
+        {
+            if (!Cull(context, camera, _cameraMaxTerrainHeight))
+            {
+                return;
+            }
+            string SampleName = commandBuffer.name;
+            commandBuffer.BeginSample(SampleName);
+            context.SetupCameraProperties(camera);
+            CameraClearFlags flags = camera.clearFlags;
+            //always clear depth and color to be guaranteed to cover previous data, unless a sky box is used
+            if (flags > CameraClearFlags.Color)
+            {
+                flags = CameraClearFlags.Color;
+            }
+            commandBuffer.GetTemporaryRT(depthId, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Point, RenderTextureFormat.Depth);
+            commandBuffer.SetRenderTarget(depthId, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            commandBuffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
+            context.ExecuteCommandBuffer(commandBuffer);
+            commandBuffer.Clear();
+            //per object light will miss some lighting but sometimes it is not neccessary to calculate all light for one fragment
+            PerObjectData lightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
+            var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
+            var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings)
+            {
+                enableDynamicBatching = useDynamicBatching,
+                enableInstancing = useInstancing,
+                perObjectData = PerObjectData.Lightmaps |
+                PerObjectData.LightProbe |
+                PerObjectData.LightProbeProxyVolume |
+                PerObjectData.ShadowMask |
+                PerObjectData.OcclusionProbe |
+                PerObjectData.OcclusionProbeProxyVolume |
+                PerObjectData.ReflectionProbes |
+                lightsPerObjectFlags
+            };
+            //set draw settings pass, index : 0, pass : MelodyUnlit; index : 1, pass: MelodyUnlit
+            if (useDeferLighting)
+            {
+                drawingSettings.SetShaderPassName(1, deferredShaderTagId);
+            }
+            else
+            {
+                drawingSettings.SetShaderPassName(1, forwardShaderTagId);
+            }
+            var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
+            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+
+            sortingSettings.criteria = SortingCriteria.CommonTransparent;
+            drawingSettings.sortingSettings = sortingSettings;
+            filteringSettings.renderQueueRange = RenderQueueRange.transparent;
+            context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+            commandBuffer.EndSample(SampleName);
+            context.ExecuteCommandBuffer(commandBuffer);
+            commandBuffer.Clear();
+            commandBuffer.BeginSample(SampleName);
+            commandBuffer.Blit(depthId, camera.targetTexture);
+            //commandBuffer.ReleaseTemporaryRT(colorID);
+            //commandBuffer.ReleaseTemporaryRT(depthId);
+            commandBuffer.EndSample(SampleName);
+            context.ExecuteCommandBuffer(commandBuffer);
+            commandBuffer.Clear();
+            context.Submit();
         }
 
 #if UNITY_EDITOR

@@ -98,6 +98,7 @@ namespace Crest
         [SerializeField] bool _hdr = true;
         [SerializeField] bool _stencil = false;
         [SerializeField] bool _hideCameraGameobject = true;
+        [SerializeField] bool useDeferLighting = true;
         bool _allowMSAA = false;           //allow MSAA on reflection camera
         [SerializeField] float _farClipPlane = 1000;             //far clip plane for reflection camera on all layers
         [SerializeField] CameraClearFlags _clearFlags = CameraClearFlags.Color;
@@ -421,14 +422,14 @@ namespace Crest
                 lightsPerObjectFlags
             };
             //set draw settings pass, index : 0, pass : MelodyUnlit; index : 1, pass: MelodyUnlit
-            //if (useDeferLighting)
+            if (useDeferLighting)
             {
                 drawingSettings.SetShaderPassName(1, deferredShaderTagId);
             }
-            //else
-            //{
-            //    drawingSettings.SetShaderPassName(1, forwardShaderTagId);
-            //}
+            else
+            {
+                drawingSettings.SetShaderPassName(1, forwardShaderTagId);
+            }
             var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
             context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
 
