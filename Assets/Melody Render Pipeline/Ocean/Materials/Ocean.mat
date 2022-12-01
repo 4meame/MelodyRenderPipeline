@@ -16,6 +16,7 @@ Material:
   - _FLOW_ON
   - _FOAM3DLIGHTING_ON
   - _FOAM_ON
+  - _PLANARREFLECTIONS_ON
   - _RECEIVE_SHADOWS
   - _SHADOWS_ON
   - _SUBSURFACESCATTERING_ON
@@ -104,10 +105,10 @@ Material:
     - _Caustics: 1
     - _CausticsBase: 0.07
     - _CausticsBias: 0.7
-    - _CausticsDepthOfField: 0.33
+    - _CausticsDepthOfField: 1.2
     - _CausticsDistortionScale: 10
     - _CausticsDistortionStrength: 0.075
-    - _CausticsFocalDepth: 2
+    - _CausticsFocalDepth: 4.15
     - _CausticsStrength: 3.2
     - _CausticsTextureAverage: 0.07
     - _CausticsTextureScale: 5
@@ -146,7 +147,7 @@ Material:
     - _OverrideReflectionCubemap: 0
     - _PlanarReflectionIntensity: 1
     - _PlanarReflectionNormalsStrength: 1
-    - _PlanarReflections: 0
+    - _PlanarReflections: 1
     - _ProceduralSky: 0
     - _Projection: 0
     - _ReceiveShadows: 1
@@ -168,8 +169,8 @@ Material:
     - _StartLevel: 0.157
     - _StencilFunction: 0
     - _SubSurfaceBase: 0.16
-    - _SubSurfaceDepthMax: 9.4
-    - _SubSurfaceDepthPower: 2.57
+    - _SubSurfaceDepthMax: 5
+    - _SubSurfaceDepthPower: 3.96
     - _SubSurfaceHeightLerp: 1
     - _SubSurfaceHeightMax: 24.9
     - _SubSurfaceHeightPower: 1.68
@@ -208,7 +209,7 @@ Material:
     - _SkyTowardsSun: {r: 2.6390157, g: 1.8217498, b: 0.9236555, a: 1}
     - _SubSurface: {r: 0, g: 0.48, b: 0.36, a: 1}
     - _SubSurfaceColour: {r: 0.10196078, g: 0.40671775, b: 0.57254905, a: 1}
-    - _SubSurfaceShallowCol: {r: 0.552, g: 1, b: 1, a: 1}
-    - _SubSurfaceShallowColShadow: {r: 0.14417942, g: 0.2264151, b: 0.21173015, a: 1}
+    - _SubSurfaceShallowCol: {r: 0.2376471, g: 0.41920167, b: 0.5882353, a: 1}
+    - _SubSurfaceShallowColShadow: {r: 0.14509805, g: 0.17941177, b: 0.22745098, a: 1}
     - _SubSurfaceShallowColour: {r: 0.41999996, g: 0.75, b: 0.69, a: 1}
   m_BuildTextureStacks: []

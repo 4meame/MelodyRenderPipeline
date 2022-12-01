@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.19103077, g: 0.24830414, b: 0.291503, a: 0}
+  m_AmbientSkyColor: {r: 0.19279197, g: 0.24980271, b: 0.2926445, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 1128481001}
-  m_IndirectSpecularColor: {r: 0.054863855, g: 0.070395835, b: 0.077605635, a: 1}
+  m_IndirectSpecularColor: {r: 0.057039652, g: 0.081453614, b: 0.10389484, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -156,32 +156,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &259802806
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Hidden/Melody RP/VolumetricLight
-  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
-  m_ValidKeywords:
-  - _DIRECTION
-  - _RECEIVE_SHADOWS
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs: []
-    m_Ints: []
-    m_Floats: []
-    m_Colors: []
-  m_BuildTextureStacks: []
 --- !u!1 &595845152
 GameObject:
   m_ObjectHideFlags: 0
@@ -374,8 +348,8 @@ Light:
   serializedVersion: 10
   m_Type: 1
   m_Shape: 0
-  m_Color: {r: 0.6505217, g: 0.5864586, b: 0.48258448, a: 1}
-  m_Intensity: 3.0605803
+  m_Color: {r: 0.65166956, g: 0.5863061, b: 0.48121914, a: 1}
+  m_Intensity: 3.0357044
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -420,7 +394,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: 6.8922027e+16}
+  m_BoundingSphereOverride: {x: 0, y: 1e-45, z: 0, w: 9e-44}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -560,7 +534,7 @@ MonoBehaviour:
   noiseIntensity: 1
   noiseIntensityOffset: 0.3
   noiseVelocity: {x: 3, y: 3}
-  material: {fileID: 259802806}
+  material: {fileID: 1449455150}
   maxRayLength: 400
 --- !u!1 &1397774481
 GameObject:
@@ -683,6 +657,32 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 23.395, y: 0, z: -26.08}
+--- !u!21 &1449455150
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hidden/Melody RP/VolumetricLight
+  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
+  m_ValidKeywords:
+  - _DIRECTION
+  - _RECEIVE_SHADOWS
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors: []
+  m_BuildTextureStacks: []
 --- !u!1 &1603468011
 GameObject:
   m_ObjectHideFlags: 0
@@ -697,6 +697,7 @@ GameObject:
   - component: {fileID: 1603468015}
   - component: {fileID: 1603468016}
   - component: {fileID: 1603468017}
+  - component: {fileID: 1603468018}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -724,7 +725,7 @@ Camera:
   m_ClearFlags: 1
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
   m_projectionMatrixMode: 1
-  m_GateFitMode: 2
+  m_GateFitMode: 1
   m_FOVAxisMode: 0
   m_SensorSize: {x: 70, y: 51}
   m_LensShift: {x: 0, y: 0}
@@ -808,7 +809,7 @@ MonoBehaviour:
     sensorSize: {x: 70, y: 51}
     ISO: 120000
     shutterSpeed: 32
-    gateFit: 2
+    gateFit: 1
     focalLength: 20
     shift: {x: 0, y: 0}
     fStop: 5.6
@@ -865,6 +866,34 @@ MonoBehaviour:
     _viewStencil: 0
     _disableHeightAboveWaterOptimization: 0
     _disableArtifactCorrection: 0
+--- !u!114 &1603468018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1603468011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da05aab3ba773644eb187d19c55bb05a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _version: 0
+  _reflectionLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  _disableOcclusionCulling: 1
+  _textureSize: 256
+  _clipPlaneOffset: 0.07
+  _physcialCamera: 1
+  _hdr: 1
+  _stencil: 1
+  _hideCameraGameobject: 1
+  useDeferLighting: 1
+  _farClipPlane: 1000
+  _clearFlags: 2
+  RefreshPerFrames: 1
+  _frameRefreshOffset: 0
 --- !u!1 &1620446447
 GameObject:
   m_ObjectHideFlags: 0
