@@ -17,7 +17,7 @@ MonoBehaviour:
   useSRPBatcher: 0
   useLightsPerObject: 1
   shadows:
-    maxDistance: 50
+    maxDistance: 120
     distanceFade: 0.303
     directional:
       atlasSize: 4096
@@ -32,10 +32,10 @@ MonoBehaviour:
       atlasSize: 4096
       filter: 3
   atmosphere: {fileID: 11400000, guid: 21777d4397c8a5842bd9927000c6afc3, type: 2}
-  cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
+  cloud: {fileID: 11400000, guid: 2b7df5e31d094ca4cbd5e881b24c5cf2, type: 2}
   fog:
     enabled: 1
-    resolution: 1
+    resolution: 0
   postFXSettings: {fileID: 11400000, guid: e089f744ec6e2f242afd88eabd41e272, type: 2}
   cameraBufferSettings:
     allowHDR: 1
@@ -59,9 +59,9 @@ MonoBehaviour:
       mode: 2
       motionVectorEnabled: 1
       jitterScale: 1
-      sharpness: 0.2
+      sharpness: 0.1
       staticBlending: 0.9
-      motionBlending: 0.965
+      motionBlending: 0.9
       staticAABBScale: 1
       motionAABBScale: 3
       feedBack: 0

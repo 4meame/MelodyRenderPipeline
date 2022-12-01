@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   updateEveryFrame: 1
   computeShader: {fileID: 7200000, guid: 5676ee6232d7d8d47b30a1d09dd6105a, type: 3}
-  mode: 1
+  mode: 2
   debugMode: 0
   planetRadius: 6371000
   atmosphereHeight: 80000
-  groundHeight: 10
+  groundHeight: 5
   densityScaleHeight: {x: 7944, y: 1200}
   rayleighCoefficients: {x: 5.26, y: 12.84, z: 27.07}
   mieCoefficients: {x: 21, y: 21, z: 21}

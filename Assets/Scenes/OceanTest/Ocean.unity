@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.19279197, g: 0.24980271, b: 0.2926445, a: 0}
+  m_AmbientSkyColor: {r: 0.21213333, g: 0.27967238, b: 0.3489435, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 1128481001}
-  m_IndirectSpecularColor: {r: 0.057039652, g: 0.081453614, b: 0.10389484, a: 1}
+  m_IndirectSpecularColor: {r: 0.04770278, g: 0.076684125, b: 0.104951315, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -156,6 +156,32 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!21 &158328149
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hidden/Melody RP/VolumetricLight
+  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
+  m_ValidKeywords:
+  - _DIRECTION
+  - _RECEIVE_SHADOWS
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors: []
+  m_BuildTextureStacks: []
 --- !u!1 &595845152
 GameObject:
   m_ObjectHideFlags: 0
@@ -348,8 +374,8 @@ Light:
   serializedVersion: 10
   m_Type: 1
   m_Shape: 0
-  m_Color: {r: 0.65166956, g: 0.5863061, b: 0.48121914, a: 1}
-  m_Intensity: 3.0357044
+  m_Color: {r: 0.59897983, g: 0.58158857, b: 0.5504342, a: 1}
+  m_Intensity: 3.6034868
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -394,7 +420,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 1e-45, z: 0, w: 9e-44}
+  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: -1.6606061e+38}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -406,14 +432,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1128481000}
-  m_LocalRotation: {x: -0.007857316, y: -0.9906318, z: 0.1198796, w: -0.06492937}
+  m_LocalRotation: {x: -0.033155214, y: -0.8601377, z: 0.5058513, w: -0.05637634}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 13.8, y: -187.5, z: 0}
+  m_LocalEulerAnglesHint: {x: 60.92, y: -187.5, z: 0}
 --- !u!114 &1128481003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,13 +554,13 @@ MonoBehaviour:
   mieG: 0.177
   HeightFog: 1
   heightScale: 0.212
-  groundHeight: 0
+  groundHeight: 5
   useNoise: 0
   noiseScale: 0.015
   noiseIntensity: 1
   noiseIntensityOffset: 0.3
   noiseVelocity: {x: 3, y: 3}
-  material: {fileID: 1449455150}
+  material: {fileID: 158328149}
   maxRayLength: 400
 --- !u!1 &1397774481
 GameObject:
@@ -657,32 +683,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 23.395, y: 0, z: -26.08}
---- !u!21 &1449455150
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Hidden/Melody RP/VolumetricLight
-  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
-  m_ValidKeywords:
-  - _DIRECTION
-  - _RECEIVE_SHADOWS
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs: []
-    m_Ints: []
-    m_Floats: []
-    m_Colors: []
-  m_BuildTextureStacks: []
 --- !u!1 &1603468011
 GameObject:
   m_ObjectHideFlags: 0
