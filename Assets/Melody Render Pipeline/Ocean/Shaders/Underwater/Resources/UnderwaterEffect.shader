@@ -4,12 +4,18 @@
 
 Shader "Hidden/Crest/Underwater/Underwater Effect"
 {
+	Properties
+	{
+		[Toggle(_RECEIVE_SHADOWS)] _ReceiveShadows("Receive Shadows", Float) = 1
+	}
+
 	HLSLINCLUDE
 	#pragma vertex Vert
 	#pragma fragment Frag
 
 	// #pragma enable_d3d11_debug_symbols
 
+	#pragma multi_compile _ _RECEIVE_SHADOWS
 	#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
 	#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
 	#pragma multi_compile _ _SHADOWS_SOFT

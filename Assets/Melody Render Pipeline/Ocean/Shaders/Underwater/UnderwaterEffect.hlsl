@@ -106,6 +106,10 @@ real4 Frag (Varyings input) : SV_Target
 		// Position needs to be reconstructed in the fragment shader to avoid precision issues as per
 		// Unity's lead. Fixes caustics stuttering when far from zero.
 		const float3 positionWS = ComputeWorldSpacePosition(uv, rawDepth, UNITY_MATRIX_I_VP);
+		float4 depthNormalTexture = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, uv, 0);
+		float3 viewNormal = DecodeViewNormalStereo(depthNormalTexture);
+		//NOTE HERE : FOR w component, point : 1, direction : 0
+		const float3 normalWS = normalize(mul(_CrestCameraToWorldMatrix, float4(viewNormal, 0))).xyz;
 		const half3 view = normalize(_WorldSpaceCameraPos - positionWS);
 		float3 scenePos = _WorldSpaceCameraPos - view * sceneZ / dot(_CameraForward, -view);
 		const Light lightMain = GetMainLight();
@@ -115,8 +119,8 @@ real4 Frag (Varyings input) : SV_Target
 		Surface surfaceData;
 		//init surface data to rely on pipeline bilut-in method for now
 		surfaceData.position = positionWS;
-		surfaceData.normal = float3(0, 1, 0);
-		surfaceData.interpolatedNormal = float3(0, 1, 0);
+		surfaceData.normal = normalWS;
+		surfaceData.interpolatedNormal = normalWS;
 		surfaceData.viewDirection = view;
 		surfaceData.depth = -TransformWorldToView(positionWS).z;
 		surfaceData.color = 1.0;

@@ -27,9 +27,9 @@ float3 _CrestFloatingOriginOffset;
 // think the root cause here might be imprecision or numerical issues at ocean
 // tile boundaries, although I'm not sure why cracks are not visible in this case.
 float _CrestForceUnderwater;
-
 float3 _PrimaryLightDirection;
 float3 _PrimaryLightIntensity;
+float4x4 _CrestCameraToWorldMatrix;
 CBUFFER_END
 
 #endif

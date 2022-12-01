@@ -437,6 +437,7 @@ namespace Crest
         readonly static int sp_lodAlphaBlackPointFade = Shader.PropertyToID("_CrestLodAlphaBlackPointFade");
         readonly static int sp_lodAlphaBlackPointWhitePointFade = Shader.PropertyToID("_CrestLodAlphaBlackPointWhitePointFade");
         readonly static int sp_CrestDepthTextureOffset = Shader.PropertyToID("_CrestDepthTextureOffset");
+        readonly static int sp_CrestCameraToWorldMatrix = Shader.PropertyToID("_CrestCameraToWorldMatrix");
         public static readonly int sp_CrestForceUnderwater = Shader.PropertyToID("_CrestForceUnderwater");
 
         public static class ShaderIDs
@@ -932,6 +933,7 @@ namespace Crest
             Shader.SetGlobalFloat(sp_lodAlphaBlackPointFade, _lodAlphaBlackPointFade);
             Shader.SetGlobalFloat(sp_lodAlphaBlackPointWhitePointFade, _lodAlphaBlackPointWhitePointFade);
             Shader.SetGlobalInt(sp_CrestDepthTextureOffset, ViewCamera != null && Helpers.IsMSAAEnabled(ViewCamera) ? 1 : 0);
+            Shader.SetGlobalMatrix(sp_CrestCameraToWorldMatrix, ViewCamera != null ? ViewCamera.worldToCameraMatrix.inverse : Matrix4x4.identity);
 
             // LOD 0 is blended in/out when scale changes, to eliminate pops. Here we set it as a global, whereas in OceanChunkRenderer it
             // is applied to LOD0 tiles only through instance data. This global can be used in compute, where we only apply this factor for slice 0.
