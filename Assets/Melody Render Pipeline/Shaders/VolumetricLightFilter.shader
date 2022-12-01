@@ -205,7 +205,7 @@
 
             float4 horizontalFrag(Varyings input) : SV_Target
             {
-                return BilateralBlur(input, int2(1, 0), _CameraDepthTexture, FULL_RES_BLUR_KERNEL_SIZE, _CameraDepthTexture_TexelSize.xy);
+                return BilateralBlur(input, int2(1, 0), _TransparentDepthTexture, FULL_RES_BLUR_KERNEL_SIZE, _TransparentDepthTexture_TexelSize.xy);
             }
 
             ENDHLSL
@@ -225,7 +225,7 @@
 
             float4 verticalFrag(Varyings input) : SV_Target
             {
-                return BilateralBlur(input, int2(0, 1), _CameraDepthTexture, FULL_RES_BLUR_KERNEL_SIZE, _CameraDepthTexture_TexelSize.xy);
+                return BilateralBlur(input, int2(0, 1), _TransparentDepthTexture, FULL_RES_BLUR_KERNEL_SIZE, _TransparentDepthTexture_TexelSize.xy);
             }
 
             ENDHLSL
@@ -286,12 +286,12 @@
 
 			DownSample vertHalfDepth(Attributes i)
 			{
-                return vertDepthDownSample(i, _CameraDepthTexture_TexelSize);
+                return vertDepthDownSample(i, _TransparentDepthTexture_TexelSize);
 			}
 
 			float frag(DownSample input) : SV_Target
 			{
-                return DownSampleDepth(input, _CameraDepthTexture);
+                return DownSampleDepth(input, _TransparentDepthTexture);
 			}
 
             ENDHLSL
@@ -317,7 +317,7 @@
 
 			float4 frag(UpSample input) : SV_TARGET
 			{
-				return BilateralUpSample(input, _CameraDepthTexture, _HalfResDepthTexture, _HalfResColorTexture);
+				return BilateralUpSample(input, _TransparentDepthTexture, _HalfResDepthTexture, _HalfResColorTexture);
 			}
 
             ENDHLSL

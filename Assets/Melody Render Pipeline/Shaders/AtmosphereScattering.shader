@@ -195,7 +195,7 @@
 
 			float4 AerialPerspectiveFog(Varyings input) : SV_TARGET{
 				float2 screenUV = input.uv;
-				float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, screenUV);
+				float depth = SAMPLE_DEPTH_TEXTURE(_TransparentDepthTexture, sampler_point_clamp, screenUV);
 				float linearDepth01 = Linear01Depth(depth, _ZBufferParams);
 				float3 rayStart = _WorldSpaceCameraPos;
 				float3 rayDirection = UVToCameraRay(screenUV);

@@ -3,6 +3,8 @@
 
 TEXTURE2D(_CameraDepthTexture);
 float4 _CameraDepthTexture_TexelSize;
+TEXTURE2D(_TransparentDepthTexture);
+float4 _TransparentDepthTexture_TexelSize;
 TEXTURE2D(_CameraColorTexture);
 float4 _CameraColorTexture_TexelSize;
 TEXTURE2D(_CameraMotionVectorTexture);

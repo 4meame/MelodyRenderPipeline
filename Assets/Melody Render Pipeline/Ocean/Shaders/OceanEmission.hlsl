@@ -40,6 +40,10 @@ half3 ScatterColour
 		col *= i_ambientLighting + i_lightCol;
 
 		// Approximate subsurface scattering - add light when surface faces viewer. Use geometry normal - don't need high freqs.
+		if (i_underwater)
+		{
+			_SubSurfaceSunFallOff = sqrt(_SubSurfaceSunFallOff);
+		}
 		half towardsSun = pow(max(0., dot(i_lightDir, -i_view)), _SubSurfaceSunFallOff);
 		// URP version was: col += (_SubSurfaceBase + _SubSurfaceSun * towardsSun) * _SubSurfaceColour.rgb * i_lightCol * shadow;
 		half3 subsurface = (_SubSurfaceBase + _SubSurfaceSun * towardsSun) * _SubSurfaceColour.rgb * i_lightCol * i_shadow;
@@ -122,10 +126,7 @@ void ApplyCaustics
 		);
 	}
 
-	// We'll use this distortion code for above water in single pass due to refraction bug.
-#if !defined(UNITY_SINGLE_PASS_STEREO) && !defined(UNITY_STEREO_INSTANCING_ENABLED)
 	if (i_underwater)
-#endif
 	{
 		float2 surfacePosXZ = i_scenePos.xz;
 
@@ -149,7 +150,10 @@ void ApplyCaustics
 		{
 			// We could skip GetMainLight but this is recommended approach which is likely more robust to API changes.
 			ShadowData shadowData;
-			surfaceData.position = i_scenePos;
+			if (!i_underwater)
+			{
+				surfaceData.position = i_scenePos;
+			}
 			shadowData = GetShadowData(surfaceData);
 			Light mainLight = GetMainLight(surfaceData, shadowData);
 			causticsStrength *= mainLight.shadowAttenuation;

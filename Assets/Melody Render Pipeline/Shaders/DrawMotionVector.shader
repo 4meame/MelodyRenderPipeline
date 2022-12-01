@@ -91,7 +91,7 @@
         }
 
         float4 FragMotionVectorsCamera(CameraMotionVector input) : SV_Target {
-            float depth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_point_clamp, input.uv, 0);
+            float depth = SAMPLE_TEXTURE2D_LOD(_TransparentDepthTexture, sampler_point_clamp, input.uv, 0);
             float2 motion = CalculateMotion(depth, input.ray);
             return float4(motion, 0, min(motion.x + motion.y, 1));
         }

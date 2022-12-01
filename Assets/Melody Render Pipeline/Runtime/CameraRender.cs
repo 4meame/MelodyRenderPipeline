@@ -39,7 +39,8 @@ public partial class CameraRender {
                depthAttachmentId = Shader.PropertyToID("_CameraDepthAttachment"),
                depthTextureId = Shader.PropertyToID("_CameraDepthTexture"),
                colorTextureId = Shader.PropertyToID("_CameraColorTexture"),
-               sourceTextureId = Shader.PropertyToID("_SourceTexture");
+               sourceTextureId = Shader.PropertyToID("_SourceTexture"),
+               transDepthTextureId = Shader.PropertyToID("_TransparentDepthTexture");
 
     bool useHDR;
     bool useDepthTexture;
@@ -286,8 +287,8 @@ public partial class CameraRender {
             ssr.Render();
             DrawDeferredGeometry(useDynamicBatching, useInstancing, useLightsPerObject, renderCloud, renderOcean);
             //NOTE : a rude method that just copys again to support transparent depth, drawing additional object pass is a better way
-            if (renderVolumetricLight) {
-                CopyAttachments(false, true);
+            if ((renderVolumetricLight || atmosScatter || postFXStack.IsActive)) {
+                CopyAttachments(true);
             }
         }
         //draw volumetric light
@@ -635,6 +636,7 @@ public partial class CameraRender {
             buffer.ReleaseTemporaryRT(depthAttachmentId);
             if (useDepthTexture) {
                 buffer.ReleaseTemporaryRT(depthTextureId);
+                buffer.ReleaseTemporaryRT(transDepthTextureId);
             }
             if (useColorTexture) {
                 buffer.ReleaseTemporaryRT(colorTextureId);
@@ -729,6 +731,31 @@ public partial class CameraRender {
             }
         }
         if (!copyTextureSupported) {
+            //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
+            buffer.SetRenderTarget(colorAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                depthAttachmentId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            buffer.name = name;
+            ExecuteBuffer();
+        }
+    }
+
+    void CopyAttachments(bool copyTransparentDepth) {
+        string name = buffer.name;
+        if (copyTransparentDepth) {
+            buffer.GetTemporaryRT(transDepthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, RenderTextureFormat.Depth);
+            if (copyTextureSupported) {
+                buffer.CopyTexture(depthAttachmentId, transDepthTextureId);
+            }
+            else {
+                buffer.name = "Copy Transparent Depth";
+                Draw(depthAttachmentId, transDepthTextureId, true);
+                ExecuteBuffer();
+            }
+        }
+        if (!copyTextureSupported)
+        {
             //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
             buffer.SetRenderTarget(colorAttachmentId,
                 RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,

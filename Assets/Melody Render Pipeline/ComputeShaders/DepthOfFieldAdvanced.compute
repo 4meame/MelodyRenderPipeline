@@ -17,7 +17,7 @@ RWTexture2D<float> _FullResCoCTexture;
 
 [numthreads(8, 8, 1)]
 void CircleOfConfusionPhysical(uint3 dispatchThreadId : SV_DispatchThreadID) {
-    float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, dispatchThreadId.xy, 0).r;
+    float depth = LOAD_TEXTURE2D_LOD(_TransparentDepthTexture, dispatchThreadId.xy, 0).r;
     //NOTE : the linearization of the depth is encoded directly in the MAD parameters
     float CoC = _CoCBias - _CoCScale * depth;
     if (CoC > 0) {
@@ -34,7 +34,7 @@ void CircleOfConfusionPhysical(uint3 dispatchThreadId : SV_DispatchThreadID) {
 
 [numthreads(8, 8, 1)]
 void CircleOfConfusionManual(uint3 dispatchThreadId : SV_DispatchThreadID) {
-    float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, dispatchThreadId.xy, 0).r;
+    float depth = LOAD_TEXTURE2D_LOD(_TransparentDepthTexture, dispatchThreadId.xy, 0).r;
     //NOTE : we can avoid explicit linearization by merging it with the other computations
     float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
     float CoC = 0;
