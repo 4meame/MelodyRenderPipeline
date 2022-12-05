@@ -44,6 +44,22 @@ Varyings LitPassVertex(Attributes input) {
     UNITY_TRANSFER_INSTANCE_ID(input, output);
 //extract the UV Coordinate from the light map data
 	TRANSFER_GI_DATA(input, output);
+#if defined(_WAVE)
+	//access material property via UNITY_ACCESS_INSTANCED_PROP( , );
+	float4 waveA = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveA);
+	float4 waveB = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveB);
+	float4 waveC = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveC);
+	float3 gridPoint = input.positionOS;
+	float3 tangent = float3(1, 0, 0);
+	float3 binormal = float3(0, 0, 1);
+	float3 p = gridPoint;
+	p += GerstnerWave(waveA, gridPoint, tangent, binormal);
+	p += GerstnerWave(waveB, gridPoint, tangent, binormal);
+	p += GerstnerWave(waveC, gridPoint, tangent, binormal);
+	float3 normal = normalize(cross(binormal, tangent));
+	input.positionOS = p;
+	input.normalOS = normal;
+#endif
 	output.positionWS = TransformObjectToWorld(input.positionOS);
 	output.positionCS = TransformWorldToHClip(output.positionWS);	
 //access material property via UNITY_ACCESS_INSTANCED_PROP( , );
