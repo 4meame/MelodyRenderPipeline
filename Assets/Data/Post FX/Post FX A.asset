@@ -20,16 +20,16 @@ MonoBehaviour:
     threshold: 1
     thresholdKnee: 0.512
     fadeFireflies: 1
-    mode: 1
+    mode: 0
     intensity: 0.45
     scatter: 0.81
     ignoreRenderScale: 1
   colorAdjustment:
     postExposure: 0
-    constrat: 0
+    constrat: 1.7
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     hueShift: 0
-    saturation: 0
+    saturation: 17.2
   whiteBalance:
     Temperature: 0
     Tint: 0
@@ -64,7 +64,7 @@ MonoBehaviour:
     depthNormalThreshold: 0.447
     depthNormalThresholdScale: 4.92
   lightShaftsSetting:
-    mode: 2
+    mode: 1
     enable: 0
     Downsample: 4
     lightShaftParameters: {x: 2.81, y: 2.76, z: 0, w: 0}
@@ -75,14 +75,14 @@ MonoBehaviour:
     exposure: 1.045
     bloomTintAndThreshold: {r: 1, g: 1, b: 1, a: 1}
   motionBlurSetting:
-    mode: 2
+    mode: 0
     shutterAngle: 120
     sampleCount: 8
     frameBlending: 0.3
   autoExposureSetting:
     autoExposure: {fileID: 7200000, guid: 9ab31004dd070044dad9f84fe059d67a, type: 3}
     logHistogram: {fileID: 7200000, guid: a13a6250b9b3e714fb4ba6e365397836, type: 3}
-    metering: 3
+    metering: 0
     meteringMask: 1
     mask: {fileID: 0}
     minEV: -10
@@ -105,7 +105,7 @@ MonoBehaviour:
     dofGather: {fileID: 7200000, guid: 8460e9c174f886a43a0693ed115df3db, type: 3}
     dofPreCombine: {fileID: 7200000, guid: 2336e1bd867d3b4429a5d752b25f1613, type: 3}
     dofCombine: {fileID: 7200000, guid: 0688f2b097264e04a995691e63f3f7f3, type: 3}
-    focusMode: 2
+    focusMode: 0
     focusDistanceMode: 1
     resolution: 1
     taaEnabled: 1
@@ -124,5 +124,5 @@ MonoBehaviour:
   lensFlareSetting:
     lensFlareShader: {fileID: 4800000, guid: 22920c1d1d86e394b8a09b15a538dd7b, type: 3}
     mergeOcclusion: {fileID: 7200000, guid: 0d0a3f5b9cd287f4598e549236f3e518, type: 3}
-    mode: 1
+    mode: 0
     antiAliasing: 1

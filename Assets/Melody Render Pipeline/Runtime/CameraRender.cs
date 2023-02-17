@@ -316,7 +316,8 @@ public partial class CameraRender {
         UnderwaterEffectPass.Execute(context, camera, bufferSize, useHDR, colorAttachmentId, depthAttachmentId);
         #endregion
         autoExposure.DoAutoExposure(colorAttachmentId);
-        DrawUnsupportedShaders();
+        //I hate this.
+        //DrawUnsupportedShaders();
         DrawGizmosBeforeFX();
         taa.Render(colorAttachmentId);
         dof.DoDepthOfField(colorAttachmentId);
