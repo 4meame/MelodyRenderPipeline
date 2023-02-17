@@ -2,15 +2,21 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: toon complex 1
   m_Shader: {fileID: 4800000, guid: bb9514afd84e74548a4044c198a5219c, type: 3}
-  m_ShaderKeywords: _CLIPPING_OFF _EMISSIVE_SIMPLE _OUTLINE_CLIPPING_ON _OUTLINE_NML
-    _RECEIVE_SHADOWS _SHADOWS_ON
+  m_ValidKeywords:
+  - _CLIPPING_OFF
+  - _EMISSIVE_SIMPLE
+  - _OUTLINE_NML
+  - _RECEIVE_SHADOWS
+  m_InvalidKeywords:
+  - _OUTLINE_CLIPPING_ON
+  - _SHADOWS_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -128,6 +134,7 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    m_Ints: []
     m_Floats:
     - _1st2nd_Shades_Feather: 0.0001
     - _Add_Antipodean_RimLight: 0
@@ -274,3 +281,4 @@ Material:
     - _Unlit_Color: {r: 0.05, g: 0.05, b: 0.05, a: 1}
     - _Unlit_Intensity: {r: 1, g: 1, b: 1, a: 1}
     - _ViewShift: {r: 0, g: 2.6390157, b: 0, a: 1}
+  m_BuildTextureStacks: []
