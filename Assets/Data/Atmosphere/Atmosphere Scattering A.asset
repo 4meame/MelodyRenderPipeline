@@ -14,20 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   updateEveryFrame: 1
   computeShader: {fileID: 7200000, guid: 5676ee6232d7d8d47b30a1d09dd6105a, type: 3}
-  mode: 2
+  mode: 1
   debugMode: 0
   planetRadius: 6371000
   atmosphereHeight: 80000
   groundHeight: 1000
   densityScaleHeight: {x: 7944, y: 1200}
-  rayleighCoefficients: {x: 5.1, y: 11.5, z: 21.52}
+  rayleighCoefficients: {x: 5.5, y: 12.08, z: 22.4}
   mieCoefficients: {x: 21, y: 21, z: 21}
-  mieG: 0.7
+  mieG: 0.67
   incomingLight: {r: 3.9533494, g: 3.9533494, b: 3.9533494, a: 4}
   sunIntensity: 0.3
   lightSamples: 32
   distanceScale: 1
-  rayleighInscatterScale: 2.75
+  rayleighInscatterScale: 2.8
   rayleighExtinctionScale: 1
   mieInscatterScale: 1.05
   mieExtinctionScale: 1

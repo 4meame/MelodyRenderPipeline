@@ -20,11 +20,11 @@ MonoBehaviour:
   fixedWidth: 960
   fixedHeight: 540
   downsample: 2
-  coverageOffsetX: 0.263
-  coverageOffsetY: 0.476
+  coverageOffsetX: 0
+  coverageOffsetY: 0
   horizonCoverageStart: 0.268
   horizonCoverageEnd: 0.815
-  baseScale: 1
+  baseScale: 0.38
   cloudGradient1:
     serializedVersion: 2
     key0: {r: 0, g: 0, b: 0, a: 1}
@@ -112,42 +112,42 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 4
     m_NumAlphaKeys: 2
-  sampleThreshold: 0.031
+  sampleThreshold: 0.059
   sampleScalar: 1
-  bottomFade: 0.244
-  detailScale: 3.4
-  erosionEdgeSize: 0.422
-  cloudDistortion: 0.372
+  bottomFade: 0.27
+  detailScale: 8.31
+  erosionEdgeSize: 0.656
+  cloudDistortion: 0.513
   cloudDistortionScale: 0.68
   cloudBaseColor: {r: 0.032776468, g: 0.08116073, b: 0.199, a: 1}
   cloudTopColor: {r: 0.422058, g: 0.5749868, b: 0.773, a: 1}
-  sunScale: 0.5
-  ambientScale: 0.46
+  sunScale: 1
+  ambientScale: 1
   sunRayLength: 0.24
   coneRadius: 0.24
-  density: 1
+  density: 4.2
   forwardScatteringG: 0.8
   backwardScatteringG: -0.39
   darkOutlineScalar: 1
-  speed: 0.1
+  speed: 0
   coverageOffsetPerFrame: {x: 0, y: 0}
   baseOffsetPerFrame: {x: 0.000951, y: -0.001, z: 0}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
-  earthCenter: {x: 0, y: -6371000, z: 0}
-  earthRadius: 6371000
+  earthCenter: {x: 0, y: -3371000, z: 0}
+  earthRadius: 3371000
   useCalculatedRadius: 0
   showCalculatedRadius: 0
   horizonDistanceOfRadius: 0
-  atmosphereStartHeight: 1500
-  atmosphereEndHeight: 4000
+  atmosphereStartHeight: 3500
+  atmosphereEndHeight: 8000
   cameraPositionScale: {x: 1, y: 1, z: 1}
-  lodDistance: 0.227
-  horizonLevel: 0
-  horizonFade: 0.58
-  horizonFadeStartAlpha: 0.892
+  lodDistance: 0.019
+  horizonLevel: 0.022
+  horizonFade: 0.122
+  horizonFadeStartAlpha: 0.059
   shapeTexture: {fileID: 11700000, guid: acfd6816ce7f6bb4c9f00280a1590461, type: 2}
   detailTexture: {fileID: 11700000, guid: b87aa95a517180a41a7303278b9c691f, type: 2}
-  coverageTexture: {fileID: 2800000, guid: 813a69576878a33438240780d057dcf3, type: 3}
+  coverageTexture: {fileID: 2800000, guid: 800e139c07c95544497413242b13afbc, type: 3}
   curlTexture: {fileID: 2800000, guid: 4c1bdebb39a1f034aad3a28b4df53a8e, type: 3}
   blueNoiseTexture: {fileID: 0}
   debugTexture: 0
