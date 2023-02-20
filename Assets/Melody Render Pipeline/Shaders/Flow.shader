@@ -154,10 +154,15 @@
 
             HLSLPROGRAM
             #pragma target 3.5
-            #pragma vertex ShadowCasterPassVertex
-            #pragma fragment ShadowCasterPassFragment
+            #pragma shader_feature _CLIPPING
+            #pragma multi_compile_instancing
+            #pragma vertex LitPassVertex
+            #pragma fragment LitPassFragment
             #define _FLOW
-            #include "ShadowCasterPass.hlsl"
+            #pragma multi_compile _FLOW_DISTORTION _FLOW_DIRECTION
+            #pragma shader_feature _DUAL_GRID
+            #include "FlowPass.hlsl"
+            #include "LitPass-Deferred.hlsl"
             ENDHLSL
         }
 

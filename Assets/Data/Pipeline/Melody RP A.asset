@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useDynamicBachting: 0
   useInstancing: 1
-  useSRPBatcher: 0
+  useSRPBatcher: 1
   useLightsPerObject: 1
   shadows:
     maxDistance: 30
@@ -57,7 +57,7 @@ MonoBehaviour:
       quality: 2
     taa:
       mode: 0
-      motionVectorEnabled: 0
+      motionVectorEnabled: 1
       jitterScale: 1
       sharpness: 0.25
       staticBlending: 0.9

@@ -14,7 +14,8 @@ public partial class CameraRender {
     CullingResults cullingResults;
     static ShaderTagId unlitShaderTagId = new ShaderTagId("MelodyUnlit"),
                        forwardShaderTagId = new ShaderTagId("MelodyForward"),
-                       deferredShaderTagId = new ShaderTagId("MelodyDeferred");
+                       deferredShaderTagId = new ShaderTagId("MelodyDeferred"),
+                      GBuffersShaderTagId = new ShaderTagId("GBuffer");
 
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
@@ -468,7 +469,7 @@ public partial class CameraRender {
         //draw Deferred Object
         PerObjectData deferredLightsPerObjectFlags = useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
         var deferredSortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
-        var deferredDrawingSettings = new DrawingSettings(deferredShaderTagId, deferredSortingSettings) {
+        var deferredDrawingSettings = new DrawingSettings(GBuffersShaderTagId, deferredSortingSettings) {
             enableDynamicBatching = useDynamicBatching,
             enableInstancing = useInstancing,
             perObjectData = PerObjectData.Lightmaps |

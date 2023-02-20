@@ -139,10 +139,13 @@
 
             HLSLPROGRAM
             #pragma target 3.5
-            #pragma vertex MetaPassVertex
-            #pragma fragment MetaPassFragment
+            #pragma shader_feature _CLIPPING
+            #pragma multi_compile_instancing
+            #pragma vertex LitPassVertex
+            #pragma fragment LitPassFragment
             #define _WAVE
-            #include "MetaPass.hlsl"
+            #include "WavePass.hlsl"
+            #include "LitPass-Deferred.hlsl"
             ENDHLSL
         }
 
