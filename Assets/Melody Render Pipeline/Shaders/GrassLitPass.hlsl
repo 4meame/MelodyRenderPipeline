@@ -9,7 +9,7 @@
 #include "../ShaderLibrary/GI.hlsl"
 #include "../ShaderLibrary/Lighting.hlsl"
 
-StructuredBuffer<float4> positionBuffer;
+StructuredBuffer<float3> _DataBuffer;
 
 struct Attributes {
 	float3 positionOS : POSITION;
@@ -21,10 +21,9 @@ struct Varyings {
 
 Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	Varyings output;
-	float4 data = positionBuffer[instanceID];
-	float3 localPosition = input.positionOS.xyz * data.w;
-	float3 worldPosition = data.xyz + localPosition;
-	output.positionCS = mul(UNITY_MATRIX_VP, float4(worldPosition, 1.0f));
+	float3 localPosition = input.positionOS;
+	float3 worldPosition = localPosition + _DataBuffer[instanceID];
+	output.positionCS = TransformWorldToHClip(worldPosition);
 	return output;
 }
 
