@@ -78,9 +78,18 @@ public class GrassRenderer : MonoBehaviour {
             return;
         }
 
+        if (allChunksData != null) {
+            foreach (var c in allChunksData) {
+                c.Clear();
+            }
+        }
         if (dataBuffer != null) {
             dataBuffer.Release();
         }
+
+        //group all grass data into chunks
+        GetChunksData();
+
         dataBuffer = new ComputeBuffer(allGrassPositions.Count, SizeOf(typeof(Vector3)));
         dataBuffer.SetData(allGrassPositions);
         grassMaterial.SetBuffer("_DataBuffer", dataBuffer);
