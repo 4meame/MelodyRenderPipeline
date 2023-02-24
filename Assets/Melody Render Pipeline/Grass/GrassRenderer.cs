@@ -10,36 +10,42 @@ public class GrassRenderer : MonoBehaviour {
     //smaller the number, CPU needs more time, but GPU is faster
     public Vector2 chunkSize;
     public float density;
+    public float viewDistance;
     public Mesh grassMesh;
     public Material grassMaterial;
 
+    Camera mainCamera;
     Mesh mesh;
     int subMeshIndex = 0;
-    Bounds bounds;
+    Plane[] frustumPlanes;
     float minX, minZ, maxX, maxZ;
     ComputeBuffer argsBuffer;
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     ComputeBuffer dataBuffer;
+    ComputeBuffer IdBuffer;
 
     int instancedGrassCount = 0;
     int cachedPositionCount = -1;
     int cacheInstancedCount = 1;
     int chunkCountX = -1;
-    int chunkCountY = -1;
+    int chunkCountZ = -1;
 
     List<Vector3> allGrassPositions;
     List<Vector3> meshPositions;
     List<Vector2> proceduralPositions;
     List<GrassData>[] allChunksData;
-
+    List<int> visiableChunkID;
+    List<GrassData> allGrassData;
 
     public struct GrassData {
-        Vector3 positionWS;
-        int chunkID;
+        public Vector3 position;
+        public int chunkID;
+        public int visable;
 
-        public GrassData(Vector3 pos, int id) {
-            positionWS= pos;
+        public GrassData(Vector3 pos, int id, int vis) {
+            position= pos;
             chunkID = id;
+            visable = vis;
         }
     }
 
@@ -47,6 +53,10 @@ public class GrassRenderer : MonoBehaviour {
         allGrassPositions = new List<Vector3>();
         meshPositions = new List<Vector3>();
         proceduralPositions = new List<Vector2>();
+        allGrassData = new List<GrassData>();
+        visiableChunkID = new List<int>();
+        frustumPlanes = new Plane[6];
+        mainCamera = Camera.main;
         mesh = transform.GetComponent<MeshFilter>().mesh;
         UpdateGrassPosition();
     }
@@ -74,7 +84,7 @@ public class GrassRenderer : MonoBehaviour {
     }
 
     void UpdateBuffer() {
-        if(cacheInstancedCount == allGrassPositions.Count) {
+        if(cacheInstancedCount == allGrassData.Count) {
             return;
         }
 
@@ -83,34 +93,48 @@ public class GrassRenderer : MonoBehaviour {
                 c.Clear();
             }
         }
-        if (dataBuffer != null) {
-            dataBuffer.Release();
-        }
-
         //group all grass data into chunks
         GetChunksData();
 
-        dataBuffer = new ComputeBuffer(allGrassPositions.Count, SizeOf(typeof(Vector3)));
-        dataBuffer.SetData(allGrassPositions);
-        grassMaterial.SetBuffer("_DataBuffer", dataBuffer);
+        //flatten 2d array into 1d buffer
+        if (allGrassData != null) {
+            allGrassData.Clear();
+        }
+        for (int i = 0; i < allChunksData.Length; i++) {
+            for (int j = 0; j < allChunksData[i].Count; j++) {
+                allGrassData.Add(allChunksData[i][j]);
+            }
+        }
 
+        if (dataBuffer != null) {
+            dataBuffer.Release();
+        }
+        dataBuffer = new ComputeBuffer(allGrassData.Count, SizeOf(typeof(GrassData)));
+        dataBuffer.SetData(allGrassData);
+        grassMaterial.SetBuffer("_GrassData", dataBuffer);
+        Debug.Log(allGrassData.Count);
         //indirect args
         if (argsBuffer != null) {
             argsBuffer.Release();
         }
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         args[0] = (uint)GetGrassMeshCache().GetIndexCount(subMeshIndex);
-        args[1] = (uint)allGrassPositions.Count;
+        args[1] = (uint)allGrassData.Count;
         args[2] = (uint)GetGrassMeshCache().GetIndexStart(subMeshIndex);
         args[3] = (uint)GetGrassMeshCache().GetBaseVertex(subMeshIndex);
         argsBuffer.SetData(args);
 
-        cacheInstancedCount = allGrassPositions.Count;
-        Debug.Log(cacheInstancedCount);
+        cacheInstancedCount = allGrassData.Count;
     }
 
     //draw grass mesh instances indirect
     void Render() {
+        DoGrassCulling();
+
+        //IdBuffer = new ComputeBuffer(visiableChunkID.Count, SizeOf(typeof(int)));
+        //IdBuffer.SetData(visiableChunkID);
+        //grassMaterial.SetBuffer("_GrassID", IdBuffer);
+
         Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, new Bounds(Vector3.zero, new Vector3(2000.0f, 2000.0f, 2000.0f)), argsBuffer);
     }
 
@@ -128,7 +152,7 @@ public class GrassRenderer : MonoBehaviour {
             position += transform.position;
             allGrassPositions.Add(position);
         }
-
+        Debug.Log(allGrassPositions.Count);
         CalcualteBounds(allGrassPositions);
         cachedPositionCount = allGrassPositions.Count;
     }
@@ -198,8 +222,8 @@ public class GrassRenderer : MonoBehaviour {
     //decide chunk count by current min&max and chunkSize
     void GetChunksData() {
         chunkCountX = Mathf.CeilToInt((maxX - minX) / chunkSize.x);
-        chunkCountY = Mathf.CeilToInt((maxZ - minZ) / chunkSize.y);
-        allChunksData = new List<GrassData>[chunkCountX * chunkCountY];
+        chunkCountZ = Mathf.CeilToInt((maxZ - minZ) / chunkSize.y);
+        allChunksData = new List<GrassData>[chunkCountX * chunkCountZ];
         for (int i = 0; i < allChunksData.Length; i++) {
             allChunksData[i] = new List<GrassData>();
         }
@@ -208,11 +232,41 @@ public class GrassRenderer : MonoBehaviour {
             Vector3 pos = allGrassPositions[i];
             //find chunkID
             int xID = Mathf.Min(chunkCountX - 1, Mathf.FloorToInt(Mathf.InverseLerp(minX, maxX, pos.x) * chunkCountX)); //use min to force within 0~[cellCountX-1]  
-            int zID = Mathf.Min(chunkCountY - 1, Mathf.FloorToInt(Mathf.InverseLerp(minZ, maxZ, pos.z) * chunkCountY)); //use min to force within 0~[cellCountZ-1]
+            int zID = Mathf.Min(chunkCountZ - 1, Mathf.FloorToInt(Mathf.InverseLerp(minZ, maxZ, pos.z) * chunkCountZ)); //use min to force within 0~[cellCountZ-1]
             int id = xID + zID * chunkCountX;
-            GrassData data = new GrassData(pos, id);
+            GrassData data = new GrassData(pos, id, 1);
             allChunksData[id].Add(data);
+        }   
+    }
+
+    //rough quick frustum culling in CPU first to filter unvisible chunk, then filter in GPU by compute shader
+    void DoGrassCulling() {
+        //apply grass view distance
+        float farClipPlane = mainCamera.farClipPlane;
+        mainCamera.farClipPlane = viewDistance;
+        //Ordering: [0] = Left, [1] = Right, [2] = Down, [3] = Up, [4] = Near, [5] = Far
+        GeometryUtility.CalculateFrustumPlanes(mainCamera, frustumPlanes);
+        mainCamera.farClipPlane = farClipPlane;
+
+        visiableChunkID.Clear();
+        for (int i = 0; i < allChunksData.Length; i++) {
+            //create per chunk bounds
+            Vector3 center = new Vector3(i % chunkCountX + 0.5f, transform.position.y, Mathf.CeilToInt(i / chunkCountX) + 0.5f);
+            center.x = Mathf.Lerp(minX, maxX, center.x / chunkCountX);
+            center.z = Mathf.Lerp(minZ, maxZ, center.z / chunkCountZ);
+            Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, 0, Mathf.Abs(maxZ - minZ) / chunkCountZ);
+            Bounds bounds = new Bounds(center, size);
+            if (GeometryUtility.TestPlanesAABB(frustumPlanes, bounds)) {
+                visiableChunkID.Add(i);
+
+                //for (int j = 0; j < allChunksData[i].Count; j++) {
+                //    GrassData d = new GrassData(allChunksData[i][j].position, allChunksData[i][j].chunkID, 1);
+                //    allChunksData[i][j] = d;
+                //}
+
+            }
         }
-        
+
+
     }
 }

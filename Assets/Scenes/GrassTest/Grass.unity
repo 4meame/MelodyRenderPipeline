@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.349915, g: 0.4554443, b: 0.5505877, a: 0}
+  m_AmbientSkyColor: {r: 0.3478254, g: 0.45564368, b: 0.5537039, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -176,7 +176,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 100000
-  field of view: 60
+  field of view: 45
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -414,8 +414,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useMeshData: 0
-  field: {x: 100, y: 100}
-  density: 1
+  fieldSize: {x: 73, y: 49}
+  chunkSize: {x: 20, y: 10}
+  density: 2
+  viewDistance: 1000
   grassMesh: {fileID: 0}
   grassMaterial: {fileID: 2100000, guid: 5fbfed9deb0bc2a4ca2b463db4af6d4a, type: 2}
 --- !u!114 &1145923638
