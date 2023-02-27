@@ -1,0 +1,32 @@
+#pragma kernel CSMain
+
+struct GrassData {
+	float3 position;
+	int chunkID;
+	int visable;
+};
+
+float4x4 _VPMatrix;
+float _MaxDrawDistance;
+uint _MemoryOffset;
+
+StructuredBuffer<GrassData> _GrassData;
+AppendStructuredBuffer<uint> _IdOfVisibleGrass;
+
+[numthreads(64,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID) {
+	//posWS -> posCS
+	GrassData data = _GrassData[id.x + _MemoryOffset];
+	float3 posWS = data.position;
+	float4 absPosCS = abs(mul(_VPMatrix, float4(posWS, 1.0)));
+
+	//do culling test in clip space, result is the same as doing test in NDC space.
+	//prefer clip space here because doing culling test in clip space is faster than doing culling test in NDC, because we can skip 1 division.
+	//the test is using OpenGL standard projection matrix, because all matrix from unity C# is OpenGL standard
+	//if instance is inside camera frustum, and is within draw distance, we append it to _VisibleInstanceOnlyTransformBuffer
+	//y test allow 50% more threshold (hardcode for grass)
+	//x test allow 10% more threshold (hardcode for grass)
+	if (absPosCS.z <= absPosCS.w && absPosCS.y <= absPosCS.w * 1.5 && absPosCS.x <= absPosCS.w * 1.1 && absPosCS.w <= _MaxDrawDistance) {
+		_IdOfVisibleGrass.Append(id.x + _MemoryOffset);
+	}
+}

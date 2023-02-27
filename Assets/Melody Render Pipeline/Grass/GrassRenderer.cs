@@ -13,29 +13,33 @@ public class GrassRenderer : MonoBehaviour {
     public float viewDistance;
     public Mesh grassMesh;
     public Material grassMaterial;
+    public ComputeShader cullingShader;
 
     Camera mainCamera;
     Mesh mesh;
     int subMeshIndex = 0;
     Plane[] frustumPlanes;
     float minX, minZ, maxX, maxZ;
+    Bounds bounds;
     ComputeBuffer argsBuffer;
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     ComputeBuffer dataBuffer;
     ComputeBuffer IdBuffer;
 
-    int instancedGrassCount = 0;
-    int cachedPositionCount = -1;
-    int cacheInstancedCount = 1;
+    int cachePositionCount = -1;
+    int cacheInstancedCount = -1;
     int chunkCountX = -1;
     int chunkCountZ = -1;
 
     List<Vector3> allGrassPositions;
     List<Vector3> meshPositions;
     List<Vector2> proceduralPositions;
-    List<GrassData>[] allChunksData;
+    GrassData[] allGrassData;
     List<int> visiableChunkID;
-    List<GrassData> allGrassData;
+    List<GrassData>[] allChunksData;
+
+    bool shouldBatchDispatch = true;
+    bool debug = false;
 
     public struct GrassData {
         public Vector3 position;
@@ -53,19 +57,13 @@ public class GrassRenderer : MonoBehaviour {
         allGrassPositions = new List<Vector3>();
         meshPositions = new List<Vector3>();
         proceduralPositions = new List<Vector2>();
-        allGrassData = new List<GrassData>();
+        allGrassData = new GrassData[1];
         visiableChunkID = new List<int>();
         frustumPlanes = new Plane[6];
         mainCamera = Camera.main;
+        bounds = new Bounds();
         mesh = transform.GetComponent<MeshFilter>().mesh;
         UpdateGrassPosition();
-    }
-
-    void OnEnable() {
-        //ensure submesh index is in range
-        if (grassMesh != null) {
-            subMeshIndex = Mathf.Clamp(subMeshIndex, 0, grassMesh.subMeshCount - 1);
-        }
     }
 
     void Update() {
@@ -79,12 +77,22 @@ public class GrassRenderer : MonoBehaviour {
     }
 
     void OnDisable() {
-        cachedPositionCount = -1;
+        cachePositionCount = -1;
         cacheInstancedCount = -1;
+
+        if (dataBuffer != null) {
+            dataBuffer.Release();
+        }
+        if (IdBuffer != null) {
+            IdBuffer.Release();
+        }
+        if (argsBuffer != null) {
+            argsBuffer.Release();
+        }
     }
 
     void UpdateBuffer() {
-        if(cacheInstancedCount == allGrassData.Count) {
+        if(cacheInstancedCount == allGrassData.Length) {
             return;
         }
 
@@ -97,51 +105,56 @@ public class GrassRenderer : MonoBehaviour {
         GetChunksData();
 
         //flatten 2d array into 1d buffer
-        if (allGrassData != null) {
-            allGrassData.Clear();
-        }
+        allGrassData = new GrassData[allGrassPositions.Count];
+        int index = 0;
         for (int i = 0; i < allChunksData.Length; i++) {
             for (int j = 0; j < allChunksData[i].Count; j++) {
-                allGrassData.Add(allChunksData[i][j]);
+                allGrassData[index] = allChunksData[i][j];
+                index++;
             }
         }
 
         if (dataBuffer != null) {
             dataBuffer.Release();
         }
-        dataBuffer = new ComputeBuffer(allGrassData.Count, SizeOf(typeof(GrassData)));
+        dataBuffer = new ComputeBuffer(allGrassData.Length, SizeOf(typeof(GrassData)));
         dataBuffer.SetData(allGrassData);
+        cullingShader.SetBuffer(0, "_GrassData", dataBuffer);
         grassMaterial.SetBuffer("_GrassData", dataBuffer);
-        Debug.Log(allGrassData.Count);
+
+        if (IdBuffer != null) {
+            IdBuffer.Release();
+        }
+        IdBuffer = new ComputeBuffer(allGrassData.Length, sizeof(uint), ComputeBufferType.Append);
+        IdBuffer.SetCounterValue(0);
+        cullingShader.SetBuffer(0, "_IdOfVisibleGrass", IdBuffer);
+        grassMaterial.SetBuffer("_IdOfVisibleGrass", IdBuffer);
+
         //indirect args
         if (argsBuffer != null) {
             argsBuffer.Release();
         }
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         args[0] = (uint)GetGrassMeshCache().GetIndexCount(subMeshIndex);
-        args[1] = (uint)allGrassData.Count;
+        args[1] = (uint)allGrassData.Length;
         args[2] = (uint)GetGrassMeshCache().GetIndexStart(subMeshIndex);
         args[3] = (uint)GetGrassMeshCache().GetBaseVertex(subMeshIndex);
         argsBuffer.SetData(args);
 
-        cacheInstancedCount = allGrassData.Count;
+        cacheInstancedCount = allGrassData.Length;
     }
 
     //draw grass mesh instances indirect
     void Render() {
         DoGrassCulling();
 
-        //IdBuffer = new ComputeBuffer(visiableChunkID.Count, SizeOf(typeof(int)));
-        //IdBuffer.SetData(visiableChunkID);
-        //grassMaterial.SetBuffer("_GrassID", IdBuffer);
-
-        Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, new Bounds(Vector3.zero, new Vector3(2000.0f, 2000.0f, 2000.0f)), argsBuffer);
+        Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer);
     }
 
     //Init grass position by mesh vertices, for example, but we generate these in procedural to get chunks
     void UpdateGrassPosition() {
         //we don't have to update position every frame.
-        if (cachedPositionCount == GetGrassCount()) {
+        if (cachePositionCount == GetGrassCount()) {
             return;
         }
         //define grass worldspace position
@@ -152,9 +165,11 @@ public class GrassRenderer : MonoBehaviour {
             position += transform.position;
             allGrassPositions.Add(position);
         }
-        Debug.Log(allGrassPositions.Count);
+        if (debug) {
+            Debug.Log("all grass count:" + allGrassPositions.Count);
+        }
         CalcualteBounds(allGrassPositions);
-        cachedPositionCount = allGrassPositions.Count;
+        cachePositionCount = allGrassPositions.Count;
     }
 
     void InitPositionData() {
@@ -185,12 +200,13 @@ public class GrassRenderer : MonoBehaviour {
     }
 
     int GetGrassCount() {
+        int count;
         if (useMeshData) {
-            instancedGrassCount = meshPositions.Count;
+            count = meshPositions.Count;
         } else  {
-            instancedGrassCount = proceduralPositions.Count;
+            count = proceduralPositions.Count;
         }
-        return instancedGrassCount;
+        return count;
     }
 
     Vector3 GetGrassPosition(int index) {
@@ -217,6 +233,8 @@ public class GrassRenderer : MonoBehaviour {
             maxX = Mathf.Max(target.x, maxX);
             maxZ = Mathf.Max(target.z, maxZ);
         }
+        //if camera frustum is not overlapping this bound, DrawMeshInstancedIndirect will not even render
+        bounds.SetMinMax(new Vector3(minX, transform.position.y - 100, minZ), new Vector3(maxX, transform.position.y + 100, maxZ));
     }
 
     //decide chunk count by current min&max and chunkSize
@@ -227,7 +245,9 @@ public class GrassRenderer : MonoBehaviour {
         for (int i = 0; i < allChunksData.Length; i++) {
             allChunksData[i] = new List<GrassData>();
         }
-
+        if (debug) {
+            Debug.Log("all chunks count:" + allChunksData.Length);
+        }
         for (int i = 0; i < allGrassPositions.Count; i++) {
             Vector3 pos = allGrassPositions[i];
             //find chunkID
@@ -258,15 +278,48 @@ public class GrassRenderer : MonoBehaviour {
             Bounds bounds = new Bounds(center, size);
             if (GeometryUtility.TestPlanesAABB(frustumPlanes, bounds)) {
                 visiableChunkID.Add(i);
-
-                //for (int j = 0; j < allChunksData[i].Count; j++) {
-                //    GrassData d = new GrassData(allChunksData[i][j].position, allChunksData[i][j].chunkID, 1);
+                //for (int j = 0; j < allChunksData[i].Count; j++)
+                //{
+                //    GrassData d = new GrassData(allChunksData[i][j].position, allChunksData[i][j].chunkID, 0);
                 //    allChunksData[i][j] = d;
                 //}
-
             }
         }
 
+        //loop though only visible cells, each visible cell dispatch GPU culling job once, at the end compute shader will fill all visible instance into IdBuffer
+        Matrix4x4 v = mainCamera.worldToCameraMatrix;
+        Matrix4x4 p = mainCamera.projectionMatrix;
+        Matrix4x4 vp = p * v;
+        //init
+        IdBuffer.SetCounterValue(0);
+        int dispatchCount = 0;
+        cullingShader.SetMatrix("_VPMatrix", vp);
+        cullingShader.SetFloat("_MaxDrawDistance", viewDistance);
+        //dispatch culling compute per chunk
+        for (int i = 0; i < visiableChunkID.Count; i++) {
+            int currentChunkId = visiableChunkID[i];
+            int memoryOffset = 0;
+            for (int j = 0; j < currentChunkId; j++) {
+                memoryOffset += allChunksData[j].Count;
+            }
+            //offset current chunk grass ID to global ID of all grass array
+            cullingShader.SetInt("_MemoryOffset", memoryOffset);
+            int jobLength = allChunksData[currentChunkId].Count;
+            //batch n dispatchs into 1 dispatch, if memory is continuous in allInstancesPosWSBuffer
+            if (shouldBatchDispatch) {
+                while ((i < visiableChunkID.Count - 1) && //test this first to avoid out of bound access to visibleChunkIDList
+                        (visiableChunkID[i + 1] == visiableChunkID[i] + 1)) {
+                    //if memory is continuous, append them together into the same dispatch call
+                    jobLength += allChunksData[visiableChunkID[i + 1]].Count;
+                    i++;
+                }
+            }
 
+            cullingShader.Dispatch(0, Mathf.CeilToInt(jobLength / 64f), 1, 1);
+            dispatchCount++;
+        }
+
+        //GPU per instance culling finished, copy visible count to argsBuffer, to setup DrawMeshInstancedIndirect's draw amount 
+        ComputeBuffer.CopyCount(IdBuffer, argsBuffer, 4);
     }
 }

@@ -16,6 +16,7 @@ struct GrassData {
 };
 
 StructuredBuffer<GrassData> _GrassData;
+StructuredBuffer<uint> _IdOfVisibleGrass;
 
 struct Attributes {
 	float3 positionOS : POSITION;
@@ -43,7 +44,7 @@ float3 hash3(uint n) {
 
 Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	Varyings output;
-	GrassData data = _GrassData[instanceID];
+	GrassData data = _GrassData[_IdOfVisibleGrass[instanceID]];
 	float3 localPosition = input.positionOS;
 	float3 worldPosition = localPosition + data.position;
 	output.positionCS = TransformWorldToHClip(worldPosition);
@@ -56,5 +57,9 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 
 float4 LitPassFragment(Varyings input) : SV_TARGET{
 	return float4(input.color, 1);
+}
+
+float4 ShadowCasterPass(Varyings input) : SV_TARGET{
+	return 1.0;
 }
 #endif
