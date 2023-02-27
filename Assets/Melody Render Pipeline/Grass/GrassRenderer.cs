@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using static System.Runtime.InteropServices.Marshal;
 
 public class GrassRenderer : MonoBehaviour {
@@ -11,6 +12,7 @@ public class GrassRenderer : MonoBehaviour {
     public Vector2 chunkSize;
     public float density;
     public float viewDistance;
+    public ShadowCastingMode castShadows;
     public Mesh grassMesh;
     public Material grassMaterial;
     public ComputeShader cullingShader;
@@ -148,7 +150,7 @@ public class GrassRenderer : MonoBehaviour {
     void Render() {
         DoGrassCulling();
 
-        Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer);
+        Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer, 0, null, castShadows);
     }
 
     //Init grass position by mesh vertices, for example, but we generate these in procedural to get chunks
