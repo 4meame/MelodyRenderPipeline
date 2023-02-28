@@ -2,7 +2,7 @@ Shader "Melody RP/Standard/Grass/Instanced"
 {
     Properties
     {
-        
+        _NoiseTex("Noise Texture", 2D) = "white" {}
         [Toggle(_PREMULTIPLY_ALPHA)]_PremulAlpha("Premultiply Alpha", Float) = 0
         [Toggle(_CLIPPING)]_Clipping("Alpha Clipping", Float) = 0
         [Toggle(_RECEIVE_SHADOWS)] _ReceiveShadows("Receive Shadows", Float) = 1

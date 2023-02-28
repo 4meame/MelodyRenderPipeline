@@ -15,7 +15,8 @@ public class GrassRenderer : MonoBehaviour {
     public ShadowCastingMode castShadows;
     public Mesh grassMesh;
     public Material grassMaterial;
-    public ComputeShader cullingShader;
+    //do culling and data remake
+    public ComputeShader dataProcessing;
 
     Camera mainCamera;
     Mesh mesh;
@@ -46,13 +47,7 @@ public class GrassRenderer : MonoBehaviour {
     public struct GrassData {
         public Vector3 position;
         public int chunkID;
-        public int visable;
-
-        public GrassData(Vector3 pos, int id, int vis) {
-            position= pos;
-            chunkID = id;
-            visable = vis;
-        }
+        public Vector2 worldCoord;
     }
 
     void Start() {
@@ -64,7 +59,7 @@ public class GrassRenderer : MonoBehaviour {
         frustumPlanes = new Plane[6];
         mainCamera = Camera.main;
         bounds = new Bounds();
-        mesh = transform.GetComponent<MeshFilter>().mesh;
+        mesh = transform.GetComponent<MeshFilter>().sharedMesh;
         UpdateGrassPosition();
     }
 
@@ -121,7 +116,7 @@ public class GrassRenderer : MonoBehaviour {
         }
         dataBuffer = new ComputeBuffer(allGrassData.Length, SizeOf(typeof(GrassData)));
         dataBuffer.SetData(allGrassData);
-        cullingShader.SetBuffer(0, "_GrassData", dataBuffer);
+        dataProcessing.SetBuffer(0, "_GrassData", dataBuffer);
         grassMaterial.SetBuffer("_GrassData", dataBuffer);
 
         if (IdBuffer != null) {
@@ -129,7 +124,7 @@ public class GrassRenderer : MonoBehaviour {
         }
         IdBuffer = new ComputeBuffer(allGrassData.Length, sizeof(uint), ComputeBufferType.Append);
         IdBuffer.SetCounterValue(0);
-        cullingShader.SetBuffer(0, "_IdOfVisibleGrass", IdBuffer);
+        dataProcessing.SetBuffer(0, "_IdOfVisibleGrass", IdBuffer);
         grassMaterial.SetBuffer("_IdOfVisibleGrass", IdBuffer);
 
         //indirect args
@@ -197,6 +192,8 @@ public class GrassRenderer : MonoBehaviour {
             int[] trinagles = new int[3] { 2, 1, 0, };
             grassMesh.SetVertices(verts);
             grassMesh.SetTriangles(trinagles, 0);
+            grassMesh.RecalculateNormals();
+            grassMesh.uv = new Vector2[] { new Vector2(0.0f, 0.0f), new Vector2(1.0f, 0.0f), new Vector2(0.5f, 1.0f) };
         }
         return grassMesh;
     }
@@ -256,7 +253,9 @@ public class GrassRenderer : MonoBehaviour {
             int xID = Mathf.Min(chunkCountX - 1, Mathf.FloorToInt(Mathf.InverseLerp(minX, maxX, pos.x) * chunkCountX)); //use min to force within 0~[cellCountX-1]  
             int zID = Mathf.Min(chunkCountZ - 1, Mathf.FloorToInt(Mathf.InverseLerp(minZ, maxZ, pos.z) * chunkCountZ)); //use min to force within 0~[cellCountZ-1]
             int id = xID + zID * chunkCountX;
-            GrassData data = new GrassData(pos, id, 1);
+            GrassData data = new GrassData();
+            data.position = pos;
+            data.chunkID = id;
             allChunksData[id].Add(data);
         }   
     }
@@ -280,11 +279,6 @@ public class GrassRenderer : MonoBehaviour {
             Bounds bounds = new Bounds(center, size);
             if (GeometryUtility.TestPlanesAABB(frustumPlanes, bounds)) {
                 visiableChunkID.Add(i);
-                //for (int j = 0; j < allChunksData[i].Count; j++)
-                //{
-                //    GrassData d = new GrassData(allChunksData[i][j].position, allChunksData[i][j].chunkID, 0);
-                //    allChunksData[i][j] = d;
-                //}
             }
         }
 
@@ -295,8 +289,12 @@ public class GrassRenderer : MonoBehaviour {
         //init
         IdBuffer.SetCounterValue(0);
         int dispatchCount = 0;
-        cullingShader.SetMatrix("_VPMatrix", vp);
-        cullingShader.SetFloat("_MaxDrawDistance", viewDistance);
+        dataProcessing.SetMatrix("_VPMatrix", vp);
+        dataProcessing.SetFloat("_MaxDrawDistance", viewDistance);
+        dataProcessing.SetFloat("_MinX", minX);
+        dataProcessing.SetFloat("_MinZ", minZ);
+        dataProcessing.SetFloat("_MaxX", maxX);
+        dataProcessing.SetFloat("_MaxZ", maxZ);
         //dispatch culling compute per chunk
         for (int i = 0; i < visiableChunkID.Count; i++) {
             int currentChunkId = visiableChunkID[i];
@@ -305,7 +303,7 @@ public class GrassRenderer : MonoBehaviour {
                 memoryOffset += allChunksData[j].Count;
             }
             //offset current chunk grass ID to global ID of all grass array
-            cullingShader.SetInt("_MemoryOffset", memoryOffset);
+            dataProcessing.SetInt("_MemoryOffset", memoryOffset);
             int jobLength = allChunksData[currentChunkId].Count;
             //batch n dispatchs into 1 dispatch, if memory is continuous in allInstancesPosWSBuffer
             if (shouldBatchDispatch) {
@@ -317,7 +315,7 @@ public class GrassRenderer : MonoBehaviour {
                 }
             }
 
-            cullingShader.Dispatch(0, Mathf.CeilToInt(jobLength / 64f), 1, 1);
+            dataProcessing.Dispatch(0, Mathf.CeilToInt(jobLength / 64f), 1, 1);
             dispatchCount++;
         }
 

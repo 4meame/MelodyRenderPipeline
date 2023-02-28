@@ -34,7 +34,7 @@ MonoBehaviour:
   atmosphere: {fileID: 11400000, guid: 40b97409a5a8e9a488d282afbe8256cc, type: 2}
   cloud: {fileID: 11400000, guid: 965f5f59ce212ee47a2896e4c7a56102, type: 2}
   fog:
-    enabled: 0
+    enabled: 1
     resolution: 1
   postFXSettings: {fileID: 11400000, guid: b4828196f5e88184d928f696687e89a2, type: 2}
   cameraBufferSettings:
