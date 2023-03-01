@@ -21,6 +21,8 @@ StructuredBuffer<uint> _IdOfVisibleGrass;
 TEXTURE2D(_NoiseTex);
 SAMPLER(sampler_NoiseTex);
 
+float4 _BaseColor;
+
 struct Attributes {
 	float3 positionOS : POSITION;
 	float2 baseUV : TEXCOORD0;
@@ -28,6 +30,7 @@ struct Attributes {
 
 struct Varyings {
 	float4 positionCS : SV_POSITION;
+	float3 positionWS : VAR_WORLD_POS;
 	float2 baseUV : VAR_BASE_UV;
 	float2 worldUV : VAR_WORLD_UV;
 	float3 normal : VAR_NORMAL;
@@ -69,16 +72,48 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	output.positionCS = TransformWorldToHClip(worldPosition);
 	output.baseUV = input.baseUV;
 	output.worldUV = data.worldCoord;
+	output.positionWS = worldPosition;
 	output.normal = float3(0, 1, 0);
 	output.color = float3(hash1(data.chunkID * 20 + 1024), hash1(hash1(data.chunkID) * 10 + 2048), hash1(data.chunkID * 4 + 4096));
 	return output;
 }
 
+
+
 float4 LitPassFragment(Varyings input) : SV_TARGET{
+	Surface surfaceData;
+	//init surface data to rely on pipeline bilut-in method for now
+	surfaceData.position = input.positionWS.xyz;
+	surfaceData.normal = input.normal;
+	surfaceData.interpolatedNormal = input.normal;
+	surfaceData.viewDirection = normalize(_WorldSpaceCameraPos - input.positionWS);
+	surfaceData.depth = -TransformWorldToView(input.positionWS).z;
+	surfaceData.color = 1.0;
+	surfaceData.alpha = 1.0;
+	surfaceData.metallic = 0.0;
+	surfaceData.occlusion = 1.0;
+	surfaceData.smoothness = 0.0;
+	surfaceData.dither = 0;
+	surfaceData.fresnelStrength = 0.0;
+	ShadowData shadowData;
+	shadowData = GetShadowData(surfaceData);
+	Light light = GetMainLight(surfaceData, shadowData);
+	//useful properties as follow
+	float3 baseColor = _BaseColor.rgb;
+	float2 baseUV = input.baseUV;
+	float2 worldUV = input.worldUV;
+	float3 n = surfaceData.normal;
+	float3 l = light.direction;
+	float3 h = normalize(light.direction + (surfaceData.viewDirection));
+	float ndotl = saturate(dot(n, l));
+	float ndoth = saturate(dot(n, h));
+	//variance
+	float4 variance = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, worldUV);
+	//radiance
+	float3 diffuse = baseColor * variance * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
+	float3 specular = 0.09 * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
 	return float4(
-		float3(0.21, 0.88, 0.16) * SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, input.worldUV).x 
-		* 
-		dot(input.normal, GetMainLight().direction).x * GetMainLight().color
+		diffuse + specular
 		, 
 		1);
 }

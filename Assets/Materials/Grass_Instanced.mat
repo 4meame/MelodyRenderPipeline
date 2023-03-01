@@ -9,9 +9,10 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Grass_Instanced
   m_Shader: {fileID: 4800000, guid: 1ed10e576e8a7544caf6d69df1c40998, type: 3}
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _RECEIVE_SHADOWS
   m_InvalidKeywords:
-  - _SHADOWS_OFF
+  - _SHADOWS_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -31,11 +32,12 @@ Material:
     - _Cull: 0
     - _DstBlend: 0
     - _PremulAlpha: 0
-    - _ReceiveShadows: 0
-    - _Shadows: 3
+    - _ReceiveShadows: 1
+    - _Shadows: 0
     - _SrcBlend: 1
     - _ZWrite: 1
     m_Colors:
+    - _BaseColor: {r: 0, g: 1, b: 0, a: 1}
     - _High: {r: 0.21568629, g: 0.41176474, b: 0.21176472, a: 1}
     - _Low: {r: 0.40000004, g: 0.6392157, b: 0.3254902, a: 1}
     - _Medium: {r: 0.34509805, g: 0.61960787, b: 0.32156864, a: 1}

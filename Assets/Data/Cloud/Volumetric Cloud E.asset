@@ -15,12 +15,12 @@ MonoBehaviour:
   shader: {fileID: 4800000, guid: e61add218821eec439de1c401c3b69ef, type: 3}
   enabled: 1
   subPixelSize: 2
-  maxIterations: 128
+  maxIterations: 235
   renderSize: 0
   fixedWidth: 960
   fixedHeight: 540
   downsample: 2
-  coverageOffsetX: 0.591
+  coverageOffsetX: 0.696
   coverageOffsetY: 0
   horizonCoverageStart: 0.268
   horizonCoverageEnd: 0.815
@@ -129,7 +129,7 @@ MonoBehaviour:
   forwardScatteringG: 0.8
   backwardScatteringG: -0.39
   darkOutlineScalar: 1
-  speed: 0.1
+  speed: 0
   coverageOffsetPerFrame: {x: 0, y: 0}
   baseOffsetPerFrame: {x: 0.000951, y: -0.001, z: 0}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}
@@ -138,8 +138,8 @@ MonoBehaviour:
   useCalculatedRadius: 0
   showCalculatedRadius: 0
   horizonDistanceOfRadius: 0
-  atmosphereStartHeight: 1500
-  atmosphereEndHeight: 4000
+  atmosphereStartHeight: 2500
+  atmosphereEndHeight: 8000
   cameraPositionScale: {x: 1, y: 1, z: 1}
   lodDistance: 0.227
   horizonLevel: 0

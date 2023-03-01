@@ -186,8 +186,8 @@ public class GrassRenderer : MonoBehaviour {
             //if not exist, create mesh procedurally
             grassMesh = new Mesh();
             Vector3[] verts = new Vector3[3];
-            verts[0] = new Vector3(-0.25f, 0);
-            verts[1] = new Vector3(+0.25f, 0);
+            verts[0] = new Vector3(-0.1f, 0);
+            verts[1] = new Vector3(+0.1f, 0);
             verts[2] = new Vector3(-0.0f, 1);
             int[] trinagles = new int[3] { 2, 1, 0, };
             grassMesh.SetVertices(verts);

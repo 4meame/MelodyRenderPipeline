@@ -17,7 +17,7 @@ MonoBehaviour:
   useSRPBatcher: 1
   useLightsPerObject: 1
   shadows:
-    maxDistance: 30
+    maxDistance: 100
     distanceFade: 0.303
     directional:
       atlasSize: 4096
@@ -32,7 +32,7 @@ MonoBehaviour:
       atlasSize: 1024
       filter: 3
   atmosphere: {fileID: 11400000, guid: 40b97409a5a8e9a488d282afbe8256cc, type: 2}
-  cloud: {fileID: 11400000, guid: 965f5f59ce212ee47a2896e4c7a56102, type: 2}
+  cloud: {fileID: 11400000, guid: bbc01be664c1ce84b83137c08d2399cd, type: 2}
   fog:
     enabled: 1
     resolution: 1
@@ -57,7 +57,7 @@ MonoBehaviour:
       quality: 2
     taa:
       mode: 0
-      motionVectorEnabled: 1
+      motionVectorEnabled: 0
       jitterScale: 1
       sharpness: 0.25
       staticBlending: 0.9
