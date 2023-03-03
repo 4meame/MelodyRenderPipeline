@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.36689073, g: 0.4756136, b: 0.57446647, a: 0}
+  m_AmbientSkyColor: {r: 0.3567714, g: 0.46372423, b: 0.5606336, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -302,7 +302,7 @@ Light:
   m_Type: 1
   m_Shape: 0
   m_Color: {r: 0.5965775, g: 0.5798895, b: 0.55481833, a: 1}
-  m_Intensity: 3.0305393
+  m_Intensity: 3.2729826
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -311,7 +311,7 @@ Light:
     m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0.619
     m_Bias: 0.211
     m_NormalBias: 0.75
     m_NearPlane: 0.2
@@ -347,7 +347,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 3.857091e-39, y: 2.2e-44, z: 9.18355e-40, w: 2.2e-44}
+  m_BoundingSphereOverride: {x: 4.5905e-41, y: 0, z: 0, w: 0.0000000020555007}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -374,7 +374,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 838695762}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7ec7cc914eb698e4e803c4034d6807ce, type: 3}
   m_Name: 
@@ -392,7 +392,7 @@ MonoBehaviour:
   noiseIntensity: 1
   noiseIntensityOffset: 0.3
   noiseVelocity: {x: 0.13, y: 0.13}
-  material: {fileID: 1540526113}
+  material: {fileID: 0}
   maxRayLength: 100
 --- !u!1 &1145923634
 GameObject:
@@ -443,10 +443,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useMeshData: 0
   fieldSize: {x: 100, y: 100}
-  chunkSize: {x: 20, y: 20}
-  density: 6
+  chunkSize: {x: 10, y: 10}
+  density: 15
   viewDistance: 150
-  castShadows: 0
+  castShadows: 1
   grassMesh: {fileID: 0}
   grassMaterial: {fileID: 2100000, guid: 5fbfed9deb0bc2a4ca2b463db4af6d4a, type: 2}
   dataProcessing: {fileID: 7200000, guid: a58064307ad24164aa0fbca4a69cc0a6, type: 3}
@@ -687,30 +687,6 @@ Mesh:
     offset: 0
     size: 0
     path: 
---- !u!21 &1540526113
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Hidden/Melody RP/VolumetricLight
-  m_Shader: {fileID: 4800000, guid: f18dd7d84aedf2c4c95dd5d3112a1981, type: 3}
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs: []
-    m_Ints: []
-    m_Floats: []
-    m_Colors: []
-  m_BuildTextureStacks: []
 --- !u!1 &2121662325
 GameObject:
   m_ObjectHideFlags: 0
