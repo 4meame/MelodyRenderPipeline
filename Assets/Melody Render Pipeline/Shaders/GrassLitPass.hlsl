@@ -30,10 +30,14 @@ float4 _BaseColor;
 float4 _HighColor;
 float4 _ShadowColor;
 
-float _BendingX;
-float _BendingY;
+float _DistributionX;
+float _DistributionY;
 
-float _WindFrequency;
+float _Height;
+float _Width;
+float _Curvature;
+float _CurvatureBase;
+
 float _WindStrength;
 float _WindSpeed;
 
@@ -92,29 +96,34 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	output.baseUV = input.baseUV;
 	output.worldUV = data.worldCoord;
 	float3 localPosition = input.positionOS;
+	//modify grass shape
+	localPosition.y *= _Height;
+	localPosition.x *= _Width;
+	float t = _CurvatureBase > 0.5 ? localPosition.y : input.baseUV.y;
+	localPosition.z += pow(t * _Curvature, 2) * t;
 	float degrees = hash1(id);
-	//random rotation
-	localPosition = RotateAroundYInDegrees(float4(localPosition, 1), degrees * _BendingY);
-	//random bending
-	localPosition = RotateAroundXInDegrees(float4(localPosition, 1), degrees * _BendingX);
+	//random distribution on XY axis
+	localPosition = RotateAroundXInDegrees(float4(localPosition, 1), degrees * _DistributionX);
+	localPosition = RotateAroundYInDegrees(float4(localPosition, 1), degrees * _DistributionY);
 	//wind
-	float2 windSample = SAMPLE_TEXTURE2D_LOD(_WindTex, sampler_WindTex, data.worldCoord * _WindTex_ST.xy + _WindTex_ST.zw + _Time.y * _WindSpeed + localPosition.y * 0.01, 0);
+	float3 windSample = SAMPLE_TEXTURE2D_LOD(_WindTex, sampler_WindTex, data.worldCoord * _WindTex_ST.xy + _WindTex_ST.zw + localPosition.y * 0.01 + _Time.y * _WindSpeed, 0);
 	windSample = windSample * 2 - 1;
-	float3 wind = normalize(float3(windSample.x, windSample.y, 0)) * _WindStrength;
+	float3 wind = normalize(windSample) * _WindStrength;
 	//bind root
-	localPosition += wind * input.baseUV.y;
+	localPosition += wind * localPosition.y;
 	float3 worldPosition = localPosition + data.position;
 	output.positionCS = TransformWorldToHClip(worldPosition);
 	output.positionWS = worldPosition;
-	output.normal = input.normal;
+	output.normal = TransformObjectToWorldNormal(input.normal);
 	output.color = float3(hash1(data.chunkID * 20 + 1024), hash1(hash1(data.chunkID) * 10 + 2048), hash1(data.chunkID * 4 + 4096));
-	output.color = wind;
+	output.color = input.baseUV.yyy;
 	return output;
 }
 
 
 
 float4 LitPassFragment(Varyings input) : SV_TARGET{
+	//return float4(input.color, 1);
 	Surface surfaceData;
 	//init surface data to rely on pipeline bilut-in method for now
 	surfaceData.position = input.positionWS.xyz;
@@ -133,7 +142,7 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	shadowData = GetShadowData(surfaceData);
 	Light light = GetMainLight(surfaceData, shadowData);
 	//useful properties as follow
-	float3 baseColor = _BaseColor.rgb;
+	float3 baseColor = lerp(_ShadowColor.rgb, _BaseColor.rgb, input.baseUV.y);
 	float2 baseUV = input.baseUV;
 	float2 worldUV = input.worldUV;
 	float3 n = float3(0, 1, 0);//force shading normal equal to UP
@@ -145,7 +154,7 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	float4 variance = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, worldUV * _NoiseTex_ST.xy + _NoiseTex_ST.zw);
 	//radiance
 	float3 diffuse = baseColor * variance * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
-	float3 specular = 0.09 * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
+	float3 specular = 0.09 * _HighColor.rgb * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
 	return float4(
 		diffuse + specular
 		, 

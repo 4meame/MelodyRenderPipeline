@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 using static System.Runtime.InteropServices.Marshal;
 
 public class GrassRenderer : MonoBehaviour {
+    [Header("Grass")]
     public bool useMeshData = false;
     public Vector2 fieldSize;
     //smaller the number, CPU needs more time, but GPU is faster
@@ -17,6 +18,18 @@ public class GrassRenderer : MonoBehaviour {
     public Material grassMaterial;
     //do culling and data remake
     public ComputeShader dataProcessing;
+
+    [Header("Wind")]
+    public bool useProceduralWind;
+    public ComputeShader windShader;
+    public float xPeriod;
+    public float yPeriod;
+    public float turbPower;
+    public float turbSize;
+    public float frequency;
+    public float amplitude;
+    public float speed;
+    RenderTexture windTexture;
 
     Camera mainCamera;
     Mesh mesh;
@@ -86,6 +99,10 @@ public class GrassRenderer : MonoBehaviour {
         if (argsBuffer != null) {
             argsBuffer.Release();
         }
+
+        if(windTexture != null) {
+            windTexture.Release();
+        }
     }
 
     void UpdateBuffer() {
@@ -145,6 +162,10 @@ public class GrassRenderer : MonoBehaviour {
     void Render() {
         DoGrassCulling();
 
+        if (useProceduralWind) {
+            GenerateWindTexure();
+        }
+
         Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer, 0, null, castShadows);
     }
 
@@ -186,16 +207,36 @@ public class GrassRenderer : MonoBehaviour {
             //if not exist, create mesh procedurally
             grassMesh = new Mesh();
             Vector3[] verts = new Vector3[3];
-            verts[0] = new Vector3(-0.1f, 0);
-            verts[1] = new Vector3(+0.1f, 0);
+            verts[0] = new Vector3(-1.0f, 0);
+            verts[1] = new Vector3(+1.0f, 0);
             verts[2] = new Vector3(-0.0f, 1);
             int[] trinagles = new int[3] { 2, 1, 0, };
             grassMesh.SetVertices(verts);
             grassMesh.SetTriangles(trinagles, 0);
-            grassMesh.RecalculateNormals();
             grassMesh.uv = new Vector2[] { new Vector2(0.0f, 0.0f), new Vector2(1.0f, 0.0f), new Vector2(0.5f, 1.0f) };
         }
         return grassMesh;
+    }
+
+    void GenerateWindTexure() {
+        if (windTexture == null) {
+            windTexture = new RenderTexture(512, 512, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
+            windTexture.enableRandomWrite = true;
+            windTexture.useMipMap = true;
+            windTexture.autoGenerateMips = true;
+            windTexture.Create();
+        }
+        windShader.SetTexture(0, "_WaveTex", windTexture);
+        windShader.SetFloat("_XPeriod", xPeriod);
+        windShader.SetFloat("_YPeriod", yPeriod);
+        windShader.SetFloat("_TurbPower", turbPower);
+        windShader.SetFloat("_TurbSize", turbSize);
+        windShader.SetFloat("_Time", Time.time * speed);
+        windShader.SetFloat("_Frequency", frequency);
+        windShader.SetFloat("_Amplitude", amplitude);
+        windShader.Dispatch(0, 64, 64, 1);
+
+        grassMaterial.SetTexture("_WindTex", windTexture);
     }
 
     int GetGrassCount() {

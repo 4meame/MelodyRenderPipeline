@@ -6,11 +6,14 @@ Shader "Melody RP/Standard/Grass/Instanced"
         _HighColor("Grass High Color", Color) = (1.0, 1.0, 0.0, 1.0)
         _ShadowColor("Grass Shadow Color", Color) = (0.0, 1.0, 1.0, 1.0)
         _NoiseTex("Noise Texture", 2D) = "white" {}
-        _BendingX("Bending X", Range(0.0, 180)) = 45
-        _BendingY("Bending Y", Range(0.0, 360)) = 360
+        _DistributionX("DistributionY X", Range(0.0, 90)) = 45
+        _DistributionY("DistributionY Y", Range(0.0, 360)) = 360
+        _Height("Blade Height", Float) = 1.0
+        _Width("Blade Width", Float) = 1.0
+        [Enum(UV, 0, HEIGHT, 1)]_CurvatureBase("Curvature Base", Float) = 1
+        _Curvature("Blade Curvature", Range(0, 3)) = 1.0
         _WindTex("Wind Texture", 2D) = "white" {}
         _WindSpeed("Wind Speed", Float) = 1.0
-        _WindFrequency("Wind Frequency", Float) = 1.0
         _WindStrength("Wind Strength", Float) = 1.0
         [Toggle(_PREMULTIPLY_ALPHA)]_PremulAlpha("Premultiply Alpha", Float) = 0
         [Toggle(_CLIPPING)]_Clipping("Alpha Clipping", Float) = 0
