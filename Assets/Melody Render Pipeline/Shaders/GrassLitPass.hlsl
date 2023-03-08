@@ -15,9 +15,9 @@ struct GrassData {
 	float2 worldCoord;
 };
 
-TEXTURE2D(_NoiseTex);
-SAMPLER(sampler_NoiseTex);
-float4 _NoiseTex_ST;
+TEXTURE2D(_ColorMap);
+SAMPLER(sampler_ColorMap);
+float4 _ColorMap_ST;
 TEXTURE2D(_WindTex);
 SAMPLER(sampler_WindTex);
 float4 _WindTex_ST;
@@ -38,8 +38,9 @@ float _Width;
 float _Curvature;
 float _CurvatureBase;
 
-float _WindStrength;
-float _WindSpeed;
+float _WindFactor;
+//xyz: dir, w: speed
+float4 _WindParams;
 
 CBUFFER_END
 
@@ -89,6 +90,20 @@ float4 RotateAroundXInDegrees(float4 vertex, float degrees) {
 	return float4(mul(m, vertex.yz), vertex.xw).zxyw;
 }
 
+float3 GetWindDirection(float3 grassUp, float3 windDirection, float windStrength) {
+	float rad = (windStrength * PI / 2) * 0.9;
+	float3 dir = normalize(windDirection - dot(windDirection, grassUp) * grassUp);
+	float x, y;
+	sincos(rad, x, y);
+	dir = x * dir + y * grassUp;
+	return dir - grassUp;
+}
+
+float GetWindStrength() {
+	//TODO
+	return _WindFactor * sin(_Time.y * _WindParams.w);
+}
+
 Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	Varyings output;
 	uint id = _IdOfVisibleGrass[instanceID];
@@ -106,9 +121,8 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	localPosition = RotateAroundXInDegrees(float4(localPosition, 1), degrees * _DistributionX);
 	localPosition = RotateAroundYInDegrees(float4(localPosition, 1), degrees * _DistributionY);
 	//wind
-	float3 windSample = SAMPLE_TEXTURE2D_LOD(_WindTex, sampler_WindTex, data.worldCoord * _WindTex_ST.xy + _WindTex_ST.zw + localPosition.y * 0.01 + _Time.y * _WindSpeed, 0);
-	windSample = windSample * 2 - 1;
-	float3 wind = normalize(windSample) * _WindStrength;
+	float windStrength = GetWindStrength();
+	float3 wind = GetWindDirection(float3(0, 1, 0), normalize(_WindParams.xyz), windStrength);
 	//bind root
 	localPosition += wind * localPosition.y;
 	float3 worldPosition = localPosition + data.position;
@@ -151,9 +165,9 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	float ndotl = saturate(dot(n, l));
 	float ndoth = saturate(dot(n, h));
 	//variance
-	float4 variance = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, worldUV * _NoiseTex_ST.xy + _NoiseTex_ST.zw);
+	float4 variance = SAMPLE_TEXTURE2D(_ColorMap, sampler_ColorMap, worldUV * _ColorMap_ST.xy + _ColorMap_ST.zw);
 	//radiance
-	float3 diffuse = baseColor * variance * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
+	float3 diffuse = baseColor * variance.rgb * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
 	float3 specular = 0.09 * _HighColor.rgb * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
 	return float4(
 		diffuse + specular
