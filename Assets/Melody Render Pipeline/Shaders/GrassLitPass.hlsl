@@ -145,7 +145,14 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	return output;
 }
 
-
+float3 CalculateLighting(Light light, float4 baseColor, float4 shadowColor, float4 highColor, float4 variance, float ndotl, float ndoth, float vdoth, float2 baseUV) {
+	float4 albedo = lerp(shadowColor, baseColor, baseUV.y);
+	float3 diffuse = albedo.a * albedo.rgb * variance.rgb * (ndotl * 0.5 + 0.5);
+	float3 specular = _HighColor.a * _HighColor.rgb * pow(ndoth, 3) * baseUV.y;
+	float3 sss = pow(vdoth, _ScatterFactor.y) * _ScatterFactor.z;
+	float3 visibleIrradiance = light.color * light.distanceAttenuation * light.shadowAttenuation;
+	return (diffuse + specular + sss) * visibleIrradiance;
+}
 
 float4 LitPassFragment(Varyings input) : SV_TARGET{
 	//return float4(input.color, 1);
@@ -167,11 +174,10 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	shadowData = GetShadowData(surfaceData);
 	Light light = GetMainLight(surfaceData, shadowData);
 	//useful properties as follow
-	float4 baseColor = lerp(_ShadowColor, _BaseColor, input.baseUV.y);
 	float2 baseUV = input.baseUV;
 	float2 worldUV = input.worldUV;
 	float3 n = float3(0, 1, 0);//force shading normal equal to UP
-	float3 randomNormal = _NormalDistribution * sin(input.hash * 78.9321) * float3(0, 0, 1) - 0.5 * input.wind;
+	float3 randomNormal = _NormalDistribution * sin(input.hash * 78.9321) * float3(0, 0, 1) - 0.24 * input.wind;
 	n = normalize(n + randomNormal);
 	float3 l = light.direction;
 	float3 v = surfaceData.viewDirection;
@@ -179,14 +185,19 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	float3 h_sss = normalize(l + n * _ScatterFactor.x);
 	float ndotl = saturate(dot(n, l));
 	float ndoth = saturate(dot(n, h));
+	float vdoth = saturate(dot(v, -h_sss));
 	//variance
 	float4 variance = SAMPLE_TEXTURE2D(_ColorMap, sampler_ColorMap, worldUV * _ColorMap_ST.xy + _ColorMap_ST.zw);
 	//radiance
-	float3 diffuse = baseColor.a * baseColor.rgb * variance.rgb * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
-	float3 specular = _HighColor.a * _HighColor.rgb * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
-	float3 sss = pow(saturate(dot(v, -h_sss)), _ScatterFactor.y) * _ScatterFactor.z * light.color * light.distanceAttenuation * light.shadowAttenuation;
+	float3 radiance = CalculateLighting(light, _BaseColor, _ShadowColor, _HighColor, variance, ndotl, ndoth, vdoth, baseUV);
+	int otherLightCount = GetOtherLightCount();
+	for (int i = 0; i < otherLightCount; i++) {
+		Light otherLight = GetOtherLight(i, surfaceData, shadowData);
+		radiance += CalculateLighting(otherLight, _BaseColor, _ShadowColor, _HighColor, variance, ndotl, ndoth, vdoth, baseUV);
+	}
+
 	return float4(
-		diffuse + specular + sss
+		radiance
 		, 
 		1);
 }
