@@ -46,31 +46,31 @@ Material:
     - _Cull: 0
     - _Curvature: 0.43
     - _CurvatureBase: 0
-    - _DistributionX: 23.1
-    - _DistributionY: 200
+    - _DistributionX: 22.2
+    - _DistributionY: 224
     - _DstBlend: 0
     - _Height: 1.1
-    - _NormalDistribution: 0.116
+    - _NormalDistribution: 0.15
     - _PremulAlpha: 0
     - _ReceiveShadows: 1
     - _Shadows: 0
     - _SrcBlend: 1
-    - _WaveCycle: 0.175
+    - _WaveCycle: 0.232
     - _WaveSpeed: 0.078
     - _WaveStrength: 0.358
     - _Width: 0.1
     - _WindFactor: 0.354
     - _WindFrequency: 1
-    - _WindSpeed: 0.0368
-    - _WindStrength: 0.368
+    - _WindSpeed: 0.0475
+    - _WindStrength: 0.488
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _High: {r: 0.21568629, g: 0.41176474, b: 0.21176472, a: 1}
-    - _HighColor: {r: 1, g: 0.35686275, b: 0, a: 1}
+    - _HighColor: {r: 1, g: 0.8128471, b: 0.709, a: 0.11372549}
     - _Low: {r: 0.40000004, g: 0.6392157, b: 0.3254902, a: 1}
     - _Medium: {r: 0.34509805, g: 0.61960787, b: 0.32156864, a: 1}
-    - _ScatterFactor: {r: 0.94, g: 2.2, b: 0.23, a: 1}
+    - _ScatterFactor: {r: 0.94, g: 2.2, b: 0.17, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
     - _TimeParams: {r: 1, g: 10, b: 100, a: 10}
     - _WindDirection: {r: 1, g: 1.44, b: -1.52, a: -0.19}

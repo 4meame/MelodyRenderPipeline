@@ -167,11 +167,11 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	shadowData = GetShadowData(surfaceData);
 	Light light = GetMainLight(surfaceData, shadowData);
 	//useful properties as follow
-	float3 baseColor = lerp(_ShadowColor.rgb, _BaseColor.rgb, input.baseUV.y);
+	float4 baseColor = lerp(_ShadowColor, _BaseColor, input.baseUV.y);
 	float2 baseUV = input.baseUV;
 	float2 worldUV = input.worldUV;
 	float3 n = float3(0, 1, 0);//force shading normal equal to UP
-	float3 randomNormal = _NormalDistribution * sin(input.hash * 78.9321) * float3(0, 0, 1) - 0.33 * input.wind;
+	float3 randomNormal = _NormalDistribution * sin(input.hash * 78.9321) * float3(0, 0, 1) - 0.5 * input.wind;
 	n = normalize(n + randomNormal);
 	float3 l = light.direction;
 	float3 v = surfaceData.viewDirection;
@@ -182,8 +182,8 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	//variance
 	float4 variance = SAMPLE_TEXTURE2D(_ColorMap, sampler_ColorMap, worldUV * _ColorMap_ST.xy + _ColorMap_ST.zw);
 	//radiance
-	float3 diffuse = baseColor * variance.rgb * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
-	float3 specular = 0.09 * _HighColor.rgb * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
+	float3 diffuse = baseColor.a * baseColor.rgb * variance.rgb * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
+	float3 specular = _HighColor.a * _HighColor.rgb * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
 	float3 sss = pow(saturate(dot(v, -h_sss)), _ScatterFactor.y) * _ScatterFactor.z * light.color * light.distanceAttenuation * light.shadowAttenuation;
 	return float4(
 		diffuse + specular + sss
