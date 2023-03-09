@@ -13,8 +13,10 @@ Shader "Melody RP/Standard/Grass/Instanced"
         [Enum(UV, 0, HEIGHT, 1)]_CurvatureBase("Curvature Base", Float) = 1
         _Curvature("Blade Curvature", Range(0, 1)) = 1.0
         _DistortionMap("Distortion Texture", 2D) = "white" {}
-        _WindFactor("Wind Factor", Range(0, 1)) = 0.0
-        _WindParams("Wind Params|xyz: direction,w: speed", Vector) = (0.0, 0.0, 0.0, 1.0)
+        _WindStrength("Wind Strength", Range(0, 1)) = 0.0
+        _WindSpeed("Wind Speed", Range(0, 0.2)) = 0.0
+        _WaveStrength("Wave Strength", Range(0, 1)) = 0.0
+        _WaveSpeed("Wave Speed", Range(0, 1.0)) = 0.0
         [Toggle(_PREMULTIPLY_ALPHA)]_PremulAlpha("Premultiply Alpha", Float) = 0
         [Toggle(_CLIPPING)]_Clipping("Alpha Clipping", Float) = 0
         [Toggle(_RECEIVE_SHADOWS)] _ReceiveShadows("Receive Shadows", Float) = 1

@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.34557924, g: 0.45203793, b: 0.5474487, a: 0}
+  m_AmbientSkyColor: {r: 0.3437409, g: 0.45364496, b: 0.55308247, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 838695763}
-  m_IndirectSpecularColor: {r: 0.04165116, g: 0.06352715, b: 0.07555875, a: 1}
+  m_IndirectSpecularColor: {r: 0.078254156, g: 0.13018458, b: 0.17873313, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -347,7 +347,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: -8.51587e-21}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 2.5e-44}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -444,22 +444,21 @@ MonoBehaviour:
   useMeshData: 0
   fieldSize: {x: 100, y: 100}
   chunkSize: {x: 10, y: 10}
-  density: 8
+  density: 10
   viewDistance: 150
-  castShadows: 1
+  castShadows: 2
   grassMesh: {fileID: 5535028233509875347, guid: 6e3fa8fe8caa23943ab0664732b4eff0,
     type: 3}
   grassMaterial: {fileID: 2100000, guid: 5fbfed9deb0bc2a4ca2b463db4af6d4a, type: 2}
   dataProcessing: {fileID: 7200000, guid: a58064307ad24164aa0fbca4a69cc0a6, type: 3}
-  useProceduralWind: 0
-  windShader: {fileID: 7200000, guid: 7702d3df34f53b64882b750c88b25e31, type: 3}
-  xPeriod: 1
-  yPeriod: 1
-  turbPower: 1
-  turbSize: 1
-  frequency: 1
-  amplitude: 1
-  speed: 1
+  noiseShader: {fileID: 7200000, guid: 7702d3df34f53b64882b750c88b25e31, type: 3}
+  xPeriod: 0.1
+  yPeriod: 0.1
+  turbPower: 2.3
+  turbSize: 2
+  frequency: 0.43
+  amplitude: 0.62
+  speed: 3
 --- !u!114 &1145923638
 MonoBehaviour:
   m_ObjectHideFlags: 0

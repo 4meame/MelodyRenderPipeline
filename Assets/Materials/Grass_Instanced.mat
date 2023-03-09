@@ -22,13 +22,21 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _ColorMap:
+        m_Texture: {fileID: 2800000, guid: 8008e747c78a9074583b61d7c1e97749, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DistortionMap:
+        m_Texture: {fileID: 2800000, guid: ea9db01cac13fce40be4a042fd398865, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _NoiseTex:
         m_Texture: {fileID: 2800000, guid: 0db06c3acfa97d7498457c8e1573d2fe, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _WindTex:
-        m_Texture: {fileID: 2800000, guid: ea9db01cac13fce40be4a042fd398865, type: 3}
-        m_Scale: {x: 10, y: 10}
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: -0.32}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
@@ -36,26 +44,32 @@ Material:
     - _BendingY: 230
     - _Clipping: 0
     - _Cull: 0
-    - _Curvature: 0.66
+    - _Curvature: 0.41
     - _CurvatureBase: 0
-    - _DistributionX: 27.9
-    - _DistributionY: 204
+    - _DistributionX: 25.3
+    - _DistributionY: 231
     - _DstBlend: 0
-    - _Height: 1
+    - _Height: 1.8
     - _PremulAlpha: 0
     - _ReceiveShadows: 1
     - _Shadows: 0
     - _SrcBlend: 1
+    - _WaveSpeed: 0.329
+    - _WaveStrength: 0.266
     - _Width: 0.1
+    - _WindFactor: 0.354
     - _WindFrequency: 1
-    - _WindSpeed: 0.05
-    - _WindStrength: 0.04
+    - _WindSpeed: 0.0726
+    - _WindStrength: 0.411
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0, g: 1, b: 0, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _High: {r: 0.21568629, g: 0.41176474, b: 0.21176472, a: 1}
     - _HighColor: {r: 1, g: 0.35686275, b: 0, a: 1}
     - _Low: {r: 0.40000004, g: 0.6392157, b: 0.3254902, a: 1}
     - _Medium: {r: 0.34509805, g: 0.61960787, b: 0.32156864, a: 1}
-    - _ShadowColor: {r: 0.24313726, g: 0.43529412, b: 0.22352941, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _TimeParams: {r: 1, g: 10, b: 100, a: 10}
+    - _WindDirection: {r: 1, g: 1.44, b: -1.52, a: -0.19}
+    - _WindParams: {r: 0.67, g: 1, b: -1.44, a: 0.04}
   m_BuildTextureStacks: []

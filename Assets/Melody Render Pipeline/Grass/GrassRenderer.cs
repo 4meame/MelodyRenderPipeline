@@ -19,9 +19,8 @@ public class GrassRenderer : MonoBehaviour {
     //do culling and data remake
     public ComputeShader dataProcessing;
 
-    [Header("Wind")]
-    public bool useProceduralWind;
-    public ComputeShader windShader;
+    [Header("Wave")]
+    public ComputeShader noiseShader;
     public float xPeriod;
     public float yPeriod;
     public float turbPower;
@@ -29,7 +28,7 @@ public class GrassRenderer : MonoBehaviour {
     public float frequency;
     public float amplitude;
     public float speed;
-    RenderTexture windTexture;
+    RenderTexture noiseTexture;
 
     Camera mainCamera;
     Mesh mesh;
@@ -100,8 +99,8 @@ public class GrassRenderer : MonoBehaviour {
             argsBuffer.Release();
         }
 
-        if(windTexture != null) {
-            windTexture.Release();
+        if(noiseTexture != null) {
+            noiseTexture.Release();
         }
     }
 
@@ -162,9 +161,7 @@ public class GrassRenderer : MonoBehaviour {
     void Render() {
         DoGrassCulling();
 
-        if (useProceduralWind) {
-            GenerateWindTexure();
-        }
+        GenerateWaveTexure();
 
         Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer, 0, null, castShadows);
     }
@@ -218,25 +215,25 @@ public class GrassRenderer : MonoBehaviour {
         return grassMesh;
     }
 
-    void GenerateWindTexure() {
-        if (windTexture == null) {
-            windTexture = new RenderTexture(512, 512, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-            windTexture.enableRandomWrite = true;
-            windTexture.useMipMap = true;
-            windTexture.autoGenerateMips = true;
-            windTexture.Create();
+    void GenerateWaveTexure() {
+        if (noiseTexture == null) {
+            noiseTexture = new RenderTexture(512, 512, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+            noiseTexture.enableRandomWrite = true;
+            noiseTexture.useMipMap = true;
+            noiseTexture.autoGenerateMips = true;
+            noiseTexture.Create();
         }
-        windShader.SetTexture(0, "_WaveTex", windTexture);
-        windShader.SetFloat("_XPeriod", xPeriod);
-        windShader.SetFloat("_YPeriod", yPeriod);
-        windShader.SetFloat("_TurbPower", turbPower);
-        windShader.SetFloat("_TurbSize", turbSize);
-        windShader.SetFloat("_Time", Time.time * speed);
-        windShader.SetFloat("_Frequency", frequency);
-        windShader.SetFloat("_Amplitude", amplitude);
-        windShader.Dispatch(0, 64, 64, 1);
+        noiseShader.SetTexture(0, "_WaveNoise", noiseTexture);
+        noiseShader.SetFloat("_XPeriod", xPeriod);
+        noiseShader.SetFloat("_YPeriod", yPeriod);
+        noiseShader.SetFloat("_TurbPower", turbPower);
+        noiseShader.SetFloat("_TurbSize", turbSize);
+        noiseShader.SetFloat("_Time", Time.time * speed);
+        noiseShader.SetFloat("_Frequency", frequency);
+        noiseShader.SetFloat("_Amplitude", amplitude);
+        noiseShader.Dispatch(0, 64, 64, 1);
 
-        grassMaterial.SetTexture("_WindTex", windTexture);
+        grassMaterial.SetTexture("_WaveNoise", noiseTexture);
     }
 
     int GetGrassCount() {

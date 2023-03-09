@@ -18,9 +18,11 @@ struct GrassData {
 TEXTURE2D(_ColorMap);
 SAMPLER(sampler_ColorMap);
 float4 _ColorMap_ST;
-TEXTURE2D(_WindTex);
-SAMPLER(sampler_WindTex);
-float4 _WindTex_ST;
+TEXTURE2D(_DistortionMap);
+SAMPLER(sampler_DistortionMap);
+float4 _DistortionMap_ST;
+TEXTURE2D(_WaveNoise);
+SAMPLER(sampler_WaveNoise);
 
 CBUFFER_START(UnityPerMaterial)
 StructuredBuffer<GrassData> _GrassData;
@@ -38,9 +40,10 @@ float _Width;
 float _Curvature;
 float _CurvatureBase;
 
-float _WindFactor;
-//xyz: dir, w: speed
-float4 _WindParams;
+float _WindStrength;
+float _WindSpeed;
+float _WaveStrength;
+float _WaveSpeed;
 
 CBUFFER_END
 
@@ -99,9 +102,9 @@ float3 GetWindDirection(float3 grassUp, float3 windDirection, float windStrength
 	return dir - grassUp;
 }
 
-float GetWindStrength() {
+float GetWindStrength(float offset, float noise) {
 	//TODO
-	return _WindFactor * sin(_Time.y * _WindParams.w);
+	return saturate(_WindStrength * offset + _WaveStrength * sin(noise * _WaveSpeed));
 }
 
 Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
@@ -121,16 +124,18 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	localPosition = RotateAroundXInDegrees(float4(localPosition, 1), degrees * _DistributionX);
 	localPosition = RotateAroundYInDegrees(float4(localPosition, 1), degrees * _DistributionY);
 	//wind
-	float windStrength = GetWindStrength();
-	float3 wind = GetWindDirection(float3(0, 1, 0), normalize(_WindParams.xyz), windStrength);
+	float4 distortion = SAMPLE_TEXTURE2D_LOD(_DistortionMap, sampler_DistortionMap, data.worldCoord * _DistortionMap_ST.xy + _DistortionMap_ST.zw - _Time.y * _WindSpeed + localPosition.y * 0.01, 0);
+	float noise = SAMPLE_TEXTURE2D_LOD(_WaveNoise, sampler_WaveNoise, data.worldCoord, 0);
+	float windStrength = GetWindStrength(length(distortion.xyz), noise);
+	float3 wind = GetWindDirection(float3(0, 1, 0), normalize(distortion.xzy), windStrength);
 	//bind root
-	localPosition += wind * localPosition.y;
+	localPosition += (wind) * localPosition.y;
 	float3 worldPosition = localPosition + data.position;
 	output.positionCS = TransformWorldToHClip(worldPosition);
 	output.positionWS = worldPosition;
 	output.normal = TransformObjectToWorldNormal(input.normal);
 	output.color = float3(hash1(data.chunkID * 20 + 1024), hash1(hash1(data.chunkID) * 10 + 2048), hash1(data.chunkID * 4 + 4096));
-	output.color = input.baseUV.yyy;
+	output.color = noise.xxx;
 	return output;
 }
 
