@@ -107,7 +107,7 @@ float _Amplitude;
 [numthreads(8, 8, 1)]
 void WaveNoise(uint3 id : SV_DispatchThreadID) {
     float xyValue = id.x * _XPeriod + id.y * _YPeriod + _TurbPower * snoise(id * _TurbSize);
-    float sinValue = (sin((xyValue + _Time) * _Frequency) + 1.5f) * _Amplitude;
+    float sinValue = (sin((xyValue - _Time) * _Frequency) + 1.5f) * _Amplitude;
     //TODO: multiple sin/cos wave
     _WaveNoise[id.xy] = sinValue;
 }

@@ -6,6 +6,7 @@ Shader "Melody RP/Standard/Grass/Instanced"
         _HighColor("Grass High Color", Color) = (1.0, 1.0, 0.0, 1.0)
         _ShadowColor("Grass Shadow Color", Color) = (0.0, 1.0, 1.0, 1.0)
         _ColorMap("Color Texture", 2D) = "white" {}
+        _ScatterFactor("SSS Factor", Vector) = (1.0, 1.0, 1.0, 1.0)
         _DistributionX("DistributionY X", Range(0.0, 90)) = 45
         _DistributionY("DistributionY Y", Range(0.0, 360)) = 360
         _Height("Blade Height", Float) = 1.0
@@ -16,7 +17,7 @@ Shader "Melody RP/Standard/Grass/Instanced"
         _WindStrength("Wind Strength", Range(0, 1)) = 0.0
         _WindSpeed("Wind Speed", Range(0, 0.2)) = 0.0
         _WaveStrength("Wave Strength", Range(0, 1)) = 0.0
-        _WaveSpeed("Wave Speed", Range(0, 1.0)) = 0.0
+        _WaveCycle("Wave Cycle", Range(0, 1.0)) = 0.0
         [Toggle(_PREMULTIPLY_ALPHA)]_PremulAlpha("Premultiply Alpha", Float) = 0
         [Toggle(_CLIPPING)]_Clipping("Alpha Clipping", Float) = 0
         [Toggle(_RECEIVE_SHADOWS)] _ReceiveShadows("Receive Shadows", Float) = 1

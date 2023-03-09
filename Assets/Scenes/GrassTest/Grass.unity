@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.3437409, g: 0.45364496, b: 0.55308247, a: 0}
+  m_AmbientSkyColor: {r: 0.3592001, g: 0.46528015, b: 0.562615, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -347,7 +347,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 2.5e-44}
+  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: -8.51587e-21}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -441,7 +441,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de59eb068c7630d478bb1bb1258962aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useMeshData: 0
+  useMeshData: 1
   fieldSize: {x: 100, y: 100}
   chunkSize: {x: 10, y: 10}
   density: 10

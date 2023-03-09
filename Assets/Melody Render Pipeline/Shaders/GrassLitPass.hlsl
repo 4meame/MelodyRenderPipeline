@@ -43,7 +43,9 @@ float _CurvatureBase;
 float _WindStrength;
 float _WindSpeed;
 float _WaveStrength;
-float _WaveSpeed;
+float _WaveCycle;
+
+float4 _ScatterFactor;
 
 CBUFFER_END
 
@@ -104,7 +106,7 @@ float3 GetWindDirection(float3 grassUp, float3 windDirection, float windStrength
 
 float GetWindStrength(float offset, float noise) {
 	//TODO
-	return saturate(_WindStrength * offset + _WaveStrength * sin(noise * _WaveSpeed));
+	return saturate(_WindStrength * offset + _WaveStrength * sin(noise * _WaveCycle));
 }
 
 Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
@@ -166,7 +168,9 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	float2 worldUV = input.worldUV;
 	float3 n = float3(0, 1, 0);//force shading normal equal to UP
 	float3 l = light.direction;
-	float3 h = normalize(light.direction + (surfaceData.viewDirection));
+	float3 v = surfaceData.viewDirection;
+	float3 h = normalize(l + v);
+	float3 h_sss = normalize(l + n * _ScatterFactor.x);
 	float ndotl = saturate(dot(n, l));
 	float ndoth = saturate(dot(n, h));
 	//variance
@@ -174,8 +178,9 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	//radiance
 	float3 diffuse = baseColor * variance.rgb * light.color * (ndotl * 0.5 + 0.5) * light.distanceAttenuation * light.shadowAttenuation;
 	float3 specular = 0.09 * _HighColor.rgb * ndoth * ndoth * ndoth * light.color * light.distanceAttenuation * light.shadowAttenuation * baseUV.y;
+	float3 sss = pow(saturate(dot(v, -h_sss)), _ScatterFactor.y) * _ScatterFactor.z * light.color * light.distanceAttenuation * light.shadowAttenuation;
 	return float4(
-		diffuse + specular
+		diffuse + specular + sss
 		, 
 		1);
 }
