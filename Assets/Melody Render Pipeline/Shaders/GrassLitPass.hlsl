@@ -46,6 +46,7 @@ float _WaveStrength;
 float _WaveCycle;
 
 float4 _ScatterFactor;
+float _NormalDistribution;
 
 CBUFFER_END
 
@@ -62,6 +63,8 @@ struct Varyings {
 	float2 worldUV : VAR_WORLD_UV;
 	float3 normal : VAR_NORMAL;
 	float3 color : VAR_COLOR;
+	float hash : VAR_HASH;
+	float3 wind : VAR_WIND;
 };
 
 float hash1(uint n) {
@@ -125,19 +128,20 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	//random distribution on XY axis
 	localPosition = RotateAroundXInDegrees(float4(localPosition, 1), degrees * _DistributionX);
 	localPosition = RotateAroundYInDegrees(float4(localPosition, 1), degrees * _DistributionY);
-	//wind
+	//wind and wave noise
 	float4 distortion = SAMPLE_TEXTURE2D_LOD(_DistortionMap, sampler_DistortionMap, data.worldCoord * _DistortionMap_ST.xy + _DistortionMap_ST.zw - _Time.y * _WindSpeed + localPosition.y * 0.01, 0);
 	float noise = SAMPLE_TEXTURE2D_LOD(_WaveNoise, sampler_WaveNoise, data.worldCoord, 0);
 	float windStrength = GetWindStrength(length(distortion.xyz), noise);
-	float3 wind = GetWindDirection(float3(0, 1, 0), normalize(distortion.xzy), windStrength);
 	//bind root
-	localPosition += (wind) * localPosition.y;
+	float3 wind = GetWindDirection(float3(0, 1, 0), normalize(distortion.xzy), windStrength) * localPosition.y;
+	localPosition += wind;
 	float3 worldPosition = localPosition + data.position;
 	output.positionCS = TransformWorldToHClip(worldPosition);
 	output.positionWS = worldPosition;
 	output.normal = TransformObjectToWorldNormal(input.normal);
 	output.color = float3(hash1(data.chunkID * 20 + 1024), hash1(hash1(data.chunkID) * 10 + 2048), hash1(data.chunkID * 4 + 4096));
-	output.color = noise.xxx;
+	output.hash = hash1(id);
+	output.wind = wind;
 	return output;
 }
 
@@ -167,6 +171,8 @@ float4 LitPassFragment(Varyings input) : SV_TARGET{
 	float2 baseUV = input.baseUV;
 	float2 worldUV = input.worldUV;
 	float3 n = float3(0, 1, 0);//force shading normal equal to UP
+	float3 randomNormal = _NormalDistribution * sin(input.hash * 78.9321) * float3(0, 0, 1) - 0.33 * input.wind;
+	n = normalize(n + randomNormal);
 	float3 l = light.direction;
 	float3 v = surfaceData.viewDirection;
 	float3 h = normalize(l + v);

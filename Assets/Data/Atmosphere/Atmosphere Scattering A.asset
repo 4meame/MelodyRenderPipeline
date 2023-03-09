@@ -26,7 +26,7 @@ MonoBehaviour:
   incomingLight: {r: 3.9533494, g: 3.9533494, b: 3.9533494, a: 4}
   sunIntensity: 0.3
   lightSamples: 32
-  distanceScale: 2.58
+  distanceScale: 1
   rayleighInscatterScale: 2.8
   rayleighExtinctionScale: 1
   mieInscatterScale: 1.05

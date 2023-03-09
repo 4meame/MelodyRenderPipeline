@@ -11,6 +11,7 @@ Shader "Melody RP/Standard/Grass/Instanced"
         _DistributionY("DistributionY Y", Range(0.0, 360)) = 360
         _Height("Blade Height", Float) = 1.0
         _Width("Blade Width", Float) = 1.0
+        _NormalDistribution("NormalDistribution", range(-0.5, 0.5)) = 1.0
         [Enum(UV, 0, HEIGHT, 1)]_CurvatureBase("Curvature Base", Float) = 1
         _Curvature("Blade Curvature", Range(0, 1)) = 1.0
         _DistortionMap("Distortion Texture", 2D) = "white" {}
