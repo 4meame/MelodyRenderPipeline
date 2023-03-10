@@ -17,10 +17,10 @@ MonoBehaviour:
   useSRPBatcher: 1
   useLightsPerObject: 1
   shadows:
-    maxDistance: 40
+    maxDistance: 10
     distanceFade: 0.432
     directional:
-      atlasSize: 4096
+      atlasSize: 1024
       filter: 3
       cascadeCount: 1
       cascadeRatio1: 0.478
@@ -56,8 +56,8 @@ MonoBehaviour:
       subpixelBlending: 0.793
       quality: 2
     taa:
-      mode: 0
-      motionVectorEnabled: 0
+      mode: 2
+      motionVectorEnabled: 1
       jitterScale: 1
       sharpness: 0.25
       staticBlending: 0.9

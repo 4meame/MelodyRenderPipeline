@@ -28,6 +28,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _DistortionMap:
         m_Texture: {fileID: 2800000, guid: ea9db01cac13fce40be4a042fd398865, type: 3}
+        m_Scale: {x: 2, y: 2}
+        m_Offset: {x: 0, y: 0}
+    - _HeightMap:
+        m_Texture: {fileID: 2800000, guid: 5ee26a8db46090e4f8e01f29ad2a7bf2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTex:
@@ -44,34 +48,36 @@ Material:
     - _BendingY: 230
     - _Clipping: 0
     - _Cull: 0
-    - _Curvature: 0.43
+    - _Curvature: 0.315
     - _CurvatureBase: 0
-    - _DistributionX: 22.2
+    - _Displacement: -4.37
+    - _DistributionX: 20
     - _DistributionY: 224
     - _DstBlend: 0
     - _Height: 1.1
+    - _HeightScale: 20
     - _NormalDistribution: 0.15
     - _PremulAlpha: 0
     - _ReceiveShadows: 1
     - _Shadows: 0
     - _SrcBlend: 1
-    - _WaveCycle: 0.232
-    - _WaveSpeed: 0.078
-    - _WaveStrength: 0.358
+    - _WaveCycle: 0.208
+    - _WaveSpeed: 0.165
+    - _WaveStrength: 0.228
     - _Width: 0.1
     - _WindFactor: 0.354
     - _WindFrequency: 1
-    - _WindSpeed: 0.0475
-    - _WindStrength: 0.488
+    - _WindSpeed: 0.0649
+    - _WindStrength: 0.397
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _High: {r: 0.21568629, g: 0.41176474, b: 0.21176472, a: 1}
-    - _HighColor: {r: 1, g: 0.8128471, b: 0.709, a: 0.11372549}
+    - _HighColor: {r: 0.7169812, g: 0.53490233, b: 0.4362763, a: 0.105882354}
     - _Low: {r: 0.40000004, g: 0.6392157, b: 0.3254902, a: 1}
     - _Medium: {r: 0.34509805, g: 0.61960787, b: 0.32156864, a: 1}
-    - _ScatterFactor: {r: 0.94, g: 2.2, b: 0.17, a: 1}
-    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ScatterFactor: {r: 0.94, g: 2.2, b: 0.25, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 0}
     - _TimeParams: {r: 1, g: 10, b: 100, a: 10}
     - _WindDirection: {r: 1, g: 1.44, b: -1.52, a: -0.19}
     - _WindParams: {r: 0.67, g: 1, b: -1.44, a: 0.04}
