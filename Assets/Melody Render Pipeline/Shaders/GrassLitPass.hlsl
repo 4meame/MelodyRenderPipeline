@@ -43,7 +43,7 @@ float _CurvatureBase;
 float _WindStrength;
 float _WindSpeed;
 float _WaveStrength;
-float _WaveCycle;
+float _WaveSpeed;
 
 float4 _ScatterFactor;
 float _NormalDistribution;
@@ -109,7 +109,7 @@ float3 GetWindDirection(float3 grassUp, float3 windDirection, float windStrength
 
 float GetWindStrength(float offset, float noise) {
 	//TODO
-	return saturate(_WindStrength * offset + _WaveStrength * sin(noise * _WaveCycle));
+	return saturate(_WindStrength * offset + _WaveStrength * sin(noise * _WaveSpeed));
 }
 
 Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
@@ -148,7 +148,7 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 float3 CalculateLighting(Light light, float4 baseColor, float4 shadowColor, float4 highColor, float4 variance, float ndotl, float ndoth, float vdoth, float2 baseUV) {
 	float4 albedo = lerp(shadowColor, baseColor, baseUV.y);
 	float3 diffuse = albedo.a * albedo.rgb * variance.rgb * (ndotl * 0.5 + 0.5);
-	float3 specular = _HighColor.a * _HighColor.rgb * pow(ndoth, 3) * baseUV.y;
+	float3 specular = _HighColor.a * _HighColor.rgb * pow(ndoth, 3) * smoothstep(0.5, 1, baseUV.y);
 	float3 sss = pow(vdoth, _ScatterFactor.y) * _ScatterFactor.z;
 	float3 visibleIrradiance = light.color * light.distanceAttenuation * light.shadowAttenuation;
 	return (diffuse + specular + sss) * visibleIrradiance;
