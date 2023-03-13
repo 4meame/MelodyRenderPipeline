@@ -32,7 +32,7 @@ MonoBehaviour:
       atlasSize: 1024
       filter: 3
   atmosphere: {fileID: 11400000, guid: 40b97409a5a8e9a488d282afbe8256cc, type: 2}
-  cloud: {fileID: 11400000, guid: bbc01be664c1ce84b83137c08d2399cd, type: 2}
+  cloud: {fileID: 11400000, guid: e2392a90fceef1a42a611ad1707be42d, type: 2}
   fog:
     enabled: 1
     resolution: 1
