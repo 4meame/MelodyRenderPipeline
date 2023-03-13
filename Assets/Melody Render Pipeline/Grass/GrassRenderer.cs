@@ -210,7 +210,7 @@ public class GrassRenderer : MonoBehaviour {
         Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer, 0, null, castShadows);
 
         lodGrassMaterial.SetFloat("useLod", 1.0f);
-        Graphics.DrawMeshInstancedIndirect(GetLodGrassMeshCache(), subMeshIndex, lodGrassMaterial, bounds, lodsArgsBuffer);
+        Graphics.DrawMeshInstancedIndirect(GetLodGrassMeshCache(), subMeshIndex, lodGrassMaterial, bounds, lodsArgsBuffer, 0, null, ShadowCastingMode.Off);
 
     }
 
