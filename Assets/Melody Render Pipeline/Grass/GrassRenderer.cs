@@ -93,7 +93,7 @@ public class GrassRenderer : MonoBehaviour {
                 Vector3 center = new Vector3(i % chunkCountX + 0.5f, (minY + maxY) / 2, Mathf.CeilToInt(i / chunkCountX) + 0.5f);
                 center.x = Mathf.Lerp(minX, maxX, center.x / chunkCountX);
                 center.z = Mathf.Lerp(minZ, maxZ, center.z / chunkCountZ);
-                Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, 3, Mathf.Abs(maxZ - minZ) / chunkCountZ);
+                Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, maxY - minY, Mathf.Abs(maxZ - minZ) / chunkCountZ);
                 Gizmos.DrawWireCube(center, size);
             }
         }
@@ -342,7 +342,7 @@ public class GrassRenderer : MonoBehaviour {
             Vector3 center = new Vector3(i % chunkCountX + 0.5f, (minY + maxY) / 2, Mathf.CeilToInt(i / chunkCountX) + 0.5f);
             center.x = Mathf.Lerp(minX, maxX, center.x / chunkCountX);
             center.z = Mathf.Lerp(minZ, maxZ, center.z / chunkCountZ);
-            Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, 3, Mathf.Abs(maxZ - minZ) / chunkCountZ);
+            Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, maxY - minY, Mathf.Abs(maxZ - minZ) / chunkCountZ);
             Bounds bounds = new Bounds(center, size);
             if (GeometryUtility.TestPlanesAABB(frustumPlanes, bounds)) {
                 visiableChunkID.Add(i);

@@ -119,13 +119,15 @@ Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	output.baseUV = input.baseUV;
 	output.worldUV = data.worldCoord;
 	float3 localPosition = input.positionOS;
+	float random = hash1(id);
 	//modify grass shape
 	localPosition.y *= _Height;
 	localPosition.x *= _Width;
+	//curve depends on height or uv
 	float t = _CurvatureBase > 0.5 ? localPosition.y : input.baseUV.y;
 	localPosition.z += pow(t * _Curvature, 2) * t;
-	float degrees = hash1(id);
 	//random distribution on XY axis
+	float degrees = random;
 	localPosition = RotateAroundXInDegrees(float4(localPosition, 1), degrees * _DistributionX);
 	localPosition = RotateAroundYInDegrees(float4(localPosition, 1), degrees * _DistributionY);
 	//wind and wave noise
