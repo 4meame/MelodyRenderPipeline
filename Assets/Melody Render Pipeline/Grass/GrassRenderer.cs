@@ -9,6 +9,7 @@ public class GrassRenderer : MonoBehaviour {
     [Header("Grass")]
     public bool useMeshData = false;
     public Vector2 fieldSize;
+    public float heightScale;
     //smaller the number, CPU needs more time, but GPU is faster
     public Vector2 chunkSize;
     public float density;
@@ -34,7 +35,7 @@ public class GrassRenderer : MonoBehaviour {
     Mesh mesh;
     int subMeshIndex = 0;
     Plane[] frustumPlanes;
-    float minX, minZ, maxX, maxZ;
+    float minX, minY, minZ, maxX, maxY, maxZ;
     Bounds bounds;
     ComputeBuffer argsBuffer;
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
@@ -48,7 +49,7 @@ public class GrassRenderer : MonoBehaviour {
 
     List<Vector3> allGrassPositions;
     List<Vector3> meshPositions;
-    List<Vector2> proceduralPositions;
+    List<Vector3> proceduralPositions;
     GrassData[] allGrassData;
     List<int> visiableChunkID;
     List<GrassData>[] allChunksData;
@@ -65,7 +66,7 @@ public class GrassRenderer : MonoBehaviour {
     void Start() {
         allGrassPositions = new List<Vector3>();
         meshPositions = new List<Vector3>();
-        proceduralPositions = new List<Vector2>();
+        proceduralPositions = new List<Vector3>();
         allGrassData = new GrassData[1];
         visiableChunkID = new List<int>();
         frustumPlanes = new Plane[6];
@@ -73,6 +74,10 @@ public class GrassRenderer : MonoBehaviour {
         bounds = new Bounds();
         mesh = transform.GetComponent<MeshFilter>().sharedMesh;
         UpdateGrassPosition();
+
+        if (debug) {
+            Debug.Log(minX + "," + maxX + "," + minY + "," + minY + "," + minZ + "," + maxZ);
+        }
     }
 
     void Update() {
@@ -82,7 +87,16 @@ public class GrassRenderer : MonoBehaviour {
     }
 
     void OnDrawGizmos() {
-        Gizmos.DrawWireCube(transform.position, new Vector3(maxX - minX, 10.0f, maxZ - minZ));
+        if (debug) {
+            for (int i = 0; i < allChunksData.Length; i++) {
+                //create per chunk bounds
+                Vector3 center = new Vector3(i % chunkCountX + 0.5f, (minY + maxY) / 2, Mathf.CeilToInt(i / chunkCountX) + 0.5f);
+                center.x = Mathf.Lerp(minX, maxX, center.x / chunkCountX);
+                center.z = Mathf.Lerp(minZ, maxZ, center.z / chunkCountZ);
+                Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, 3, Mathf.Abs(maxZ - minZ) / chunkCountZ);
+                Gizmos.DrawWireCube(center, size);
+            }
+        }
     }
 
     void OnDisable() {
@@ -191,11 +205,21 @@ public class GrassRenderer : MonoBehaviour {
         if (useMeshData) {
             meshPositions.Clear();
             for (int i = 0; i < mesh.vertexCount; i++) {
+                //TODO: Write a tessellation shader
                 meshPositions.Add(mesh.vertices[i]);
             }
         } else {
             proceduralPositions.Clear();
-            proceduralPositions = PoissonDiscSampling.GeneratePoints(1 / density, fieldSize);
+            List<Vector2> samplingPoints = PoissonDiscSampling.GeneratePoints(1 / density, fieldSize);
+            //TODO: Sample height map here to give y dimension coord
+            Vector2 origin = new Vector2(UnityEngine.Random.Range(0, 1000), UnityEngine.Random.Range(0, 1000));
+            Vector2 scale = new Vector2(UnityEngine.Random.Range(2, 2.5f), UnityEngine.Random.Range(2, 2.5f));
+            for (int i = 0; i < samplingPoints.Count; i++) {
+                float coordX = samplingPoints[i].x / fieldSize.x * scale.x + origin.x;
+                float coordY = samplingPoints[i].y / fieldSize.y * scale.y + origin.y;
+                float height = Mathf.PerlinNoise(coordX, coordY);
+                proceduralPositions.Add(new Vector3(samplingPoints[i].x, samplingPoints[i].y, height * heightScale));
+            }
         }
     }
 
@@ -253,6 +277,7 @@ public class GrassRenderer : MonoBehaviour {
         } else {
             pos.x = proceduralPositions[index].x;
             pos.z = proceduralPositions[index].y;
+            pos.y = proceduralPositions[index].z;
         }
         return pos;
     }
@@ -260,18 +285,22 @@ public class GrassRenderer : MonoBehaviour {
     //find all instances in the list to get min&max bound
     void CalcualteBounds(List<Vector3> positions) {
         minX = float.MaxValue;
+        minY = float.MaxValue;
         minZ = float.MaxValue;
         maxX = float.MinValue;
+        maxY = float.MinValue;
         maxZ = float.MinValue;
         for (int i = 0; i < positions.Count; i++) {
             Vector3 target = positions[i];
             minX = Mathf.Min(target.x, minX);
+            minY = Mathf.Min(target.y, minY);
             minZ = Mathf.Min(target.z, minZ);
             maxX = Mathf.Max(target.x, maxX);
+            maxY = Mathf.Max(target.y, maxY);
             maxZ = Mathf.Max(target.z, maxZ);
         }
         //if camera frustum is not overlapping this bound, DrawMeshInstancedIndirect will not even render
-        bounds.SetMinMax(new Vector3(minX, transform.position.y - 100, minZ), new Vector3(maxX, transform.position.y + 100, maxZ));
+        bounds.SetMinMax(new Vector3(minX, minY - 10, minZ), new Vector3(maxX, maxY + 20, maxZ));
     }
 
     //decide chunk count by current min&max and chunkSize
@@ -310,10 +339,10 @@ public class GrassRenderer : MonoBehaviour {
         visiableChunkID.Clear();
         for (int i = 0; i < allChunksData.Length; i++) {
             //create per chunk bounds
-            Vector3 center = new Vector3(i % chunkCountX + 0.5f, transform.position.y, Mathf.CeilToInt(i / chunkCountX) + 0.5f);
+            Vector3 center = new Vector3(i % chunkCountX + 0.5f, (minY + maxY) / 2, Mathf.CeilToInt(i / chunkCountX) + 0.5f);
             center.x = Mathf.Lerp(minX, maxX, center.x / chunkCountX);
             center.z = Mathf.Lerp(minZ, maxZ, center.z / chunkCountZ);
-            Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, 0, Mathf.Abs(maxZ - minZ) / chunkCountZ);
+            Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, 3, Mathf.Abs(maxZ - minZ) / chunkCountZ);
             Bounds bounds = new Bounds(center, size);
             if (GeometryUtility.TestPlanesAABB(frustumPlanes, bounds)) {
                 visiableChunkID.Add(i);
