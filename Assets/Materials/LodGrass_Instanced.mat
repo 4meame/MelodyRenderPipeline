@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Grass_Instanced
+  m_Name: LodGrass_Instanced
   m_Shader: {fileID: 4800000, guid: 1ed10e576e8a7544caf6d69df1c40998, type: 3}
   m_ValidKeywords:
   - _RECEIVE_SHADOWS

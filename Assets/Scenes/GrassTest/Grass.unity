@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.35798833, g: 0.46352926, b: 0.56017506, a: 0}
+  m_AmbientSkyColor: {r: 0.34614247, g: 0.45344448, b: 0.5504314, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -347,7 +347,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 3e-45, y: 0, z: 0, w: -2.0000002}
+  m_BoundingSphereOverride: {x: NaN, y: 3e-45, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -645,10 +645,13 @@ MonoBehaviour:
   chunkSize: {x: 10, y: 10}
   density: 10
   viewDistance: 100
+  lodDsitance: 60
   castShadows: 0
   grassMesh: {fileID: 5535028233509875347, guid: 6e3fa8fe8caa23943ab0664732b4eff0,
     type: 3}
+  lodGrassMesh: {fileID: 0}
   grassMaterial: {fileID: 2100000, guid: 5fbfed9deb0bc2a4ca2b463db4af6d4a, type: 2}
+  lodGrassMaterial: {fileID: 2100000, guid: b5a41f9eb9dcfcf4a8c5264362563b22, type: 2}
   dataProcessing: {fileID: 7200000, guid: a58064307ad24164aa0fbca4a69cc0a6, type: 3}
   noiseShader: {fileID: 7200000, guid: 7702d3df34f53b64882b750c88b25e31, type: 3}
   xPeriod: 0.1

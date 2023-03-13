@@ -27,6 +27,7 @@ SAMPLER(sampler_WaveNoise);
 CBUFFER_START(UnityPerMaterial)
 StructuredBuffer<GrassData> _GrassData;
 StructuredBuffer<uint> _IdOfVisibleGrass;
+StructuredBuffer<uint> _IdOfLodGrass;
 
 float4 _BaseColor;
 float4 _HighColor;
@@ -47,6 +48,8 @@ float _WaveSpeed;
 
 float4 _ScatterFactor;
 float _NormalDistribution;
+
+float useLod;
 
 CBUFFER_END
 
@@ -114,7 +117,7 @@ float GetWindStrength(float offset, float noise) {
 
 Varyings LitPassVertex(Attributes input, uint instanceID : SV_InstanceID) {
 	Varyings output;
-	uint id = _IdOfVisibleGrass[instanceID];
+	uint id = (useLod > 0.5) ? _IdOfLodGrass[instanceID] : _IdOfVisibleGrass[instanceID];
 	GrassData data = _GrassData[id];
 	output.baseUV = input.baseUV;
 	output.worldUV = data.worldCoord;

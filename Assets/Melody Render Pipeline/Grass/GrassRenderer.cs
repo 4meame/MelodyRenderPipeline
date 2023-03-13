@@ -14,9 +14,12 @@ public class GrassRenderer : MonoBehaviour {
     public Vector2 chunkSize;
     public float density;
     public float viewDistance;
+    public float lodDsitance = 80;
     public ShadowCastingMode castShadows;
     public Mesh grassMesh;
+    public Mesh lodGrassMesh;
     public Material grassMaterial;
+    public Material lodGrassMaterial;
     //do culling and data remake
     public ComputeShader dataProcessing;
 
@@ -39,8 +42,11 @@ public class GrassRenderer : MonoBehaviour {
     Bounds bounds;
     ComputeBuffer argsBuffer;
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
+    ComputeBuffer lodsArgsBuffer;
+    uint[] lodsArgs = new uint[5] { 0, 0, 0, 0, 0 };
     ComputeBuffer dataBuffer;
     ComputeBuffer IdBuffer;
+    ComputeBuffer lodIdBuffer;
 
     int cachePositionCount = -1;
     int cacheInstancedCount = -1;
@@ -109,11 +115,17 @@ public class GrassRenderer : MonoBehaviour {
         if (IdBuffer != null) {
             IdBuffer.Release();
         }
+        if (lodIdBuffer != null) {
+            lodIdBuffer.Release();
+        }
         if (argsBuffer != null) {
             argsBuffer.Release();
         }
+        if (lodsArgsBuffer != null) {
+            lodsArgsBuffer.Release();
+        }
 
-        if(noiseTexture != null) {
+        if (noiseTexture != null) {
             noiseTexture.Release();
         }
     }
@@ -148,6 +160,7 @@ public class GrassRenderer : MonoBehaviour {
         dataBuffer.SetData(allGrassData);
         dataProcessing.SetBuffer(0, "_GrassData", dataBuffer);
         grassMaterial.SetBuffer("_GrassData", dataBuffer);
+        lodGrassMaterial.SetBuffer("_GrassData", dataBuffer);
 
         if (IdBuffer != null) {
             IdBuffer.Release();
@@ -156,6 +169,13 @@ public class GrassRenderer : MonoBehaviour {
         IdBuffer.SetCounterValue(0);
         dataProcessing.SetBuffer(0, "_IdOfVisibleGrass", IdBuffer);
         grassMaterial.SetBuffer("_IdOfVisibleGrass", IdBuffer);
+        if (lodIdBuffer != null) {
+            lodIdBuffer.Release();
+        }
+        lodIdBuffer = new ComputeBuffer(allGrassData.Length, sizeof(uint), ComputeBufferType.Append);
+        lodIdBuffer.SetCounterValue(0);
+        dataProcessing.SetBuffer(0, "_IdOfLodGrass", lodIdBuffer);
+        lodGrassMaterial.SetBuffer("_IdOfLodGrass", lodIdBuffer);
 
         //indirect args
         if (argsBuffer != null) {
@@ -163,10 +183,19 @@ public class GrassRenderer : MonoBehaviour {
         }
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         args[0] = (uint)GetGrassMeshCache().GetIndexCount(subMeshIndex);
-        args[1] = (uint)allGrassData.Length;
+        //args[1] = (uint)allGrassData.Length;
         args[2] = (uint)GetGrassMeshCache().GetIndexStart(subMeshIndex);
         args[3] = (uint)GetGrassMeshCache().GetBaseVertex(subMeshIndex);
         argsBuffer.SetData(args);
+        if (lodsArgsBuffer != null) {
+            lodsArgsBuffer.Release();
+        }
+        lodsArgsBuffer = new ComputeBuffer(1, lodsArgs.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+        lodsArgs[0] = (uint)GetLodGrassMeshCache().GetIndexCount(subMeshIndex);
+        //lodsArgs[1] = (uint)allGrassData.Length;
+        lodsArgs[2] = (uint)GetLodGrassMeshCache().GetIndexStart(subMeshIndex);
+        lodsArgs[3] = (uint)GetLodGrassMeshCache().GetBaseVertex(subMeshIndex);
+        lodsArgsBuffer.SetData(lodsArgs);
 
         cacheInstancedCount = allGrassData.Length;
     }
@@ -177,7 +206,12 @@ public class GrassRenderer : MonoBehaviour {
 
         GenerateWaveTexure();
 
+        grassMaterial.SetFloat("useLod", 0.0f);
         Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer, 0, null, castShadows);
+
+        lodGrassMaterial.SetFloat("useLod", 1.0f);
+        Graphics.DrawMeshInstancedIndirect(GetLodGrassMeshCache(), subMeshIndex, lodGrassMaterial, bounds, lodsArgsBuffer);
+
     }
 
     //Init grass position by mesh vertices, for example, but we generate these in procedural to get chunks
@@ -230,13 +264,31 @@ public class GrassRenderer : MonoBehaviour {
             Vector3[] verts = new Vector3[3];
             verts[0] = new Vector3(-1.0f, 0);
             verts[1] = new Vector3(+1.0f, 0);
-            verts[2] = new Vector3(-0.0f, 1);
+            verts[2] = new Vector3(-0.0f, 1.732f);
             int[] trinagles = new int[3] { 2, 1, 0, };
             grassMesh.SetVertices(verts);
             grassMesh.SetTriangles(trinagles, 0);
             grassMesh.uv = new Vector2[] { new Vector2(0.0f, 0.0f), new Vector2(1.0f, 0.0f), new Vector2(0.5f, 1.0f) };
+            grassMesh.RecalculateNormals();
         }
         return grassMesh;
+    }
+
+    Mesh GetLodGrassMeshCache() {
+        if (!lodGrassMesh) {
+            //if not exist, create mesh procedurally
+            lodGrassMesh = new Mesh();
+            Vector3[] verts = new Vector3[3];
+            verts[0] = new Vector3(-1.0f, 0);
+            verts[1] = new Vector3(+1.0f, 0);
+            verts[2] = new Vector3(-0.0f, 1.732f);
+            int[] trinagles = new int[3] { 2, 1, 0, };
+            lodGrassMesh.SetVertices(verts);
+            lodGrassMesh.SetTriangles(trinagles, 0);
+            lodGrassMesh.uv = new Vector2[] { new Vector2(0.0f, 0.0f), new Vector2(1.0f, 0.0f), new Vector2(0.5f, 1.0f) };
+            lodGrassMesh.RecalculateNormals();
+        }
+        return lodGrassMesh;
     }
 
     void GenerateWaveTexure() {
@@ -258,6 +310,7 @@ public class GrassRenderer : MonoBehaviour {
         noiseShader.Dispatch(0, 64, 64, 1);
 
         grassMaterial.SetTexture("_WaveNoise", noiseTexture);
+        lodGrassMaterial.SetTexture("_WaveNoise", noiseTexture);
     }
 
     int GetGrassCount() {
@@ -355,9 +408,11 @@ public class GrassRenderer : MonoBehaviour {
         Matrix4x4 vp = p * v;
         //init
         IdBuffer.SetCounterValue(0);
+        lodIdBuffer.SetCounterValue(0);
         int dispatchCount = 0;
         dataProcessing.SetMatrix("_VPMatrix", vp);
         dataProcessing.SetFloat("_MaxDrawDistance", viewDistance);
+        dataProcessing.SetFloat("_LodDistance", lodDsitance);
         dataProcessing.SetFloat("_MinX", minX);
         dataProcessing.SetFloat("_MinZ", minZ);
         dataProcessing.SetFloat("_MaxX", maxX);
@@ -388,5 +443,6 @@ public class GrassRenderer : MonoBehaviour {
 
         //GPU per instance culling finished, copy visible count to argsBuffer, to setup DrawMeshInstancedIndirect's draw amount 
         ComputeBuffer.CopyCount(IdBuffer, argsBuffer, 4);
+        ComputeBuffer.CopyCount(lodIdBuffer, lodsArgsBuffer, 4);
     }
 }

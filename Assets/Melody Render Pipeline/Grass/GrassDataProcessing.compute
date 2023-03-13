@@ -8,12 +8,14 @@ struct GrassData {
 
 float4x4 _VPMatrix;
 float _MaxDrawDistance;
+float _LodDistance;
 float _MinX, _MinZ;
 float _MaxX, _MaxZ;
 uint _MemoryOffset;
 
 RWStructuredBuffer<GrassData> _GrassData;
 AppendStructuredBuffer<uint> _IdOfVisibleGrass;
+AppendStructuredBuffer<uint> _IdOfLodGrass;
 
 [numthreads(64,1,1)]
 void Processing(uint3 id : SV_DispatchThreadID) {
@@ -28,7 +30,12 @@ void Processing(uint3 id : SV_DispatchThreadID) {
 	//y test allow 50% more threshold (hardcode for grass)
 	//x test allow 10% more threshold (hardcode for grass)
 	if (absPosCS.z <= absPosCS.w && absPosCS.y <= absPosCS.w * 1.5 && absPosCS.x <= absPosCS.w * 1.1 && absPosCS.w <= _MaxDrawDistance) {
-		_IdOfVisibleGrass.Append(validID);
+		if (absPosCS.w <= _LodDistance) {
+			_IdOfVisibleGrass.Append(validID);
+		}
+		else {
+			_IdOfLodGrass.Append(validID);
+		}
 		//go deep into processing data only for valid visible grass
 		float coordX = clamp((data.position.x - _MinX) / (_MaxX - _MinX), 0.0, 1.0);
 		float coordZ = clamp((data.position.z - _MinZ) / (_MaxZ - _MinZ), 0.0, 1.0);
