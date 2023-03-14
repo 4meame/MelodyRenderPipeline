@@ -122,6 +122,7 @@ float4 ToonLitPassFragment(Varyings input) : SV_TARGET {
 	surface.normal = normalize(input.normalWS);
 	surface.viewDirection = normalize(_WorldSpaceCameraPos - input.positionWS);
 	surface.depth = -TransformWorldToView(input.positionWS).z;
+	surface.dither = InterleavedGradientNoise(fragment.positionSS, 0);
 	//Init shadow data
 	ShadowData shadowData = GetShadowData(surface);
 	//Init main light data
