@@ -15,7 +15,7 @@ MonoBehaviour:
   shader: {fileID: 4800000, guid: e61add218821eec439de1c401c3b69ef, type: 3}
   enabled: 1
   subPixelSize: 2
-  maxIterations: 4
+  maxIterations: 62
   renderSize: 0
   fixedWidth: 960
   fixedHeight: 540
@@ -115,7 +115,7 @@ MonoBehaviour:
   sampleThreshold: 0
   sampleScalar: 1
   bottomFade: 0.244
-  detailScale: 0.25
+  detailScale: 2.21
   erosionEdgeSize: 0.625
   cloudDistortion: 0.062
   cloudDistortionScale: 4.6
@@ -129,7 +129,7 @@ MonoBehaviour:
   forwardScatteringG: 0.745
   backwardScatteringG: -0.39
   darkOutlineScalar: 1
-  speed: 0
+  speed: 1.64
   coverageOffsetPerFrame: {x: 0.0005, y: 0.0005}
   baseOffsetPerFrame: {x: -0.005, y: -0.003, z: 0}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}

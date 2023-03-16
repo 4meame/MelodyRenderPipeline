@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using static System.Runtime.InteropServices.Marshal;
+using Random = UnityEngine.Random;
 
 public class GrassRenderer : MonoBehaviour {
     [Header("Grass")]
@@ -12,6 +13,7 @@ public class GrassRenderer : MonoBehaviour {
     public float heightScale;
     //smaller the number, CPU needs more time, but GPU is faster
     public Vector2 chunkSize;
+    public int seed;
     public float density;
     public float viewDistance;
     public float lodDsitance = 80;
@@ -246,8 +248,9 @@ public class GrassRenderer : MonoBehaviour {
             proceduralPositions.Clear();
             List<Vector2> samplingPoints = PoissonDiscSampling.GeneratePoints(1 / density, fieldSize);
             //TODO: Sample height map here to give y dimension coord
-            Vector2 origin = new Vector2(UnityEngine.Random.Range(0, 1000), UnityEngine.Random.Range(0, 1000));
-            Vector2 scale = new Vector2(UnityEngine.Random.Range(2, 2.5f), UnityEngine.Random.Range(2, 2.5f));
+            Random.InitState(seed);
+            Vector2 origin = new Vector2(Random.Range(0, 1000), Random.Range(0, 1000));
+            Vector2 scale = new Vector2(Random.Range(2, 2.5f), Random.Range(2, 2.5f));
             for (int i = 0; i < samplingPoints.Count; i++) {
                 float coordX = samplingPoints[i].x / fieldSize.x * scale.x + origin.x;
                 float coordY = samplingPoints[i].y / fieldSize.y * scale.y + origin.y;

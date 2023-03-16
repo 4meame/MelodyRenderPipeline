@@ -1,4 +1,4 @@
-Shader "Melody RP/Standard/Grass/Instanced"
+Shader "Melody RP/Standard/Plant/Grass"
 {
     Properties
     {
@@ -6,6 +6,7 @@ Shader "Melody RP/Standard/Grass/Instanced"
         _HighColor("Grass High Color", Color) = (1.0, 1.0, 0.0, 1.0)
         _ShadowColor("Grass Shadow Color", Color) = (0.0, 1.0, 1.0, 1.0)
         _ColorMap("Color Texture", 2D) = "white" {}
+        _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
         _ScatterFactor("SSS Factor", Vector) = (1.0, 1.0, 1.0, 1.0)
         _DistributionX("DistributionY X", Range(0.0, 90)) = 45
         _DistributionY("DistributionY Y", Range(0.0, 360)) = 360
@@ -48,8 +49,8 @@ Shader "Melody RP/Standard/Grass/Instanced"
             #pragma multi_compile _ _CASCADE_BLEND_SOFT _CASCADE_BLEND_DITHER
             #pragma multi_compile _ _SHADOW_MASK_ALWAYS _SHADOW_MASK_DISTANCE
             #pragma vertex LitPassVertex
-            #pragma fragment LitPassFragment
-            #include "GrassLitPass.hlsl"
+            #pragma fragment GrassLitPassFragment
+            #include "PlantLitPass.hlsl"
             ENDHLSL
         }
 
@@ -71,8 +72,8 @@ Shader "Melody RP/Standard/Grass/Instanced"
             #pragma multi_compile _ _CASCADE_BLEND_SOFT _CASCADE_BLEND_DITHER
             #pragma multi_compile _ _SHADOW_MASK_ALWAYS _SHADOW_MASK_DISTANCE
             #pragma vertex LitPassVertex
-            #pragma fragment LitPassFragment
-            #include "GrassLitPass.hlsl"
+            #pragma fragment GrassLitPassFragment
+            #include "PlantLitPass.hlsl"
             ENDHLSL
         }
 
@@ -87,7 +88,7 @@ Shader "Melody RP/Standard/Grass/Instanced"
             #pragma target 3.5
             #pragma vertex LitPassVertex
             #pragma fragment ShadowCasterPass
-            #include "GrassLitPass.hlsl"
+            #include "PlantLitPass.hlsl"
             ENDHLSL
         }
     }
