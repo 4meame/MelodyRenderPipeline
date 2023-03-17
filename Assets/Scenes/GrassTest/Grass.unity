@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.7235581, g: 0.9348747, b: 1.129664, a: 0}
+  m_AmbientSkyColor: {r: 0.68893665, g: 0.89138657, b: 1.0751727, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -347,7 +347,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: -8.51587e-21}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -611,7 +611,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1145923635
 Transform:
   m_ObjectHideFlags: 0
@@ -643,7 +643,7 @@ MonoBehaviour:
   fieldSize: {x: 100, y: 100}
   heightScale: 10
   chunkSize: {x: 10, y: 10}
-  seed: 1736
+  seed: 264
   density: 10
   viewDistance: 100
   lodDsitance: 60
@@ -806,8 +806,8 @@ MonoBehaviour:
   fieldSize: {x: 100, y: 100}
   heightScale: 10
   chunkSize: {x: 10, y: 10}
-  seed: 1736
-  density: 3
+  seed: 264
+  density: 1
   viewDistance: 100
   lodDsitance: 50
   castShadows: 0

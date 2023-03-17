@@ -69,6 +69,7 @@ public class GrassRenderer : MonoBehaviour {
         public Vector3 position;
         public int chunkID;
         public Vector2 worldCoord;
+        //TODO: aabb data for accurate culling
     }
 
     void Start() {

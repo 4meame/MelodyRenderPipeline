@@ -27,7 +27,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DistortionMap:
-        m_Texture: {fileID: 2800000, guid: ea9db01cac13fce40be4a042fd398865, type: 3}
+        m_Texture: {fileID: 2800000, guid: 75318a7bf958aec499d7058d2cf197e3, type: 3}
         m_Scale: {x: 2, y: 2}
         m_Offset: {x: 0, y: 0}
     - _HeightMap:
@@ -50,6 +50,7 @@ Material:
     - _Cull: 0
     - _Curvature: 0.315
     - _CurvatureBase: 0
+    - _Cutoff: 0.5
     - _Displacement: -4.37
     - _DistributionX: 20
     - _DistributionY: 224

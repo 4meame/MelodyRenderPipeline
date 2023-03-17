@@ -88,15 +88,15 @@ Material:
     - _BumpScale: 1
     - _Clipping: 1
     - _Cull: 0
-    - _Curvature: 0
+    - _Curvature: 0.165
     - _CurvatureBase: 0
     - _Cutoff: 0.5
     - _DetailAlbedo: 1
     - _DetailNormalMapScale: 1
     - _DetailNormalScale: 1
     - _DetailSmoothness: 1
-    - _DistributionX: 26.6
-    - _DistributionY: 284
+    - _DistributionX: 12.2
+    - _DistributionY: 194
     - _DstBlend: 0
     - _Fresnel: 1
     - _GlossMapScale: 1
