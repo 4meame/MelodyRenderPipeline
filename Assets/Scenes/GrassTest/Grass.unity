@@ -347,7 +347,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.02e-43, y: 0, z: 0, w: -8.51587e-21}
+  m_BoundingSphereOverride: {x: 1.8467236e+25, y: 3.0300084e+35, z: 62471572, w: 239474420}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -655,10 +655,10 @@ MonoBehaviour:
   lodGrassMaterial: {fileID: 2100000, guid: b5a41f9eb9dcfcf4a8c5264362563b22, type: 2}
   dataProcessing: {fileID: 7200000, guid: a58064307ad24164aa0fbca4a69cc0a6, type: 3}
   noiseShader: {fileID: 7200000, guid: 7702d3df34f53b64882b750c88b25e31, type: 3}
-  xPeriod: 0.1
+  xPeriod: 0.19
   yPeriod: 0.1
-  turbPower: 2.3
-  turbSize: 2
+  turbPower: 2.58
+  turbSize: 2.21
   frequency: 0.43
   amplitude: 0.62
   speed: 3
