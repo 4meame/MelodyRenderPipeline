@@ -13,6 +13,8 @@ struct GrassData {
 	float3 position;
 	int chunkID;
 	float2 worldCoord;
+	float3 boundsMin;
+	float3 boundsMax;
 };
 
 TEXTURE2D(_ColorMap);

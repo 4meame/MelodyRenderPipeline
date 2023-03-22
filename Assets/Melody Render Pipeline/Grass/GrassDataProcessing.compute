@@ -4,6 +4,8 @@ struct GrassData {
 	float3 position;
 	int chunkID;
 	float2 worldCoord;
+	float3 boundsMin;
+	float3 boundsMax;
 };
 
 float4x4 _VPMatrix;
@@ -11,35 +13,81 @@ float _MaxDrawDistance;
 float _LodDistance;
 float _MinX, _MinZ;
 float _MaxX, _MaxZ;
+float4 _FrustumPlanes[6];
 uint _MemoryOffset;
+
+float3 _WorldSpaceCameraPos;
 
 RWStructuredBuffer<GrassData> _GrassData;
 AppendStructuredBuffer<uint> _IdOfVisibleGrass;
 AppendStructuredBuffer<uint> _IdOfLodGrass;
+
+bool IsOutsideThePlane(float4 plane, float3 position) {
+	return dot(plane.xyz, position) + plane.w > 0;
+}
 
 [numthreads(64,1,1)]
 void Processing(uint3 id : SV_DispatchThreadID) {
 	uint validID = id.x + _MemoryOffset;
 	GrassData data = _GrassData[validID];
 	float3 posWS = data.position;
-	float4 absPosCS = abs(mul(_VPMatrix, float4(posWS, 1.0)));
-	//do culling test in clip space, result is the same as doing test in NDC space.
-	//prefer clip space here because doing culling test in clip space is faster than doing culling test in NDC, because we can skip 1 division.
-	//the test is using OpenGL standard projection matrix, because all matrix from unity C# is OpenGL standard
-	//if instance is inside camera frustum, and is within draw distance, we append it to _VisibleInstanceOnlyTransformBuffer
-	//y test allow 50% more threshold (hardcode for grass)
-	//x test allow 10% more threshold (hardcode for grass)
-	if (absPosCS.z <= absPosCS.w && absPosCS.y <= absPosCS.w * 1.5 && absPosCS.x <= absPosCS.w * 1.1 && absPosCS.w <= _MaxDrawDistance) {
-		if (absPosCS.w <= _LodDistance) {
-			_IdOfVisibleGrass.Append(validID);
+//------------------------------------------------------------fast frustum culling-----------------------------------------------------------//
+	//	float4 absPosCS = abs(mul(_VPMatrix, float4(posWS, 1.0)));
+	////do culling test in clip space, result is the same as doing test in NDC space.
+	////prefer clip space here because doing culling test in clip space is faster than doing culling test in NDC, because we can skip 1 division.
+	////the test is using OpenGL standard projection matrix, because all matrix from unity C# is OpenGL standard
+	////if instance is inside camera frustum, and is within draw distance, we append it to _VisibleInstanceOnlyTransformBuffer
+	////y test allow 50% more threshold (hardcode for grass)
+	////x test allow 10% more threshold (hardcode for grass)
+	//if (absPosCS.z <= absPosCS.w && absPosCS.y <= absPosCS.w * 1.5 && absPosCS.x <= absPosCS.w * 1.1 && absPosCS.w <= _MaxDrawDistance) {
+	//	if (absPosCS.w <= _LodDistance) {
+	//		_IdOfVisibleGrass.Append(validID);
+	//	}
+	//	else {
+	//		_IdOfLodGrass.Append(validID);
+	//	}
+	//	//go deep into processing data only for valid visible grass
+	//	float coordX = clamp((data.position.x - _MinX) / (_MaxX - _MinX), 0.0, 1.0);
+	//	float coordZ = clamp((data.position.z - _MinZ) / (_MaxZ - _MinZ), 0.0, 1.0);
+	//	float2 worldCoord = float2(coordX, coordZ);
+	//	_GrassData[validID].worldCoord = worldCoord;
+	//}
+//--------------------------------------------------------------------------------------------------------------------------------------------//
+
+//----------------------------------------------------------accurate culling------------------------------------------------------------------//
+	float3 boundsVerts[8];
+	float3 boundsMin = data.boundsMin;
+	float3 boundsMax = data.boundsMax;
+	boundsVerts[0] =boundsMin;
+	boundsVerts[1] =boundsMax;
+	boundsVerts[2] = float3(boundsMax.x, boundsMax.y, boundsMin.z);
+	boundsVerts[3] = float3(boundsMax.x, boundsMin.y, boundsMax.z);
+	boundsVerts[6] = float3(boundsMax.x, boundsMin.y, boundsMin.z);
+	boundsVerts[4] = float3(boundsMin.x, boundsMax.y, boundsMax.z);
+	boundsVerts[5] = float3(boundsMin.x, boundsMax.y, boundsMin.z);
+	boundsVerts[7] = float3(boundsMin.x, boundsMin.y, boundsMax.z);
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 8; j++) {
+			float3 boundsPosition = boundsVerts[j];
+			if (!IsOutsideThePlane(_FrustumPlanes[i], boundsPosition))
+				break;
+			if (j == 7)
+				return;
 		}
-		else {
-			_IdOfLodGrass.Append(validID);
-		}
-		//go deep into processing data only for valid visible grass
-		float coordX = clamp((data.position.x - _MinX) / (_MaxX - _MinX), 0.0, 1.0);
-		float coordZ = clamp((data.position.z - _MinZ) / (_MaxZ - _MinZ), 0.0, 1.0);
-		float2 worldCoord = float2(coordX, coordZ);
-		_GrassData[validID].worldCoord = worldCoord;
 	}
+
+	float dstToCamera = length(_WorldSpaceCameraPos - posWS);
+
+	if (dstToCamera <= _LodDistance) {
+		_IdOfVisibleGrass.Append(validID);
+	}
+	else {
+		_IdOfLodGrass.Append(validID);
+	}
+	//go deep into processing data only for valid visible grass
+	float coordX = clamp((data.position.x - _MinX) / (_MaxX - _MinX), 0.0, 1.0);
+	float coordZ = clamp((data.position.z - _MinZ) / (_MaxZ - _MinZ), 0.0, 1.0);
+	float2 worldCoord = float2(coordX, coordZ);
+	_GrassData[validID].worldCoord = worldCoord;
+//--------------------------------------------------------------------------------------------------------------------------------------------//
 }

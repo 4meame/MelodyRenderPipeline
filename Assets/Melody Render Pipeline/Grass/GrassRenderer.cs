@@ -39,9 +39,10 @@ public class GrassRenderer : MonoBehaviour {
     Camera mainCamera;
     Mesh mesh;
     int subMeshIndex = 0;
-    Plane[] frustumPlanes;
+    Plane[] planes = new Plane[6];
+    Vector4[] frustumPlanes = new Vector4[6];
     float minX, minY, minZ, maxX, maxY, maxZ;
-    Bounds bounds;
+    Bounds fieldBounds, meshBounds;
     ComputeBuffer argsBuffer;
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     ComputeBuffer lodsArgsBuffer;
@@ -70,6 +71,8 @@ public class GrassRenderer : MonoBehaviour {
         public int chunkID;
         public Vector2 worldCoord;
         //TODO: aabb data for accurate culling
+        public Vector3 boundsMin;
+        public Vector3 boundsMax;
     }
 
     void Start() {
@@ -78,9 +81,8 @@ public class GrassRenderer : MonoBehaviour {
         proceduralPositions = new List<Vector3>();
         allGrassData = new GrassData[1];
         visiableChunkID = new List<int>();
-        frustumPlanes = new Plane[6];
         mainCamera = Camera.main;
-        bounds = new Bounds();
+        fieldBounds = new Bounds();
         mesh = transform.GetComponent<MeshFilter>().sharedMesh;
         UpdateGrassPosition();
 
@@ -104,6 +106,12 @@ public class GrassRenderer : MonoBehaviour {
                 center.z = Mathf.Lerp(minZ, maxZ, center.z / chunkCountZ);
                 Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, maxY - minY, Mathf.Abs(maxZ - minZ) / chunkCountZ);
                 Gizmos.DrawWireCube(center, size);
+            }
+
+            for (int i = 0; i < GetGrassCount(); i++) {
+                CalculateMeshAABB(allGrassPositions[i]);
+                Gizmos.color = Color.black;
+                Gizmos.DrawWireCube(meshBounds.center, meshBounds.size);
             }
         }
     }
@@ -210,10 +218,10 @@ public class GrassRenderer : MonoBehaviour {
         GenerateWaveTexure();
 
         grassMaterial.SetFloat("useLod", 0.0f);
-        Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, bounds, argsBuffer, 0, null, castShadows);
+        Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), subMeshIndex, grassMaterial, fieldBounds, argsBuffer, 0, null, castShadows);
 
         lodGrassMaterial.SetFloat("useLod", 1.0f);
-        Graphics.DrawMeshInstancedIndirect(GetLodGrassMeshCache(), subMeshIndex, lodGrassMaterial, bounds, lodsArgsBuffer, 0, null, ShadowCastingMode.Off);
+        Graphics.DrawMeshInstancedIndirect(GetLodGrassMeshCache(), subMeshIndex, lodGrassMaterial, fieldBounds, lodsArgsBuffer, 0, null, ShadowCastingMode.Off);
 
     }
 
@@ -357,7 +365,32 @@ public class GrassRenderer : MonoBehaviour {
             maxZ = Mathf.Max(target.z, maxZ);
         }
         //if camera frustum is not overlapping this bound, DrawMeshInstancedIndirect will not even render
-        bounds.SetMinMax(new Vector3(minX, minY - 10, minZ), new Vector3(maxX, maxY + 20, maxZ));
+        fieldBounds.SetMinMax(new Vector3(minX, minY - 10, minZ), new Vector3(maxX, maxY + 20, maxZ));
+    }
+
+    //find instanced mesh aabb
+    void CalculateMeshAABB(Vector3 worldPos) {
+        Mesh mesh = GetGrassMeshCache();
+        Vector3 meshMin, meshMax;
+        meshMin = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        meshMax = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+        float height = grassMaterial.GetFloat("_Height");
+        float width = grassMaterial.GetFloat("_Width");
+        for (int i = 0; i < mesh.vertexCount; i++) {
+            Vector3 target = mesh.vertices[i];
+            target.y *= height;
+            target.x *= width;
+            //give a z division offset
+            target = Quaternion.Euler(0, 45, 0) * target;
+            target += worldPos;
+            meshMin.x = Mathf.Min(target.x, meshMin.x);
+            meshMin.y = Mathf.Min(target.y, meshMin.y);
+            meshMin.z = Mathf.Min(target.z, meshMin.z);
+            meshMax.x = Mathf.Max(target.x, meshMax.x);
+            meshMax.y = Mathf.Max(target.y, meshMax.y);
+            meshMax.z = Mathf.Max(target.z, meshMax.z);
+        }
+        meshBounds.SetMinMax(meshMin, meshMax);
     }
 
     //decide chunk count by current min&max and chunkSize
@@ -377,9 +410,13 @@ public class GrassRenderer : MonoBehaviour {
             int xID = Mathf.Min(chunkCountX - 1, Mathf.FloorToInt(Mathf.InverseLerp(minX, maxX, pos.x) * chunkCountX)); //use min to force within 0~[cellCountX-1]  
             int zID = Mathf.Min(chunkCountZ - 1, Mathf.FloorToInt(Mathf.InverseLerp(minZ, maxZ, pos.z) * chunkCountZ)); //use min to force within 0~[cellCountZ-1]
             int id = xID + zID * chunkCountX;
-            GrassData data = new GrassData();
-            data.position = pos;
-            data.chunkID = id;
+            GrassData data = new GrassData {
+                position = pos,
+                chunkID = id
+            };
+            CalculateMeshAABB(pos);
+            data.boundsMin = meshBounds.min;
+            data.boundsMax = meshBounds.max;
             allChunksData[id].Add(data);
         }   
     }
@@ -388,11 +425,13 @@ public class GrassRenderer : MonoBehaviour {
     void DoGrassCulling() {
         //apply grass view distance
         float farClipPlane = mainCamera.farClipPlane;
+        float fov = mainCamera.fieldOfView;
         mainCamera.farClipPlane = viewDistance;
+        mainCamera.fieldOfView *= 1.05f;
         //Ordering: [0] = Left, [1] = Right, [2] = Down, [3] = Up, [4] = Near, [5] = Far
-        GeometryUtility.CalculateFrustumPlanes(mainCamera, frustumPlanes);
+        GeometryUtility.CalculateFrustumPlanes(mainCamera, planes);
         mainCamera.farClipPlane = farClipPlane;
-
+        mainCamera.fieldOfView = fov;
         visiableChunkID.Clear();
         for (int i = 0; i < allChunksData.Length; i++) {
             //create per chunk bounds
@@ -401,7 +440,7 @@ public class GrassRenderer : MonoBehaviour {
             center.z = Mathf.Lerp(minZ, maxZ, center.z / chunkCountZ);
             Vector3 size = new Vector3(Mathf.Abs(maxX - minX) / chunkCountX, maxY - minY, Mathf.Abs(maxZ - minZ) / chunkCountZ);
             Bounds bounds = new Bounds(center, size);
-            if (GeometryUtility.TestPlanesAABB(frustumPlanes, bounds)) {
+            if (GeometryUtility.TestPlanesAABB(planes, bounds)) {
                 visiableChunkID.Add(i);
             }
         }
@@ -421,6 +460,11 @@ public class GrassRenderer : MonoBehaviour {
         dataProcessing.SetFloat("_MinZ", minZ);
         dataProcessing.SetFloat("_MaxX", maxX);
         dataProcessing.SetFloat("_MaxZ", maxZ);
+        for (int i = 0; i < frustumPlanes.Length; i++) {
+            var normal = -planes[i].normal;
+            frustumPlanes[i] = new Vector4(normal.x, normal.y, normal.z, -planes[i].distance);
+        }
+        dataProcessing.SetVectorArray("_FrustumPlanes", frustumPlanes);
         //dispatch culling compute per chunk
         for (int i = 0; i < visiableChunkID.Count; i++) {
             int currentChunkId = visiableChunkID[i];
@@ -449,4 +493,5 @@ public class GrassRenderer : MonoBehaviour {
         ComputeBuffer.CopyCount(IdBuffer, argsBuffer, 4);
         ComputeBuffer.CopyCount(lodIdBuffer, lodsArgsBuffer, 4);
     }
+
 }

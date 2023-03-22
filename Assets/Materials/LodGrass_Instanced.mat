@@ -50,11 +50,12 @@ Material:
     - _Cull: 0
     - _Curvature: 0.315
     - _CurvatureBase: 0
+    - _Cutoff: 0.5
     - _Displacement: -4.37
-    - _DistributionX: 20
+    - _DistributionX: 22.6
     - _DistributionY: 224
     - _DstBlend: 0
-    - _Height: 1.1
+    - _Height: 1.2
     - _HeightScale: 20
     - _NormalDistribution: 0.145
     - _PremulAlpha: 0

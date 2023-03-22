@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.68893665, g: 0.89138657, b: 1.0751727, a: 0}
+  m_AmbientSkyColor: {r: 0.7254465, g: 0.92643416, b: 1.1099582, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -201,8 +201,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 698166452}
-  m_LocalRotation: {x: 0.01625003, y: 0.93709815, z: 0.34598523, w: -0.043328673}
-  m_LocalPosition: {x: -593.1406, y: 1012.95905, z: 494.769}
+  m_LocalRotation: {x: -0.50316596, y: -0.3513663, z: 0.23408902, w: -0.75403464}
+  m_LocalPosition: {x: -599.5806, y: 1012.07715, z: 486.76666}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -347,7 +347,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.8467236e+25, y: 3.0300084e+35, z: 62471572, w: 239474420}
+  m_BoundingSphereOverride: {x: 4.5905e-41, y: -3.7183465e-22, z: 4.5905e-41, w: 9.403955e-38}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -641,12 +641,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useMeshData: 0
   fieldSize: {x: 100, y: 100}
-  heightScale: 10
+  heightScale: 8
   chunkSize: {x: 10, y: 10}
-  seed: 264
+  seed: 6438
   density: 10
   viewDistance: 100
-  lodDsitance: 60
+  lodDsitance: 70
   castShadows: 0
   grassMesh: {fileID: 5535028233509875347, guid: 6e3fa8fe8caa23943ab0664732b4eff0,
     type: 3}
@@ -807,7 +807,7 @@ MonoBehaviour:
   heightScale: 10
   chunkSize: {x: 10, y: 10}
   seed: 264
-  density: 1
+  density: 3
   viewDistance: 100
   lodDsitance: 50
   castShadows: 0
@@ -817,7 +817,7 @@ MonoBehaviour:
     type: 3}
   grassMaterial: {fileID: 2100000, guid: 37ef20bb6dae305418624cb3870f3e4d, type: 2}
   lodGrassMaterial: {fileID: 2100000, guid: 20c3072cdca123b44bebad28735a2bc6, type: 2}
-  dataProcessing: {fileID: 7200000, guid: 2b3abfd0f34e78c47ace9e7889089bb2, type: 3}
+  dataProcessing: {fileID: 7200000, guid: a58064307ad24164aa0fbca4a69cc0a6, type: 3}
   noiseShader: {fileID: 7200000, guid: 7702d3df34f53b64882b750c88b25e31, type: 3}
   xPeriod: 0.1
   yPeriod: 0.1

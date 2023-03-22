@@ -19,7 +19,7 @@ MonoBehaviour:
   renderSize: 0
   fixedWidth: 960
   fixedHeight: 540
-  downsample: 2
+  downsample: 4
   coverageOffsetX: 0.265
   coverageOffsetY: 0.332
   horizonCoverageStart: 0.106

@@ -52,8 +52,8 @@ Material:
     - _CurvatureBase: 0
     - _Cutoff: 0.5
     - _Displacement: -4.37
-    - _DistributionX: 20
-    - _DistributionY: 224
+    - _DistributionX: 21.8
+    - _DistributionY: 203
     - _DstBlend: 0
     - _Height: 1.1
     - _HeightScale: 20
