@@ -22,8 +22,14 @@ RWStructuredBuffer<GrassData> _GrassData;
 AppendStructuredBuffer<uint> _IdOfVisibleGrass;
 AppendStructuredBuffer<uint> _IdOfLodGrass;
 
-bool IsOutsideThePlane(float4 plane, float3 position) {
+bool IsPointOutsideThePlane(float4 plane, float3 position) {
 	return dot(plane.xyz, position) + plane.w > 0;
+}
+
+bool IsBoundsOutsideThePlane(float4 plane, float3 boundsMin, float3 boundsMax) {
+	float3 center = (boundsMin + boundsMax) / 2;
+	float radius = max(max((boundsMax.x - boundsMin.x), (boundsMax.y - boundsMin.y)), (boundsMax.z - boundsMin.z)) / 2;
+	return dot(plane.xyz, center) + plane.w > radius;
 }
 
 [numthreads(64,1,1)]
@@ -67,13 +73,17 @@ void Processing(uint3 id : SV_DispatchThreadID) {
 	boundsVerts[5] = float3(boundsMin.x, boundsMax.y, boundsMin.z);
 	boundsVerts[7] = float3(boundsMin.x, boundsMin.y, boundsMax.z);
 	for (int i = 0; i < 6; i++) {
-		for (int j = 0; j < 8; j++) {
-			float3 boundsPosition = boundsVerts[j];
-			if (!IsOutsideThePlane(_FrustumPlanes[i], boundsPosition))
-				break;
-			if (j == 7)
-				return;
+		//a faster method of check the distance from plane to bounds center straightforward
+		if (IsBoundsOutsideThePlane(_FrustumPlanes[i], boundsMin, boundsMax)) {
+			return;
 		}
+		//for (int j = 0; j < 8; j++) {
+		//	float3 boundsPosition = boundsVerts[j];
+		//	if (!IsPointOutsideThePlane(_FrustumPlanes[i], boundsPosition))
+		//		break;
+		//	if (j == 7)
+		//		return;
+		//}
 	}
 
 	float dstToCamera = length(_WorldSpaceCameraPos - posWS);

@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.7254465, g: 0.92643416, b: 1.1099582, a: 0}
+  m_AmbientSkyColor: {r: 0.71353966, g: 0.91649777, b: 1.1019459, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -807,7 +807,7 @@ MonoBehaviour:
   heightScale: 10
   chunkSize: {x: 10, y: 10}
   seed: 264
-  density: 3
+  density: 1
   viewDistance: 100
   lodDsitance: 50
   castShadows: 0

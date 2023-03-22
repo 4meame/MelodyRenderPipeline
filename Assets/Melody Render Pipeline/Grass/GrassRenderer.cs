@@ -427,7 +427,7 @@ public class GrassRenderer : MonoBehaviour {
         float farClipPlane = mainCamera.farClipPlane;
         float fov = mainCamera.fieldOfView;
         mainCamera.farClipPlane = viewDistance;
-        mainCamera.fieldOfView *= 1.05f;
+        mainCamera.fieldOfView *= 1.01f;
         //Ordering: [0] = Left, [1] = Right, [2] = Down, [3] = Up, [4] = Near, [5] = Far
         GeometryUtility.CalculateFrustumPlanes(mainCamera, planes);
         mainCamera.farClipPlane = farClipPlane;
