@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.71353966, g: 0.91649777, b: 1.1019459, a: 0}
+  m_AmbientSkyColor: {r: 0.71594113, g: 0.9197481, b: 1.1077807, a: 0}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 838695763}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.049581625, g: 0.083566606, b: 0.11722981, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -123,6 +123,89 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &562485439
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 562485443}
+  - component: {fileID: 562485442}
+  - component: {fileID: 562485441}
+  m_Layer: 0
+  m_Name: Occlusion
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!23 &562485441
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 562485439}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 5ec85e74a558dc34987a6b215199c485, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &562485442
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 562485439}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &562485443
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 562485439}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -591.17, y: 1010.38, z: 486.1}
+  m_LocalScale: {x: 15.221, y: 15.221, z: 15.221}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &698166452
 GameObject:
   m_ObjectHideFlags: 0
@@ -347,7 +430,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 4.5905e-41, y: -3.7183465e-22, z: 4.5905e-41, w: 9.403955e-38}
+  m_BoundingSphereOverride: {x: 6e-44, y: 8.30059e+11, z: 3140.0789, w: 3268.1482}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -641,12 +724,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useMeshData: 0
   fieldSize: {x: 100, y: 100}
-  heightScale: 8
-  chunkSize: {x: 10, y: 10}
+  heightScale: 10
+  chunkSize: {x: 20, y: 20}
   seed: 6438
-  density: 10
+  density: 12
   viewDistance: 100
-  lodDsitance: 70
+  lodDsitance: 50
   castShadows: 0
   grassMesh: {fileID: 5535028233509875347, guid: 6e3fa8fe8caa23943ab0664732b4eff0,
     type: 3}
@@ -925,10 +1008,10 @@ MonoBehaviour:
   drawCoverage: 1
   drawType: 1
   blendValues: 0
-  mousePosition: {x: -238.00075, y: 861.0004, z: 0}
-  worldPosition: {x: -15875.166, y: 2470.5068, z: -8193.002}
-  worldPosition_: {x: -15875.166, y: 7970.507, z: -8193.002}
-  coveragePosition: {x: 0.73793304, y: 0.8180311}
+  mousePosition: {x: -249.00076, y: 822.0004, z: 0}
+  worldPosition: {x: -602.63635, y: 1021.7385, z: 494.497}
+  worldPosition_: {x: -602.63635, y: 6521.7383, z: 494.497}
+  coveragePosition: {x: 0.7639725, y: 0.83284307}
   displayEnable: 1
   coverageTexture: {fileID: 0}
 --- !u!114 &2111707653

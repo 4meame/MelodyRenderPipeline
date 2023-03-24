@@ -447,7 +447,8 @@ public class GrassRenderer : MonoBehaviour {
 
         //loop though only visible cells, each visible cell dispatch GPU culling job once, at the end compute shader will fill all visible instance into IdBuffer
         Matrix4x4 v = mainCamera.worldToCameraMatrix;
-        Matrix4x4 p = mainCamera.projectionMatrix;
+        //Matrix4x4 p = mainCamera.projectionMatrix;
+        Matrix4x4 p = GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false);
         Matrix4x4 vp = p * v;
         //init
         IdBuffer.SetCounterValue(0);

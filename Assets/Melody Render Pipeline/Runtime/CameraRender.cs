@@ -786,7 +786,7 @@ public partial class CameraRender {
     }
 
     void DrawHierarchicalDepth() {
-        if (bufferSize.x < 350 || bufferSize.y < 200) {
+        if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection || bufferSize.x < 350 || bufferSize.y < 200) {
             //scene preview camera exit
             return;
         }
@@ -798,11 +798,10 @@ public partial class CameraRender {
             descriptor.colorFormat = RenderTextureFormat.RHalf;
             descriptor.sRGB = false;
             descriptor.useMipMap = true;
-            descriptor.autoGenerateMips = true;
+            descriptor.autoGenerateMips = false;
             RenderTexture.ReleaseTemporary(hierarchicalDepthTexture);
             hierarchicalDepthTexture = RenderTexture.GetTemporary(descriptor);
             hierarchicalDepthTexture.filterMode = FilterMode.Point;
-            descriptor.autoGenerateMips = false;
             RenderTexture.ReleaseTemporary(hierarchicalDepthBackUpTexture);
             hierarchicalDepthBackUpTexture = RenderTexture.GetTemporary(descriptor);
             hierarchicalDepthBackUpTexture.filterMode = FilterMode.Point;
