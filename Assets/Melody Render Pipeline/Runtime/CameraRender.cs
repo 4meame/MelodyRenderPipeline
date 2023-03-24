@@ -15,7 +15,7 @@ public partial class CameraRender {
     static ShaderTagId unlitShaderTagId = new ShaderTagId("MelodyUnlit"),
                        forwardShaderTagId = new ShaderTagId("MelodyForward"),
                        deferredShaderTagId = new ShaderTagId("MelodyDeferred"),
-                      GBuffersShaderTagId = new ShaderTagId("GBuffer");
+                       GBuffersShaderTagId = new ShaderTagId("GBuffer");
 
     Lighting lighting = new Lighting();
     AtmosphereScattering atmosphere = new AtmosphereScattering();
@@ -43,6 +43,13 @@ public partial class CameraRender {
                sourceTextureId = Shader.PropertyToID("_SourceTexture"),
                transDepthTextureId = Shader.PropertyToID("_TransparentDepthTexture");
 
+    //hi-z depth texture
+    RenderTexture hierarchicalDepthTexture;
+    RenderTexture hierarchicalDepthBackUpTexture;
+    Vector2 hizBufferSize = Vector2.zero;
+    int hizMaxLevel;
+    static int hierarchicalDepthTextureId = Shader.PropertyToID("_HierarchicalDepthTexture");
+
     bool useHDR;
     bool useDepthTexture;
     bool useColorTexture;
@@ -51,6 +58,7 @@ public partial class CameraRender {
     bool useSpecularTexture;
     bool useGBuffers;
     bool useIntermediateBuffer;
+    bool useHizDepthTexture;
 
     #region Utility Params
     static int cameraFOVId = Shader.PropertyToID("_CurrentCameraFOV");
@@ -142,6 +150,9 @@ public partial class CameraRender {
         useSpecularTexture = cameraBufferSettings.useSpecular && cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Forward;
         useGBuffers = cameraBufferSettings.renderingPath == CameraBufferSettings.RenderingPath.Deferred;
         useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
+        useHizDepthTexture = cameraBufferSettings.useHizDepthTexture;
+        hizMaxLevel = cameraBufferSettings.HizMaxLevel;
+        cameraBufferSettings.ssr.Hiz_MaxLevel = cameraBufferSettings.gi.Hiz_MaxLevel = hizMaxLevel;
 
         #region Render Scale
         if (useScaledRendering) {
@@ -700,6 +711,9 @@ public partial class CameraRender {
                     Draw(depthAttachmentId, depthTextureId, true);
                     ExecuteBuffer();
                 }
+            if (useHizDepthTexture) {
+                DrawHierarchicalDepth();
+            }
         }
         if (!copyTextureSupported) {
             //NOTE : because Draw changes the render target, we have to set render target back, loading color attachments again 
@@ -730,6 +744,9 @@ public partial class CameraRender {
                 buffer.name = "Copy Depth";
                 Draw(depthAttachmentId, depthTextureId, true);
                 ExecuteBuffer();
+            }
+            if (useHizDepthTexture) {
+                DrawHierarchicalDepth();
             }
         }
         if (!copyTextureSupported) {
@@ -768,6 +785,41 @@ public partial class CameraRender {
         }
     }
 
+    void DrawHierarchicalDepth() {
+        if (bufferSize.x < 350 || bufferSize.y < 200) {
+            //scene preview camera exit
+            return;
+        }
+        buffer.name = "Draw Hierarchical Depth";
+        if (hizBufferSize != bufferSize) {
+            hizBufferSize = bufferSize;
+            //fix : "setting mipmap mode of already created render texture is not supported"
+            RenderTextureDescriptor descriptor = new RenderTextureDescriptor(bufferSize.x, bufferSize.y, 0);
+            descriptor.colorFormat = RenderTextureFormat.RHalf;
+            descriptor.sRGB = false;
+            descriptor.useMipMap = true;
+            descriptor.autoGenerateMips = true;
+            RenderTexture.ReleaseTemporary(hierarchicalDepthTexture);
+            hierarchicalDepthTexture = RenderTexture.GetTemporary(descriptor);
+            hierarchicalDepthTexture.filterMode = FilterMode.Point;
+            descriptor.autoGenerateMips = false;
+            RenderTexture.ReleaseTemporary(hierarchicalDepthBackUpTexture);
+            hierarchicalDepthBackUpTexture = RenderTexture.GetTemporary(descriptor);
+            hierarchicalDepthBackUpTexture.filterMode = FilterMode.Point;
+        }
+        //bilt scene depth
+        buffer.Blit("_CameraDepthTexture", hierarchicalDepthTexture);
+        //set Hiz-depth RT
+        for (int i = 0; i < hizMaxLevel; i++) {
+            buffer.SetGlobalInt("_HizMipLevel", i);
+            buffer.SetRenderTarget(hierarchicalDepthBackUpTexture, i + 1);
+            buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.Hiz, MeshTopology.Triangles, 3);
+            buffer.CopyTexture(hierarchicalDepthBackUpTexture, 0, i + 1, hierarchicalDepthTexture, 0, i + 1);
+        }
+        buffer.SetGlobalTexture(hierarchicalDepthTextureId, hierarchicalDepthTexture);
+        ExecuteBuffer();
+    }
+
     //duplicate Draw methods and manully set viewport after seting render target
     void DrawFinal(CameraSettings.FinalBlendMode finalBlendMode) {
         buffer.SetGlobalTexture(sourceTextureId, colorAttachmentId);
@@ -788,7 +840,8 @@ public partial class CameraRender {
         Copy,
         CopyDepth,
         CombineSSR,
-        CombineSSAO
+        CombineSSAO,
+        Hiz
     }
     //make sure that invalid samples will produce consistent resutlts
     Texture2D missingTexture;

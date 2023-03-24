@@ -59,4 +59,18 @@ float4 CombineSSAOPassFragment(Varyings input) : SV_TARGET{
 	source.rgb *= ssaoResult;
 	return source;
 }
+
+//get Hierarchical ZBuffer
+float GetHierarchicalZBuffer(Varyings input) : SV_TARGET{
+	float2 uv = input.screenUV;
+	float4 minDepth = float4(
+		_HierarchicalDepthTexture.SampleLevel(sampler_point_clamp, uv, _HizMipLevel, int2(-1.0, -1.0)).r,
+		_HierarchicalDepthTexture.SampleLevel(sampler_point_clamp, uv, _HizMipLevel, int2(-1.0, 1.0)).r,
+		_HierarchicalDepthTexture.SampleLevel(sampler_point_clamp, uv, _HizMipLevel, int2(1.0, -1.0)).r,
+		_HierarchicalDepthTexture.SampleLevel(sampler_point_clamp, uv, _HizMipLevel, int2(1.0, 1.0)).r
+		);
+	//sample pixel surrounds and pick minnset depth
+	return max(max(minDepth.r, minDepth.g), max(minDepth.b, minDepth.a));
+}
+
 #endif

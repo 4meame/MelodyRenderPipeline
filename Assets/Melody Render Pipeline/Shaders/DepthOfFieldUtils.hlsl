@@ -38,8 +38,19 @@ RngStateType InitRNG(uint2 launchIndex, uint frameIndex, uint sampleIndex, uint 
     return JenkinsHash(seed);
 }
 
+uint2 XorShift(uint2 state) {
+    uint x = state.x;
+    uint y = state.y;
+    state.x = y;
+    x ^= x << 23;
+    x ^= x >> 17;
+    x ^= y ^ (y >> 26);
+    state.y = x;
+    return state + y;
+}
+
 float RandomFloat01(inout RngStateType state, uint dimension) {
-    return UintToNormalizedFloat(XorShift(state));
+    return UintToNormalizedFloat(XorShift(state)); 
 }
 
 //gather utils

@@ -211,7 +211,7 @@ void GlobalIlluminationHierarchicalZ(Varyings input, out float4 SSGIColor_Occlus
 		float4 Ray_Proj = mul(_SSGI_ProjectionMatrix, float4(Ray_Origin_VS + Ray_Dir_VS, 1.0));
 		float3 Ray_Dir = normalize((Ray_Proj.xyz / Ray_Proj.w) - screenPos);
 		Ray_Dir.xy *= 0.5;
-		float4 Ray_Hit_Data = HierarchicalZTrace(_SSGI_HiZ_MaxLevel, _SSGI_HiZ_StartLevel, _SSGI_HiZ_StopLevel, _SSGI_NumSteps_HiZ, _SSGI_Thickness, 1 / _SSGI_ScreenSize.xy, Ray_Start, Ray_Dir, _SSGI_HierarchicalDepth_RT, sampler_SSGI_HierarchicalDepth_RT);
+		float4 Ray_Hit_Data = HierarchicalZTrace(_SSGI_HiZ_MaxLevel, _SSGI_HiZ_StartLevel, _SSGI_HiZ_StopLevel, _SSGI_NumSteps_HiZ, _SSGI_Thickness, 1 / _SSGI_ScreenSize.xy, Ray_Start, Ray_Dir, _HierarchicalDepthTexture, sampler_HierarchicalDepthTexture);
 		//calculate reflect color, last frame reflect color can be the light source for this frame
 		float4 SampleColor = SAMPLE_TEXTURE2D_LOD(_SSGI_SceneColor_RT, sampler_linear_clamp, Ray_Hit_Data.xy, 0);
 		float4 SampleNormal = SAMPLE_TEXTURE2D_LOD(_CameraDepthNormalTexture, sampler_point_clamp, Ray_Hit_Data.xy, 0);

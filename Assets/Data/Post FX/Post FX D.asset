@@ -89,7 +89,7 @@ MonoBehaviour:
     maxEV: 10
     lowPercent: 10
     highPercent: 90
-    compensation: 0
+    compensation: 1.54
     adaptation: 0
     speedUp: 3
     speedDown: 1

@@ -244,6 +244,10 @@ SAMPLER(sampler_point_clamp);
 SAMPLER(sampler_point_repeat);
 #include "Fragment.hlsl"
 
+//hi-z depth texture
+Texture2D _HierarchicalDepthTexture; SamplerState sampler_HierarchicalDepthTexture;
+int _HizMipLevel;
+
 #define SAMPLE_DEPTH_OFFSET(x,y,z,a) (x.Sample(y,z,a).r )
 #define SAMPLE_TEXTURE2D_OFFSET(x,y,z,a) (x.Sample(y,z,a))
 

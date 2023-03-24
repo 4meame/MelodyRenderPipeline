@@ -280,7 +280,7 @@ void HierarchicalZSingleSPP(Varyings input, out float4 RayHit_PDF : SV_TARGET0, 
 	float4 Ray_Proj = mul(_SSR_ProjectionMatrix, float4(Ray_Origin_VS + Ray_Dir_VS, 1.0));
 	float3 Ray_Dir = normalize((Ray_Proj.xyz / Ray_Proj.w) - screenPos);
 	Ray_Dir.xy *= 0.5;
-	float4 Ray_Hit_Data = HierarchicalZTrace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_TraceBehind == 1, _SSR_Threshold_Hiz, _SSR_ScreenSize.xy, Ray_Start, Ray_Dir, _SSR_HierarchicalDepth_RT);
+	float4 Ray_Hit_Data = HierarchicalZTrace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_TraceBehind == 1, _SSR_Threshold_Hiz, _SSR_ScreenSize.xy, Ray_Start, Ray_Dir, _HierarchicalDepthTexture);
 
 	RayHit_PDF = float4(Ray_Hit_Data.xyz, H.a);
 	Mask = Square(Ray_Hit_Data.w * GetScreenFadeBord(Ray_Hit_Data.xy, _SSR_ScreenFade));
@@ -329,7 +329,7 @@ void HierarchicalZMultiSPP(Varyings input, out float4 SSRColor_PDF : SV_TARGET0,
 		float4 Ray_Proj = mul(_SSR_ProjectionMatrix, float4(Ray_Origin_VS + Ray_Dir_VS, 1.0));
 		float3 Ray_Dir = normalize((Ray_Proj.xyz / Ray_Proj.w) - screenPos);
 		Ray_Dir.xy *= 0.5;
-		float4 Ray_Hit_Data = HierarchicalZTrace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_TraceBehind == 1, _SSR_Threshold_Hiz, _SSR_ScreenSize.xy, Ray_Start, Ray_Dir, _SSR_HierarchicalDepth_RT);
+		float4 Ray_Hit_Data = HierarchicalZTrace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_TraceBehind == 1, _SSR_Threshold_Hiz, _SSR_ScreenSize.xy, Ray_Start, Ray_Dir, _HierarchicalDepthTexture);
 		//calculate reflect color, last frame reflect color can be the light source for this frame
 		float4 SampleColor = SAMPLE_TEXTURE2D_LOD(_SSR_SceneColor_RT, sampler_linear_clamp, Ray_Hit_Data.xy, 0);
 		SampleColor.rgb /= 1 + Luminance(SampleColor.rgb);

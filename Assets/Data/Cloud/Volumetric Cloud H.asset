@@ -129,7 +129,7 @@ MonoBehaviour:
   forwardScatteringG: 0.745
   backwardScatteringG: -0.39
   darkOutlineScalar: 1
-  speed: 1.64
+  speed: -1
   coverageOffsetPerFrame: {x: 0.0005, y: 0.0005}
   baseOffsetPerFrame: {x: -0.005, y: -0.003, z: 0}
   detailOffsetPerFrame: {x: 0.005, y: 0.001, z: 0}

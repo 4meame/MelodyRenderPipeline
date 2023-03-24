@@ -137,16 +137,18 @@ public class ScreenSpaceReflection {
                 buffer.DisableShaderKeyword("_SSR_ON");
                 randomSampler = GenerateRandomOffset();
                 UpdateMatricesAndRenderTexture();
-                //bilt scene depth
-                buffer.Blit("_CameraDepthTexture", SSR_HierarchicalDepth_RT);
-                //set Hiz-depth RT
-                for (int i = 0; i < settings.Hiz_MaxLevel; i++) {
-                    buffer.SetGlobalInt("_SSR_HiZ_PrevDepthLevel", i);
-                    buffer.SetRenderTarget(SSR_HierarchicalDepth_BackUp_RT, i + 1);
-                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.PrepareHiz, MeshTopology.Triangles, 3);
-                    buffer.CopyTexture(SSR_HierarchicalDepth_BackUp_RT, 0, i + 1, SSR_HierarchicalDepth_RT, 0, i + 1);
-                }
-                buffer.SetGlobalTexture(SSR_HierarchicalDepth_ID, SSR_HierarchicalDepth_RT);
+
+                ////bilt scene depth
+                //buffer.Blit("_CameraDepthTexture", SSR_HierarchicalDepth_RT);
+                ////set Hiz-depth RT
+                //for (int i = 0; i < settings.Hiz_MaxLevel; i++) {
+                //    buffer.SetGlobalInt("_SSR_HiZ_PrevDepthLevel", i);
+                //    buffer.SetRenderTarget(SSR_HierarchicalDepth_BackUp_RT, i + 1);
+                //    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.PrepareHiz, MeshTopology.Triangles, 3);
+                //    buffer.CopyTexture(SSR_HierarchicalDepth_BackUp_RT, 0, i + 1, SSR_HierarchicalDepth_RT, 0, i + 1);
+                //}
+                //buffer.SetGlobalTexture(SSR_HierarchicalDepth_ID, SSR_HierarchicalDepth_RT);
+
                 //set scene color RT
                 buffer.SetGlobalTexture(SSR_SceneColor_ID, SSR_SceneColor_RT);
                 CopyTexture("_CameraColorTexture", SSR_SceneColor_RT);
@@ -306,19 +308,21 @@ public class ScreenSpaceReflection {
             //SceneColor and HierarchicalDepth RT
             RenderTexture.ReleaseTemporary(SSR_SceneColor_RT);
             SSR_SceneColor_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            //fix : "setting mipmap mode of already created render texture is not supported"
-            RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0);
-            descriptor.colorFormat = RenderTextureFormat.RHalf;
-            descriptor.sRGB = false;
-            descriptor.useMipMap = true;
-            descriptor.autoGenerateMips = true;
-            RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
-            SSR_HierarchicalDepth_RT = RenderTexture.GetTemporary(descriptor);
-            SSR_HierarchicalDepth_RT.filterMode = FilterMode.Point;
-            RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_BackUp_RT);
-            descriptor.autoGenerateMips = false;
-            SSR_HierarchicalDepth_BackUp_RT = RenderTexture.GetTemporary(descriptor);
-            SSR_HierarchicalDepth_BackUp_RT.filterMode = FilterMode.Point;
+
+            ////fix : "setting mipmap mode of already created render texture is not supported"
+            //RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0);
+            //descriptor.colorFormat = RenderTextureFormat.RHalf;
+            //descriptor.sRGB = false;
+            //descriptor.useMipMap = true;
+            //descriptor.autoGenerateMips = true;
+            //RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
+            //SSR_HierarchicalDepth_RT = RenderTexture.GetTemporary(descriptor);
+            //SSR_HierarchicalDepth_RT.filterMode = FilterMode.Point;
+            //RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_BackUp_RT);
+            //descriptor.autoGenerateMips = false;
+            //SSR_HierarchicalDepth_BackUp_RT = RenderTexture.GetTemporary(descriptor);
+            //SSR_HierarchicalDepth_BackUp_RT.filterMode = FilterMode.Point;
+
             //RayMarching and RayMask RT
             RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[0]);
             SSR_TraceMask_RT[0] = RenderTexture.GetTemporary((int)cameraBufferSize.x / (int)settings.rayCastSize, (int)cameraBufferSize.y / (int)settings.rayCastSize, 0, RenderTextureFormat.ARGBHalf);
@@ -387,7 +391,7 @@ public class ScreenSpaceReflection {
     }
 
     void ReleaseBuffer() {
-        RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
+        //RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
         RenderTexture.ReleaseTemporary(SSR_SceneColor_RT);
         RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[0]);
         RenderTexture.ReleaseTemporary(SSR_TraceMask_RT[1]);

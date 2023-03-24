@@ -46,6 +46,7 @@ MonoBehaviour:
     copyDepthReflections: 0
     copyColor: 1
     copyColorReflections: 0
+    useHizDepthTexture: 1
     useDepthNormal: 0
     useDiffuse: 0
     useSpecular: 0

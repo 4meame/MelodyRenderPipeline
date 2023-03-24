@@ -62,5 +62,16 @@
             #pragma fragment CombineSSAOPassFragment
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "Hierarchical Depth"
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment GetHierarchicalZBuffer
+            ENDHLSL
+        }
     }
 }

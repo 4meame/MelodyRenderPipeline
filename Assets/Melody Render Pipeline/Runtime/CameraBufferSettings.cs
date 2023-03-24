@@ -16,6 +16,9 @@ public struct CameraBufferSettings {
     public bool copyDepthReflections;
     public bool copyColor;
     public bool copyColorReflections;
+    public bool useHizDepthTexture;
+    [Range(4, 10)]
+    public int HizMaxLevel;
     [Header("Invalid on deferred")]
     public bool useDepthNormal;
     public bool useDiffuse;
@@ -170,7 +173,7 @@ public struct CameraBufferSettings {
         public int Hiz_RaySteps;
         [Range(0, 0.001f)]
         public float Hiz_Threshold;
-        [Range(4, 10)]
+        [HideInInspector]
         public int Hiz_MaxLevel;
         [Range(0, 2)]
         public int Hiz_StartLevel;
@@ -301,7 +304,7 @@ public struct CameraBufferSettings {
         public TraceType traceType;
         [Range(32, 512)]
         public int Hiz_RaySteps;
-        [Range(4, 10)]
+        [HideInInspector]
         public int Hiz_MaxLevel;
         [Range(0, 2)]
         public int Hiz_StartLevel;

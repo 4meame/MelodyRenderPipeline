@@ -71,11 +71,6 @@ public class ScreenSpaceGlobalIllumination
         }
     }
 
-    public void CleanUp() {
-        ReleaseBuffer();
-        ExecuteBuffer();
-    }
-
     public void Render() {
         if(camera.cameraType != CameraType.Game) {
             return;
@@ -84,16 +79,18 @@ public class ScreenSpaceGlobalIllumination
             if (settings.giType == CameraBufferSettings.GI.GIType.SSGI) {
                 randomSampler = GenerateRandomOffset();
                 UpdateMatricesAndRenderTexture();
-                //bilt scene depth
-                buffer.Blit("_CameraDepthTexture", SSGI_HierarchicalDepth_RT);
-                //set Hiz-depth RT
-                for (int i = 0; i < settings.Hiz_MaxLevel; i++) {
-                    buffer.SetGlobalInt("_SSGI_HiZ_PrevDepthLevel", i);
-                    buffer.SetRenderTarget(SSGI_HierarchicalDepth_BackUp_RT, i + 1);
-                    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.PrepareHiz, MeshTopology.Triangles, 3);
-                    buffer.CopyTexture(SSGI_HierarchicalDepth_BackUp_RT, 0, i + 1, SSGI_HierarchicalDepth_RT, 0, i + 1);
-                }
-                buffer.SetGlobalTexture(SSGI_HierarchicalDepth_ID, SSGI_HierarchicalDepth_RT);
+
+                ////bilt scene depth
+                //buffer.Blit("_CameraDepthTexture", SSGI_HierarchicalDepth_RT);
+                ////set Hiz-depth RT
+                //for (int i = 0; i < settings.Hiz_MaxLevel; i++) {
+                //    buffer.SetGlobalInt("_SSGI_HiZ_PrevDepthLevel", i);
+                //    buffer.SetRenderTarget(SSGI_HierarchicalDepth_BackUp_RT, i + 1);
+                //    buffer.DrawProcedural(Matrix4x4.identity, material, (int)Pass.PrepareHiz, MeshTopology.Triangles, 3);
+                //    buffer.CopyTexture(SSGI_HierarchicalDepth_BackUp_RT, 0, i + 1, SSGI_HierarchicalDepth_RT, 0, i + 1);
+                //}
+                //buffer.SetGlobalTexture(SSGI_HierarchicalDepth_ID, SSGI_HierarchicalDepth_RT);
+
                 //set scene color RT
                 buffer.SetGlobalTexture(SSGI_SceneColor_ID, SSGI_SceneColor_RT);
                 CopyTexture("_CameraColorTexture", SSGI_SceneColor_RT);
@@ -248,19 +245,21 @@ public class ScreenSpaceGlobalIllumination
             //SceneColor and HierarchicalDepth RT
             RenderTexture.ReleaseTemporary(SSGI_SceneColor_RT);
             SSGI_SceneColor_RT = RenderTexture.GetTemporary((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0, useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            //fix : "setting mipmap mode of already created render texture is not supported"
-            RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0);
-            descriptor.colorFormat = RenderTextureFormat.RHalf;
-            descriptor.sRGB = false;
-            descriptor.useMipMap = true;
-            descriptor.autoGenerateMips = true;
-            RenderTexture.ReleaseTemporary(SSGI_HierarchicalDepth_RT);
-            SSGI_HierarchicalDepth_RT = RenderTexture.GetTemporary(descriptor);
-            SSGI_HierarchicalDepth_RT.filterMode = FilterMode.Point;
-            RenderTexture.ReleaseTemporary(SSGI_HierarchicalDepth_BackUp_RT);
-            descriptor.autoGenerateMips = false;
-            SSGI_HierarchicalDepth_BackUp_RT = RenderTexture.GetTemporary(descriptor);
-            SSGI_HierarchicalDepth_BackUp_RT.filterMode = FilterMode.Point;
+
+            ////fix : "setting mipmap mode of already created render texture is not supported"
+            //RenderTextureDescriptor descriptor = new RenderTextureDescriptor((int)cameraBufferSize.x, (int)cameraBufferSize.y, 0);
+            //descriptor.colorFormat = RenderTextureFormat.RHalf;
+            //descriptor.sRGB = false;
+            //descriptor.useMipMap = true;
+            //descriptor.autoGenerateMips = true;
+            //RenderTexture.ReleaseTemporary(SSGI_HierarchicalDepth_RT);
+            //SSGI_HierarchicalDepth_RT = RenderTexture.GetTemporary(descriptor);
+            //SSGI_HierarchicalDepth_RT.filterMode = FilterMode.Point;
+            //RenderTexture.ReleaseTemporary(SSGI_HierarchicalDepth_BackUp_RT);
+            //descriptor.autoGenerateMips = false;
+            //SSGI_HierarchicalDepth_BackUp_RT = RenderTexture.GetTemporary(descriptor);
+            //SSGI_HierarchicalDepth_BackUp_RT.filterMode = FilterMode.Point;
+
             //RayMarching and RayMask RT
             RenderTexture.ReleaseTemporary(SSGI_TraceMask_RT[0]);
             SSGI_TraceMask_RT[0] = RenderTexture.GetTemporary((int)cameraBufferSize.x / (int)settings.rayCastSize, (int)cameraBufferSize.y / (int)settings.rayCastSize, 0, RenderTextureFormat.ARGBHalf);
@@ -329,7 +328,7 @@ public class ScreenSpaceGlobalIllumination
     }
 
     void ReleaseBuffer() {
-        RenderTexture.ReleaseTemporary(SSGI_HierarchicalDepth_RT);
+        //RenderTexture.ReleaseTemporary(SSGI_HierarchicalDepth_RT);
         RenderTexture.ReleaseTemporary(SSGI_SceneColor_RT);
         RenderTexture.ReleaseTemporary(SSGI_TraceMask_RT[0]);
         RenderTexture.ReleaseTemporary(SSGI_TraceMask_RT[1]);

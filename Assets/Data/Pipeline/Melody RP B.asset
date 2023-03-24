@@ -34,7 +34,7 @@ MonoBehaviour:
   atmosphere: {fileID: 11400000, guid: 21777d4397c8a5842bd9927000c6afc3, type: 2}
   cloud: {fileID: 11400000, guid: d6ce6c53365b5e94796bef0b4876683a, type: 2}
   fog:
-    enabled: 1
+    enabled: 0
     resolution: 1
   postFXSettings: {fileID: 11400000, guid: e089f744ec6e2f242afd88eabd41e272, type: 2}
   cameraBufferSettings:
@@ -46,6 +46,8 @@ MonoBehaviour:
     copyDepthReflections: 0
     copyColor: 1
     copyColorReflections: 0
+    useHizDepthTexture: 1
+    HizMaxLevel: 10
     useDepthNormal: 0
     useDiffuse: 0
     useSpecular: 0
