@@ -24,6 +24,8 @@ public class GrassRenderer : MonoBehaviour {
     public Material lodGrassMaterial;
     //do culling and data remake
     public ComputeShader dataProcessing;
+    public bool useFrustumCulling;
+    public bool useOcclusionCulling;
 
     [Header("Wave")]
     public ComputeShader noiseShader;
@@ -466,6 +468,8 @@ public class GrassRenderer : MonoBehaviour {
             frustumPlanes[i] = new Vector4(normal.x, normal.y, normal.z, -planes[i].distance);
         }
         dataProcessing.SetVectorArray("_FrustumPlanes", frustumPlanes);
+        dataProcessing.SetBool("FrustumCulling", useFrustumCulling);
+        dataProcessing.SetBool("OcclusionCulling", useOcclusionCulling);
         //dispatch culling compute per chunk
         for (int i = 0; i < visiableChunkID.Count; i++) {
             int currentChunkId = visiableChunkID[i];
