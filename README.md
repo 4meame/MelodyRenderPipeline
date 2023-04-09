@@ -19,6 +19,7 @@ Feature include ：
 14.Temporal Antialiasing  
 15.Physical Camera: Depth of Field,Auto Exposure,Lens Falre  
 16.FFT Ocean  
+17.Compute shader grass  
 
 VERY IMPROTANT:  
 Please let me know if you find bug in this project.  
